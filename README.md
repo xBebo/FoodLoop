@@ -76,10 +76,10 @@ Normal app startup does not migrate or create a database. Outside Development a 
 ## Architecture
 
 ```text
-Domain          Entities and enums; no EF or Identity dependency
-Application     Repository/current-user/audit contracts and application exceptions
-Infrastructure  EF mappings, DbContext, repositories, Identity and seed support
-Web             MVC composition root, authentication middleware and views
+Domain                           Entities and enums; no EF or Identity dependency
+Application (Business Logic L)   Repository/current-user/audit contracts and application exceptions
+Infrastructure (Data Access L)   EF mappings, DbContext, repositories, Identity and seed support
+Web (Presentation L)             MVC composition root, authentication middleware and views
 ```
 
 Web references Infrastructure to register services; feature controllers should call Application use cases rather than implementing business workflows directly in controllers.
