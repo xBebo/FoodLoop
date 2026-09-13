@@ -5,4 +5,7 @@
     <Project Path="src/FoodLoop.Infrastructure/FoodLoop.Infrastructure.csproj" />
     <Project Path="src/FoodLoop.Web/FoodLoop.Web.csproj" />
   </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/FoodLoop.Foundation.Tests/FoodLoop.Foundation.Tests.csproj" />
+  </Folder>
 </Solution>
