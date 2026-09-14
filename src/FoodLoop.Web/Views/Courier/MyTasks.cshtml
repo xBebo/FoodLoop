@@ -1,0 +1,44 @@
+﻿@model IEnumerable<dynamic>
+
+@{
+    ViewData["Title"] = "مهام التوصيل الخاصة بي";
+}
+
+<div class="container mt-4">
+    <h2>مهام التوصيل الموكلة إليّ</h2>
+
+    @if (TempData["SuccessMessage"] != null)
+    {
+        <div class="alert alert-success my-3">
+            @TempData["SuccessMessage"]
+        </div>
+    }
+
+    <table class="table table-bordered table-striped mt-3">
+        <thead>
+            <tr>
+                <th>اسم التبرع</th>
+                <th>المؤسسة المانحة</th>
+                <th>الحالة الحالية</th>
+                <th>الإجراءات</th>
+            </tr>
+        </thead>
+        <tbody>
+            @if (Model != null)
+            {
+                @foreach (var task in Model)
+                {
+                    <tr>
+                        <td>@task.Title</td>
+                        <td>@task.Organization?.Name</td>
+                        <td><span class="badge bg-info">@task.Status</span></td>
+                        <td>
+                            <a asp-action="VerifyHandover" asp-route-donationId="@task.Id" asp-route-type="Pickup" class="btn btn-warning btn-sm">تأكيد الاستلام (Pickup)</a>
+                            <a asp-action="VerifyHandover" asp-route-donationId="@task.Id" asp-route-type="Delivery" class="btn btn-success btn-sm">تأكيد التسليم (Delivery)</a>
+                        </td>
+                    </tr>
+                }
+            }
+        </tbody>
+    </table>
+</div>
