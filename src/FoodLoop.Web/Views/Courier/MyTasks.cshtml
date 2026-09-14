@@ -1,11 +1,12 @@
-﻿@model IEnumerable<dynamic>
+﻿@using FoodLoop.Domain.Entities
+@model IEnumerable<DonationClaim>
 
 @{
     ViewData["Title"] = "مهام التوصيل الخاصة بي";
 }
 
 <div class="container mt-4">
-    <h2>مهام التوصيل الموكلة إليّ</h2>
+    <h2>مهامي المسندة</h2>
 
     @if (TempData["SuccessMessage"] != null)
     {
@@ -15,26 +16,33 @@
     }
 
     <table class="table table-bordered table-striped mt-3">
-        <thead>
+        <thead class="table-dark">
             <tr>
                 <th>اسم التبرع</th>
-                <th>المؤسسة المانحة</th>
-                <th>الحالة الحالية</th>
-                <th>الإجراءات</th>
+                <th>حالة المهمة</th>
+                <th class="text-center">الإجراءات</th>
             </tr>
         </thead>
         <tbody>
-            @if (Model != null)
+            @if (Model == null || !Model.Any())
+            {
+                <tr>
+                    <td colspan="3" class="text-center py-4 text-muted">لا توجد مهام مسندة إليك حالياً.</td>
+                </tr>
+            }
+            else
             {
                 @foreach (var task in Model)
                 {
                     <tr>
-                        <td>@task.Title</td>
-                        <td>@task.Organization?.Name</td>
-                        <td><span class="badge bg-info">@task.Status</span></td>
-                        <td>
-                            <a asp-action="VerifyHandover" asp-route-donationId="@task.Id" asp-route-type="Pickup" class="btn btn-warning btn-sm">تأكيد الاستلام (Pickup)</a>
-                            <a asp-action="VerifyHandover" asp-route-donationId="@task.Id" asp-route-type="Delivery" class="btn btn-success btn-sm">تأكيد التسليم (Delivery)</a>
+                        <td class="align-middle fw-bold">@task.FoodDonation?.Title</td>
+                        <td class="align-middle">
+                            <span class="badge bg-info text-dark">@task.Status</span>
+                        </td>
+                        <td class="align-middle text-center">
+                            <a asp-action="VerifyHandover" asp-route-claimId="@task.Id" class="btn btn-primary btn-sm">
+                                إثبات استلام / تسليم
+                            </a>
                         </td>
                     </tr>
                 }

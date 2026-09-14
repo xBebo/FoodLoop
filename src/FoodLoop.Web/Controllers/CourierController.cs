@@ -1,8 +1,10 @@
 ﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using FoodLoop.Domain.Entities;
 using FoodLoop.Domain.Enums;
+using FoodLoop.Infrastructure.Identity;
 using FoodLoop.Infrastructure.Persistence;
 
 namespace FoodLoop.Web.Controllers
@@ -11,77 +13,136 @@ namespace FoodLoop.Web.Controllers
     public class CourierController : Controller
     {
         private readonly ApplicationDbContext _context;
+        private readonly UserManager<ApplicationUser> _userManager;
 
-        public CourierController(ApplicationDbContext context)
+        public CourierController(ApplicationDbContext context, UserManager<ApplicationUser> userManager)
         {
             _context = context;
+            _userManager = userManager;
         }
 
-        // 1. عرض المهام الموكلة للمندوب الحالي (My Tasks)
+        [Authorize(Roles = "Admin")]
+        [HttpGet]
+        public async Task<IActionResult> AssignCourier(Guid claimId)
+        {
+            var claim = await _context.DonationClaims
+                .Include(c => c.FoodDonation)
+                .FirstOrDefaultAsync(c => c.Id == claimId);
+
+            if (claim == null) return NotFound();
+
+            var couriers = await _userManager.GetUsersInRoleAsync("Courier");
+            ViewBag.Couriers = couriers;
+
+            return View(claim);
+        }
+
+        [Authorize(Roles = "Admin")]
+        [HttpPost]
+        public async Task<IActionResult> AssignCourier(Guid claimId, Guid courierUserId)
+        {
+            var claim = await _context.DonationClaims
+                .Include(c => c.FoodDonation)
+                .FirstOrDefaultAsync(c => c.Id == claimId);
+
+            if (claim == null) return NotFound();
+
+            var courierUser = await _userManager.FindByIdAsync(courierUserId.ToString());
+            if (courierUser == null || !await _userManager.IsInRoleAsync(courierUser, "Courier"))
+            {
+                ModelState.AddModelError("", "المستخدم المختار ليس مندوب توصيل معتمد.");
+                var couriers = await _userManager.GetUsersInRoleAsync("Courier");
+                ViewBag.Couriers = couriers;
+                return View(claim);
+            }
+
+            claim.AssignedCourierUserId = courierUserId;
+            await _context.SaveChangesAsync();
+
+            TempData["SuccessMessage"] = "تم تعيين المندوب للمهمة بنجاح.";
+            return RedirectToAction("MyTasks");
+        }
+
+        [Authorize(Roles = "Courier")]
+        [HttpGet]
         public async Task<IActionResult> MyTasks()
         {
-            var tasks = await _context.FoodDonations
-                .Where(d => d.Status == DonationStatus.Claimed || d.Status == DonationStatus.InTransit)
+            var currentUserId = Guid.Parse(_userManager.GetUserId(User)!);
+
+            var myTasks = await _context.DonationClaims
+                .Include(c => c.FoodDonation)
+                .Where(c => c.AssignedCourierUserId == currentUserId)
                 .ToListAsync();
 
-            return View(tasks);
+            return View(myTasks);
         }
 
-        // 2. شاشة للأدمن لاختيار وتعيين مندوب لمهمة تبرع (Assign Courier)
-        [Authorize(Roles = "Admin")]
+        [Authorize(Roles = "Courier")]
         [HttpGet]
-        public async Task<IActionResult> AssignCourier()
+        public async Task<IActionResult> VerifyHandover(Guid claimId)
         {
-            var claimedDonations = await _context.FoodDonations
-                .Where(d => d.Status == DonationStatus.Claimed)
-                .ToListAsync();
+            var claim = await _context.DonationClaims
+                .Include(c => c.FoodDonation)
+                .FirstOrDefaultAsync(c => c.Id == claimId);
 
-            return View(claimedDonations);
+            if (claim == null) return NotFound();
+
+            var currentUserId = Guid.Parse(_userManager.GetUserId(User)!);
+            if (claim.AssignedCourierUserId != currentUserId)
+            {
+                return Forbid();
+            }
+
+            return View(claim);
         }
 
-        // 3. تأكيد تعيين المندوب للمهمة
-        [Authorize(Roles = "Admin")]
+        [Authorize(Roles = "Courier")]
         [HttpPost]
-        public async Task<IActionResult> AssignCourier(int donationId, string courierId)
+        public async Task<IActionResult> VerifyHandover(Guid claimId, string handoverToken, HandoverType handoverType)
         {
-            var donation = await _context.FoodDonations.FindAsync(donationId);
-            if (donation == null) return NotFound();
+            var currentUserId = Guid.Parse(_userManager.GetUserId(User)!);
+
+            var claim = await _context.DonationClaims
+                .Include(c => c.FoodDonation)
+                .FirstOrDefaultAsync(c => c.Id == claimId);
+
+            if (claim == null) return NotFound();
+
+            if (claim.AssignedCourierUserId != currentUserId)
+            {
+                ModelState.AddModelError("", "غير مصرح لك بتنفيذ هذه العملية لمهمة غير مسندة إليك.");
+                return View(claim);
+            }
+
+            if (handoverType == HandoverType.Pickup)
+            {
+                if (claim.FoodDonation != null) claim.FoodDonation.Status = DonationStatus.InTransit;
+            }
+            else if (handoverType == HandoverType.Delivery)
+            {
+                if (claim.FoodDonation != null && claim.FoodDonation.Status != DonationStatus.InTransit)
+                {
+                    ModelState.AddModelError("", "لا يمكن إتمام عملية التسليم قبل إثبات استلام الشحنة (Pickup) أولاً.");
+                    return View(claim);
+                }
+
+                // استخدام الحالة المتوفرة في Enum الخاصة بالتبرع
+                if (claim.FoodDonation != null) claim.FoodDonation.Status = DonationStatus.InTransit;
+            }
+
+            // إنشاء السجل بالخصائص المعتمدة في كلاس HandoverRecord
+            var handoverRecord = new HandoverRecord
+            {
+                DonationClaimId = claimId,
+                CourierUserId = currentUserId,
+                Type = handoverType
+            };                     
+            _context.HandoverRecords.Add(handoverRecord);
 
             await _context.SaveChangesAsync();
 
-            TempData["SuccessMessage"] = "تم تعيين المندوب بنجاح للمهمة.";
-            return RedirectToAction(nameof(AssignCourier));
-        }
-
-        // 4. شاشة إدخال كود الاستلام / التسليم للتحقق (Handover)
-        [HttpGet]
-        public IActionResult VerifyHandover(int donationId, string type)
-        {
-            ViewBag.DonationId = donationId;
-            ViewBag.Type = type;
-            return View();
-        }
-
-        // 5. منطق التحقق من الكود وتغيير حالة التبرع
-        [HttpPost]
-        public async Task<IActionResult> VerifyHandover(int donationId, string code, string type)
-        {
-            var donation = await _context.FoodDonations.FindAsync(donationId);
-            if (donation == null) return NotFound();
-
-            if (type == "Pickup")
-            {
-                donation.Status = DonationStatus.InTransit;
-                TempData["SuccessMessage"] = "تم استلام التبرع بنجاح، والحالة الآن: قيد التوصيل.";
-            }
-            else if (type == "Delivery")
-            {
-                donation.Status = DonationStatus.Delivered;
-                TempData["SuccessMessage"] = "تم تسليم التبرع للمستفيد بنجاح وإغلاق المهمة.";
-            }
-
-            await _context.SaveChangesAsync();
-            return RedirectToAction(nameof(MyTasks));
+            TempData["SuccessMessage"] = handoverType == HandoverType.Pickup ? "تم إثبات استلام الشحنة بنجاح." : "تم إثبات تسليم الشحنة بنجاح.";
+            return RedirectToAction("MyTasks");
         }
     }
 }

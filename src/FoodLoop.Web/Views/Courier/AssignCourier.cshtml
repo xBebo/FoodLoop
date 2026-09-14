@@ -1,45 +1,42 @@
-﻿@model IEnumerable<dynamic>
+﻿@using FoodLoop.Domain.Entities
+@model DonationClaim
 
 @{
-    ViewData["Title"] = "تعيين مندوب للمهام";
+    ViewData["Title"] = "تعيين مندوب توصيل";
 }
 
 <div class="container mt-4">
-    <h2>تعيين مندوب توصيل للتبرعات المحجوزة</h2>
+    <div class="row justify-content-center">
+        <div class="col-md-6">
+            <div class="card shadow">
+                <div class="card-header bg-primary text-white">
+                    <h4 class="mb-0">تعيين مندوب للتبرع: @Model?.FoodDonation?.Title</h4>
+                </div>
+                <div class="card-body">
+                    <form asp-action="AssignCourier" method="post">
+                        <input type="hidden" name="claimId" value="@Model?.Id" />
 
-    @if (TempData["SuccessMessage"] != null)
-    {
-        <div class="alert alert-success my-3">
-            @TempData["SuccessMessage"]
+                        <div class="mb-3">
+                            <label class="form-label fw-bold">اختر المندوب</label>
+                            <select name="courierUserId" class="form-select" required>
+                                <option value="" selected disabled>-- اختر مندوب التوصيل --</option>
+                                @if (ViewBag.Couriers != null)
+                                {
+                                    foreach (var courier in ViewBag.Couriers)
+                                    {
+                                        <option value="@courier.Id">@courier.UserName (@courier.Email)</option>
+                                    }
+                                }
+                            </select>
+                        </div>
+
+                        <div class="d-grid gap-2">
+                            <button type="submit" class="btn btn-success">حفظ وتعيين المندوب</button>
+                            <a asp-action="MyTasks" class="btn btn-secondary">إلغاء</a>
+                        </div>
+                    </form>
+                </div>
+            </div>
         </div>
-    }
-
-    <table class="table table-bordered table-striped mt-3">
-        <thead>
-            <tr>
-                <th>اسم التبرع</th>
-                <th>الحالة الحالية</th>
-                <th>إجراء التعيين</th>
-            </tr>
-        </thead>
-        <tbody>
-            @if (Model != null)
-            {
-                @foreach (var donation in Model)
-                {
-                    <tr>
-                        <td>@donation.Title</td>
-                        <td><span class="badge bg-warning">@donation.Status</span></td>
-                        <td>
-                            <form asp-action="AssignCourier" method="post" class="d-flex gap-2">
-                                <input type="hidden" name="donationId" value="@donation.Id" />
-                                <input type="text" name="courierId" class="form-control form-control-sm" placeholder="إيميل أو معرف المندوب" required />
-                                <button type="submit" class="btn btn-primary btn-sm">تعيين</button>
-                            </form>
-                        </td>
-                    </tr>
-                }
-            }
-        </tbody>
-    </table>
+    </div>
 </div>
