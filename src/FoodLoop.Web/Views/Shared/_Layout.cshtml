@@ -26,6 +26,11 @@
                         <li class="nav-item">
                             <a class="nav-link text-dark" asp-area="" asp-controller="Home" asp-action="Privacy">Privacy</a>
                         </li>
+                        @if (User.IsInRole(FoodLoop.Application.Identity.AppRoles.Admin))
+                        {
+                            <li class="nav-item"><a class="nav-link text-dark" asp-controller="Admin" asp-action="Index">Admin dashboard</a></li>
+                            <li class="nav-item"><a class="nav-link text-dark" asp-controller="Admin" asp-action="Audit">Audit log</a></li>
+                        }
                     </ul>
                 </div>
             </div>

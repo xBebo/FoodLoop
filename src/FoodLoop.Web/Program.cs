@@ -1,3 +1,4 @@
+using FoodLoop.Application;
 using FoodLoop.Infrastructure;
 using FoodLoop.Infrastructure.Persistence;
 using Microsoft.AspNetCore.Mvc;
@@ -12,6 +13,7 @@ if (string.IsNullOrWhiteSpace(connectionString))
         throw new InvalidOperationException("Configure ConnectionStrings:DefaultConnection before running outside Development.");
     connectionString = "Server=(localdb)\\MSSQLLocalDB;Database=FoodLoop_Development;Trusted_Connection=True;TrustServerCertificate=True";
 }
+builder.Services.AddApplication();
 builder.Services.AddInfrastructure(connectionString);
 var app = builder.Build();
 
@@ -40,3 +42,6 @@ app.UseAuthorization();
 app.MapStaticAssets();
 app.MapControllerRoute(name: "default", pattern: "{controller=Home}/{action=Index}/{id?}").WithStaticAssets();
 app.Run();
+
+// Exposes the entry point to HTTP integration tests.
+public partial class Program { }

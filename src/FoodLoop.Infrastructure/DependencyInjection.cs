@@ -19,8 +19,8 @@ public static class DependencyInjection
             options.Password.RequiredLength = 10;
         }).AddEntityFrameworkStores<ApplicationDbContext>().AddDefaultTokenProviders();
         services.ConfigureApplicationCookie(options => {
-            options.LoginPath = "/Account/Login";
-            options.AccessDeniedPath = "/Account/AccessDenied";
+            options.LoginPath = "/Auth/Login";
+            options.AccessDeniedPath = "/Admin/AccessDenied";
         });
         services.AddHttpContextAccessor();
         services.AddSingleton(TimeProvider.System);
@@ -29,6 +29,7 @@ public static class DependencyInjection
         services.AddScoped<IFoodDonationRepository, FoodDonationRepository>();
         services.AddScoped<IClaimRepository, ClaimRepository>();
         services.AddScoped<IUnitOfWork, UnitOfWork>();
+        services.AddScoped<IAdminReadRepository, AdminReadRepository>();
         services.AddScoped<IAuditService, AuditService>();
         services.AddScoped<DevelopmentDataSeeder>();
         return services;

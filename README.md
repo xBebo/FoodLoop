@@ -69,7 +69,7 @@ Seeding is explicit and Development-only. Re-running does not duplicate seed dat
 dotnet run --project src/FoodLoop.Web
 ```
 
-Open the URL printed by the application. The landing page works now. Jana will add the login and account screens; **seeded users do not mean login UI already exists**. Cookie paths are reserved for `/Account/Login` and `/Account/AccessDenied`.
+Open the URL printed by the application. The landing page works now. Jana will add the login and account screens; **seeded users do not mean login UI already exists**. Cookie paths now use `/Auth/Login` (Jana's controller route) and `/Admin/AccessDenied` (implemented here). Jana's authentication branch is not included in this feature; until it is integrated, `/Auth/Login` is unavailable on develop.
 
 Normal app startup does not migrate or create a database. Outside Development a connection string must be configured explicitly. HTTPS certificate trust, if required locally, can be set with `dotnet dev-certs https --trust`.
 
@@ -113,3 +113,13 @@ Coverage includes migration/model consistency, SQL constraints, competing rowver
 5. Merge and demonstrate the integrated application nightly.
 
 The existing release branch is named `master`; do not assume `main` exists. Confirm GitHub branch protection in the repository UI; it is not configured by these source files.
+
+## Admin dashboard and audit list
+
+- `/Admin`: Admin-only operational counts.
+- `/Admin/Audit`: Admin-only audit records, 20 per page, newest first (UTC timestamps).
+- `/Admin/AccessDenied`: public explanatory page returning HTTP 403; contains no admin data.
+
+`AddApplication()` in Application/DependencyInjection.cs explicitly registers application services. Keep the existing Infrastructure registrations in AddInfrastructure(); coordinate shared registration-file changes with the other owners.
+
+Read [the admin feature guide](docs/ADMIN-FEATURE.md) for the count definitions, auth integration dependency and manual checks. No migration is required for these read-only screens.
