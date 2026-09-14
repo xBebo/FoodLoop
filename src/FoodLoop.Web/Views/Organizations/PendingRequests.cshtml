@@ -1,0 +1,37 @@
+﻿@model IEnumerable<FoodLoop.Domain.Entities.Organization>
+
+@{
+    ViewData["Title"] = "طلبات الانضمام المعلقة";
+}
+
+<div class="container mt-4">
+    <h2>طلبات انضمام المؤسسات المنتظرة</h2>
+    <table class="table table-bordered table-striped mt-3">
+        <thead>
+            <tr>
+                <th>اسم المؤسسة</th>
+                <th>نوع المؤسسة</th>
+                <th>رقم الترخيص</th>
+                <th>الإجراءات</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var org in Model)
+            {
+                <tr>
+                    <td>@org.Name</td>
+                    <td>@org.Type</td>
+                    <td>@org.LicenseNumber</td>
+                    <td>
+                        <form asp-action="Approve" asp-route-id="@org.Id" method="post" class="d-inline">
+                            <button type="submit" class="btn btn-success btn-sm">قبول</button>
+                        </form>
+                        <form asp-action="Reject" asp-route-id="@org.Id" method="post" class="d-inline">
+                            <button type="submit" class="btn btn-danger btn-sm">رفض</button>
+                        </form>
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </table>
+</div>
