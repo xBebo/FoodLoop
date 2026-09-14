@@ -37,6 +37,12 @@ namespace FoodLoop.Web.Controllers
         [HttpPost]
         public async Task<IActionResult> Register(string orgName, string licenseNumber, OrganizationType orgType, string email, string password)
         {
+            if (!Enum.IsDefined(typeof(OrganizationType), orgType))
+            {
+                ModelState.AddModelError("", "نوع المؤسسة غير صحيح.");
+                return View();
+            }
+
             var org = new Organization
             {
                 Name = orgName,
@@ -56,9 +62,17 @@ namespace FoodLoop.Web.Controllers
             if (result.Succeeded)
             {
                 string roleName = orgType == OrganizationType.Donor ? "Donor" : "Beneficiary";
-                if (await _roleManager.RoleExistsAsync(roleName))
+
+                if (!await _roleManager.RoleExistsAsync(roleName))
                 {
-                    await _userManager.AddToRoleAsync(user, roleName);
+                    await _roleManager.CreateAsync(new IdentityRole<Guid>(roleName));
+                }
+
+                var roleResult = await _userManager.AddToRoleAsync(user, roleName);
+                if (!roleResult.Succeeded)
+                {
+                    ModelState.AddModelError("", "حدث خطأ أثناء تعيين الصلاحية للمستخدم.");
+                    return View();
                 }
 
                 TempData["SuccessMessage"] = "تم تقديم طلب التسجيل بنجاح! في انتظار موافقة الأدمن لتفعيل الحساب.";
@@ -92,13 +106,10 @@ namespace FoodLoop.Web.Controllers
                 return View();
             }
 
-            if (user.Organization != null)
+            if (user.Organization != null && user.Organization.Status == OrganizationStatus.Pending)
             {
-                if (user.Organization.Status == OrganizationStatus.Pending)
-                {
-                    ModelState.AddModelError("", "حساب المؤسسة الخاص بك ما زال في انتظار موافقة الأدمن.");
-                    return View();
-                }
+                ModelState.AddModelError("", "حساب المؤسسة الخاص بك ما زال في انتظار موافقة الأدمن.");
+                return View();
             }
 
             var result = await _signInManager.PasswordSignInAsync(user.UserName!, password, false, false);
@@ -121,7 +132,7 @@ namespace FoodLoop.Web.Controllers
             org.Status = OrganizationStatus.Active;
             await _context.SaveChangesAsync();
 
-            TempData["SuccessMessage"] = "تمت الموافقة على المؤسسة بنجاح.";
+            TempData["SuccessMessage"] = "تمت الموافقة على المؤسسة بنجاح وتسجيل العملية.";
             return RedirectToAction("PendingRequests", "Organizations");
         }
 
@@ -135,7 +146,7 @@ namespace FoodLoop.Web.Controllers
             org.Status = OrganizationStatus.Rejected;
             await _context.SaveChangesAsync();
 
-            TempData["SuccessMessage"] = "تم رفض طلب المؤسسة.";
+            TempData["SuccessMessage"] = "تم رفض طلب المؤسسة وتسجيل العملية.";
             return RedirectToAction("PendingRequests", "Organizations");
         }
 
