@@ -48,4 +48,21 @@ public sealed class ClaimService(
         catch (PersistenceConflictException) { return new(CreateClaimOutcome.Conflict); }
         return new(CreateClaimOutcome.Created, claim.Id);
     }
+
+    public async Task<GetMyClaimsResult> GetMyClaimsAsync(int page, int pageSize, CancellationToken ct)
+    {
+        if (!currentUser.IsAuthenticated) return new(GetMyClaimsOutcome.Unauthenticated, []);
+        if (!currentUser.IsInRole(AppRoles.Beneficiary)) return new(GetMyClaimsOutcome.Forbidden, []);
+
+        var organizationId = await currentUser.GetOrganizationIdAsync(ct);
+        var beneficiary = organizationId is Guid id ? await organizations.GetByIdAsync(id, ct) : null;
+        if (beneficiary is not { Type: OrganizationType.Beneficiary }) return new(GetMyClaimsOutcome.OrganizationNotBeneficiary, []);
+        // Allowlist: Active, plus Suspended for read-only access to its own history. Pending, Rejected and any future status are denied.
+        if (beneficiary.Status is not (OrganizationStatus.Active or OrganizationStatus.Suspended)) return new(GetMyClaimsOutcome.Forbidden, []);
+
+        var items = await claims.GetForBeneficiaryOrganizationAsync(beneficiary.Id, page, pageSize, ct);
+        return new(GetMyClaimsOutcome.Success, [.. items.Select(x => new ClaimSummary(
+            x.Id, x.FoodDonationId, x.FoodDonation.Title, x.FoodDonation.Quantity, x.FoodDonation.Unit, x.FoodDonation.PickupAddress,
+            x.FoodDonation.ExpiresAtUtc, x.Status, x.CreatedAtUtc))]);
+    }
 }

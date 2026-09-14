@@ -278,6 +278,185 @@ public sealed class ClaimServiceTests(DatabaseFixture fixture) : IClassFixture<D
         Assert.Equal(claim.Id, (await ClaimCreatedAudits(verify, donationId).SingleAsync()).EntityId);
     }
 
+    // ---- My Claims
+    private async Task<GetMyClaimsResult> GetMyClaimsAsync(ClaimsPrincipal principal, int page = 1, int pageSize = 20)
+    {
+        await using var db = fixture.CreateContext();
+        return await Service(db, principal).GetMyClaimsAsync(page, pageSize, CancellationToken.None);
+    }
+    private async Task<Guid> SeedClaimAsync(Guid beneficiaryOrganizationId, DateTimeOffset createdAtUtc,
+        ClaimStatus status = ClaimStatus.Booked, Guid? claimId = null, FoodDonation? donation = null)
+    {
+        await using var db = fixture.CreateContext();
+        var claim = new DonationClaim
+        {
+            Id = claimId ?? Guid.NewGuid(), BeneficiaryOrganizationId = beneficiaryOrganizationId, Status = status, CreatedAtUtc = createdAtUtc,
+            FoodDonation = donation ?? new FoodDonation
+            {
+                DonorOrganization = Org(OrganizationType.Donor), FoodCategory = new FoodCategory { Name = Guid.NewGuid().ToString("N") },
+                Title = "Claimed food", Description = "Test", Quantity = 5, Unit = QuantityUnit.Meals, PreparedAtUtc = Now.AddHours(-3),
+                ExpiresAtUtc = Now.AddHours(2), PickupAddress = "Test address", StorageInstructions = "Test", Status = DonationStatus.Claimed
+            }
+        };
+        db.Add(claim); await db.SaveChangesAsync();
+        return claim.Id;
+    }
+    private static Guid[] Ids(GetMyClaimsResult result) => [.. result.Claims.Select(x => x.ClaimId)];
+
+    [Fact]
+    public async Task My_claims_returns_only_the_current_beneficiarys_claims()
+    {
+        var (userA, orgA) = await SeedBeneficiaryAsync(); var (userB, orgB) = await SeedBeneficiaryAsync();
+        var claimA1 = await SeedClaimAsync(orgA!.Value, Now.AddMinutes(-2)); var claimA2 = await SeedClaimAsync(orgA.Value, Now.AddMinutes(-1));
+        var claimB = await SeedClaimAsync(orgB!.Value, Now);
+
+        var resultA = await GetMyClaimsAsync(Principal(userA));
+        Assert.Equal(GetMyClaimsOutcome.Success, resultA.Outcome);
+        Assert.Equal([claimA2, claimA1], Ids(resultA));
+        var resultB = await GetMyClaimsAsync(Principal(userB));
+        Assert.Equal([claimB], Ids(resultB));
+    }
+    [Theory]
+    [InlineData(OrganizationStatus.Active)]
+    [InlineData(OrganizationStatus.Suspended)]
+    public async Task Active_or_suspended_beneficiary_can_read_its_own_claims(OrganizationStatus status)
+    {
+        var (userId, organizationId) = await SeedBeneficiaryAsync(status); var (_, otherOrg) = await SeedBeneficiaryAsync();
+        var claimId = await SeedClaimAsync(organizationId!.Value, Now, ClaimStatus.PickupPending);
+        await SeedClaimAsync(otherOrg!.Value, Now);
+        var result = await GetMyClaimsAsync(Principal(userId));
+        Assert.Equal(GetMyClaimsOutcome.Success, result.Outcome);
+        Assert.Equal([claimId], Ids(result));
+    }
+    [Theory]
+    [InlineData(OrganizationStatus.Pending)]
+    [InlineData(OrganizationStatus.Rejected)]
+    public async Task Pending_or_rejected_beneficiary_is_denied_my_claims_without_changes(OrganizationStatus status)
+    {
+        var (userId, organizationId) = await SeedBeneficiaryAsync(status); var (_, otherOrg) = await SeedBeneficiaryAsync();
+        var ownClaim = await SeedClaimAsync(organizationId!.Value, Now, ClaimStatus.Booked);
+        var otherClaim = await SeedClaimAsync(otherOrg!.Value, Now, ClaimStatus.Booked);
+
+        var result = await GetMyClaimsAsync(Principal(userId));
+        Assert.Equal(GetMyClaimsOutcome.Forbidden, result.Outcome);
+        Assert.Empty(result.Claims);
+
+        await using var db = fixture.CreateContext();
+        Assert.Equal(status, (await db.Organizations.AsNoTracking().SingleAsync(x => x.Id == organizationId)).Status);
+        foreach (var claimId in new[] { ownClaim, otherClaim })
+        {
+            var claim = await db.DonationClaims.AsNoTracking().Include(x => x.FoodDonation).SingleAsync(x => x.Id == claimId);
+            Assert.Equal(ClaimStatus.Booked, claim.Status); Assert.Equal(DonationStatus.Claimed, claim.FoodDonation.Status);
+        }
+        Assert.False(await db.AuditLogs.AnyAsync(x => x.ActorUserId == userId));
+    }
+    [Fact]
+    public async Task Empty_history_succeeds_and_never_falls_back_to_other_organizations_claims()
+    {
+        var (userId, _) = await SeedBeneficiaryAsync(); var (_, otherOrg) = await SeedBeneficiaryAsync();
+        await SeedClaimAsync(otherOrg!.Value, Now);
+        var result = await GetMyClaimsAsync(Principal(userId));
+        Assert.Equal(GetMyClaimsOutcome.Success, result.Outcome);
+        Assert.Empty(result.Claims);
+    }
+    [Fact]
+    public async Task Active_and_historical_claim_statuses_are_all_returned()
+    {
+        var (userId, organizationId) = await SeedBeneficiaryAsync();
+        foreach (var status in Enum.GetValues<ClaimStatus>()) await SeedClaimAsync(organizationId!.Value, Now, status);
+        var result = await GetMyClaimsAsync(Principal(userId));
+        Assert.Equal(Enum.GetValues<ClaimStatus>().Order(), result.Claims.Select(x => x.ClaimStatus).Order());
+    }
+    [Fact]
+    public async Task Claims_are_ordered_newest_first()
+    {
+        var (userId, organizationId) = await SeedBeneficiaryAsync();
+        var middle = await SeedClaimAsync(organizationId!.Value, Now.AddDays(-1));
+        var newest = await SeedClaimAsync(organizationId.Value, Now);
+        var oldest = await SeedClaimAsync(organizationId.Value, Now.AddDays(-2));
+        Assert.Equal([newest, middle, oldest], Ids(await GetMyClaimsAsync(Principal(userId))));
+    }
+    [Fact]
+    public async Task Claims_with_equal_timestamps_are_ordered_by_id()
+    {
+        var (userId, organizationId) = await SeedBeneficiaryAsync();
+        // Ids differ only in the final byte group, which SQL Server compares first, so SQL and .NET agree on the order.
+        var prefix = Guid.NewGuid().ToString("N")[..8];
+        Guid Id(int n) => Guid.Parse($"{prefix}-0000-0000-0000-00000000000{n}");
+        foreach (var n in new[] { 3, 1, 2 }) await SeedClaimAsync(organizationId!.Value, Now, claimId: Id(n));
+        Assert.Equal([Id(1), Id(2), Id(3)], Ids(await GetMyClaimsAsync(Principal(userId))));
+        Assert.Equal([Id(1), Id(2), Id(3)], Ids(await GetMyClaimsAsync(Principal(userId))));
+    }
+    [Fact]
+    public async Task My_claims_are_paginated()
+    {
+        var (userId, organizationId) = await SeedBeneficiaryAsync();
+        var ids = new List<Guid>();
+        for (var i = 0; i < 5; i++) ids.Add(await SeedClaimAsync(organizationId!.Value, Now.AddMinutes(-i)));
+        Assert.Equal(ids[..2], Ids(await GetMyClaimsAsync(Principal(userId), page: 1, pageSize: 2)));
+        Assert.Equal(ids[2..4], Ids(await GetMyClaimsAsync(Principal(userId), page: 2, pageSize: 2)));
+        Assert.Equal(ids[4..], Ids(await GetMyClaimsAsync(Principal(userId), page: 3, pageSize: 2)));
+        Assert.Empty((await GetMyClaimsAsync(Principal(userId), page: 4, pageSize: 2)).Claims);
+    }
+    [Theory]
+    [InlineData(0, 20)]
+    [InlineData(1, 0)]
+    [InlineData(1, 101)]
+    public async Task Invalid_page_arguments_are_rejected(int page, int pageSize)
+    {
+        var (userId, _) = await SeedBeneficiaryAsync();
+        await Assert.ThrowsAsync<ArgumentOutOfRangeException>(() => GetMyClaimsAsync(Principal(userId), page, pageSize));
+    }
+    [Fact]
+    public async Task Claim_summary_maps_donation_and_claim_fields()
+    {
+        var (userId, organizationId) = await SeedBeneficiaryAsync();
+        var donation = new FoodDonation
+        {
+            DonorOrganization = Org(OrganizationType.Donor), FoodCategory = new FoodCategory { Name = Guid.NewGuid().ToString("N") },
+            Title = "Vegetable soup", Description = "Test", Quantity = 12.5m, Unit = QuantityUnit.Kilograms, PreparedAtUtc = Now.AddHours(-1),
+            ExpiresAtUtc = Now.AddHours(6), PickupAddress = "12 Market Street", StorageInstructions = "Keep cold", Status = DonationStatus.Delivered
+        };
+        var claimedAt = Now.AddMinutes(-30);
+        var claimId = await SeedClaimAsync(organizationId!.Value, claimedAt, ClaimStatus.Delivered, donation: donation);
+
+        var summary = Assert.Single((await GetMyClaimsAsync(Principal(userId))).Claims);
+        Assert.Equal(new ClaimSummary(claimId, donation.Id, "Vegetable soup", 12.5m, QuantityUnit.Kilograms, "12 Market Street",
+            Now.AddHours(6), ClaimStatus.Delivered, claimedAt), summary);
+    }
+    [Fact]
+    public async Task My_claims_rejects_unauthenticated_user()
+    {
+        var result = await GetMyClaimsAsync(new ClaimsPrincipal(new ClaimsIdentity()));
+        Assert.Equal(GetMyClaimsOutcome.Unauthenticated, result.Outcome); Assert.Empty(result.Claims);
+    }
+    [Theory]
+    [InlineData(AppRoles.Donor)]
+    [InlineData(AppRoles.Courier)]
+    [InlineData(AppRoles.Admin)]
+    public async Task My_claims_rejects_wrong_role(string role)
+    {
+        var (userId, organizationId) = await SeedBeneficiaryAsync(); await SeedClaimAsync(organizationId!.Value, Now);
+        var result = await GetMyClaimsAsync(Principal(userId, role));
+        Assert.Equal(GetMyClaimsOutcome.Forbidden, result.Outcome); Assert.Empty(result.Claims);
+    }
+    [Fact]
+    public async Task My_claims_rejects_beneficiary_without_linked_organization()
+    {
+        var (userId, _) = await SeedUserAsync(null);
+        var result = await GetMyClaimsAsync(Principal(userId));
+        Assert.Equal(GetMyClaimsOutcome.OrganizationNotBeneficiary, result.Outcome); Assert.Empty(result.Claims);
+    }
+    [Fact]
+    public async Task My_claims_rejects_beneficiary_role_linked_to_donor_organization()
+    {
+        var (userId, organizationId) = await SeedBeneficiaryAsync(type: OrganizationType.Donor);
+        // Even if claims somehow reference that organization, a non-Beneficiary organization sees nothing.
+        await SeedClaimAsync(organizationId!.Value, Now);
+        var result = await GetMyClaimsAsync(Principal(userId));
+        Assert.Equal(GetMyClaimsOutcome.OrganizationNotBeneficiary, result.Outcome); Assert.Empty(result.Claims);
+    }
+
     private sealed class FixedClock(DateTimeOffset now) : TimeProvider
     {
         public override DateTimeOffset GetUtcNow() => now;
