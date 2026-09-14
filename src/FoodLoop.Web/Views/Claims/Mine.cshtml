@@ -1,0 +1,165 @@
+@using System.Globalization
+@using System.Text.RegularExpressions
+@using FoodLoop.Domain.Enums
+@model MyClaimsViewModel
+@functions {
+    // Forward lifecycle only; Cancelled/Failed are historical end states and deliberately not part of the progress track.
+    private static readonly ClaimStatus[] Lifecycle =
+        [ClaimStatus.Booked, ClaimStatus.PickupPending, ClaimStatus.PickedUp, ClaimStatus.InTransit, ClaimStatus.Delivered, ClaimStatus.Closed];
+    private static string Label(Enum value) => Regex.Replace(value.ToString(), "(?<=[a-z])(?=[A-Z])", " ");
+    private static string Tone(ClaimStatus status) => status switch
+    {
+        ClaimStatus.Booked or ClaimStatus.PickupPending => "pending",
+        ClaimStatus.PickedUp or ClaimStatus.InTransit => "transit",
+        ClaimStatus.Delivered or ClaimStatus.Closed => "done",
+        ClaimStatus.Cancelled or ClaimStatus.Failed => "stopped",
+        _ => "neutral"
+    };
+    // TODO: shown in UTC with an explicit label; switch to the viewer's timezone once a shared localization approach exists.
+    private static string DisplayUtc(DateTimeOffset value) => value.ToUniversalTime().ToString("d MMM yyyy, HH:mm 'UTC'", CultureInfo.InvariantCulture);
+    private static string IsoUtc(DateTimeOffset value) => value.ToUniversalTime().ToString("yyyy-MM-dd'T'HH:mm:ss'Z'", CultureInfo.InvariantCulture);
+}
+@{
+    ViewData["Title"] = "My Claims";
+    var claims = Model.Claims;
+    var success = TempData["Success"] as string;
+    var error = TempData["Error"] as string;
+    var hasPrevious = Model.Page > 1;
+    // No total count is returned: a full page only suggests another page may exist, so the page count is never shown.
+    var mayHaveNext = claims.Count == Model.PageSize;
+}
+<div class="claims-page">
+    <header class="claims-hero">
+        <p class="claims-eyebrow">FoodLoop claims</p>
+        <h1 class="claims-title">My Claims</h1>
+        <p class="claims-lead">Track the food donations your organization has claimed.</p>
+    </header>
+
+    @if (!string.IsNullOrEmpty(success))
+    {
+        <div class="claims-alert claims-alert--success alert alert-dismissible fade show" role="status">
+            <svg class="claims-alert__icon" viewBox="0 0 20 20" aria-hidden="true" focusable="false"><path d="M10 1.5a8.5 8.5 0 1 0 0 17 8.5 8.5 0 0 0 0-17Zm4.03 6.28-4.75 5a.75.75 0 0 1-1.08.02l-2.25-2.25a.75.75 0 1 1 1.06-1.06l1.7 1.7 4.23-4.45a.75.75 0 1 1 1.09 1.04Z" fill="currentColor" /></svg>
+            <p class="claims-alert__text">@success</p>
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Dismiss message"></button>
+        </div>
+    }
+    @if (!string.IsNullOrEmpty(error))
+    {
+        <div class="claims-alert claims-alert--error alert alert-dismissible fade show" role="alert">
+            <svg class="claims-alert__icon" viewBox="0 0 20 20" aria-hidden="true" focusable="false"><path d="M10 1.5a8.5 8.5 0 1 0 0 17 8.5 8.5 0 0 0 0-17Zm0 4a.75.75 0 0 1 .75.75v4.5a.75.75 0 0 1-1.5 0v-4.5A.75.75 0 0 1 10 5.5Zm0 9a1 1 0 1 1 0-2 1 1 0 0 1 0 2Z" fill="currentColor" /></svg>
+            <p class="claims-alert__text">@error</p>
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Dismiss message"></button>
+        </div>
+    }
+
+    @if (claims.Count > 0)
+    {
+        <section class="claims-summary" aria-labelledby="claims-summary-title">
+            <h2 id="claims-summary-title" class="claims-section-title">On this page</h2>
+            <dl class="claims-stats">
+                <div class="claims-stat">
+                    <dt>Claims</dt>
+                    <dd>@claims.Count</dd>
+                </div>
+                <div class="claims-stat claims-stat--transit">
+                    <dt>In progress</dt>
+                    <dd>@claims.Count(c => Tone(c.ClaimStatus) is "pending" or "transit")</dd>
+                </div>
+                <div class="claims-stat claims-stat--done">
+                    <dt>Delivered or closed</dt>
+                    <dd>@claims.Count(c => Tone(c.ClaimStatus) == "done")</dd>
+                </div>
+                <div class="claims-stat claims-stat--stopped">
+                    <dt>Cancelled or failed</dt>
+                    <dd>@claims.Count(c => Tone(c.ClaimStatus) == "stopped")</dd>
+                </div>
+            </dl>
+        </section>
+
+        <section class="claims-list" aria-labelledby="claims-list-title">
+            <h2 id="claims-list-title" class="claims-section-title">Claimed donations</h2>
+            <table class="claims-table">
+                <caption class="visually-hidden">Claimed donations, most recently claimed first</caption>
+                <thead>
+                    <tr>
+                        <th scope="col">Donation</th>
+                        <th scope="col">Quantity</th>
+                        <th scope="col">Pickup address</th>
+                        <th scope="col">Claimed</th>
+                        <th scope="col">Expires</th>
+                        <th scope="col">Status</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var claim in claims)
+                    {
+                        var step = Array.IndexOf(Lifecycle, claim.ClaimStatus) + 1;
+                        var tone = Tone(claim.ClaimStatus);
+                        <tr class="claims-row">
+                            <th scope="row" class="claims-donation">@claim.DonationTitle</th>
+                            <td data-label="Quantity" class="claims-nowrap">@claim.Quantity.ToString("0.##", CultureInfo.InvariantCulture) @Label(claim.Unit)</td>
+                            <td data-label="Pickup address" class="claims-address">@claim.PickupAddress</td>
+                            <td data-label="Claimed" class="claims-nowrap"><time datetime="@IsoUtc(claim.ClaimedAtUtc)">@DisplayUtc(claim.ClaimedAtUtc)</time></td>
+                            <td data-label="Expires" class="claims-nowrap"><time datetime="@IsoUtc(claim.ExpiresAtUtc)">@DisplayUtc(claim.ExpiresAtUtc)</time></td>
+                            <td data-label="Status" class="claims-status">
+                                <span class="claims-badge claims-badge--@tone">
+                                    <span class="claims-badge__dot" aria-hidden="true"></span>@Label(claim.ClaimStatus)
+                                </span>
+                                @if (step > 0)
+                                {
+                                    <span class="claims-progress">
+                                        <span class="claims-progress__track claims-progress__track--@tone" aria-hidden="true">
+                                            @for (var i = 1; i <= Lifecycle.Length; i++)
+                                            {
+                                                <span class="claims-progress__step @(i <= step ? "is-reached" : null)"></span>
+                                            }
+                                        </span>
+                                        <span class="claims-progress__text">Step @step of @Lifecycle.Length</span>
+                                    </span>
+                                }
+                                else if (tone == "stopped")
+                                {
+                                    <span class="claims-progress__text">No further steps</span>
+                                }
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </section>
+    }
+    else
+    {
+        <section class="claims-empty" aria-labelledby="claims-empty-title">
+            <span class="claims-empty__icon" aria-hidden="true">
+                <svg viewBox="0 0 24 24" focusable="false"><path d="M4 9h16l-1.4 9.1A2.25 2.25 0 0 1 16.38 20H7.62a2.25 2.25 0 0 1-2.22-1.9L4 9Zm4-1V7a4 4 0 1 1 8 0v1" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" /></svg>
+            </span>
+            @if (hasPrevious)
+            {
+                <h2 id="claims-empty-title" class="claims-empty__title">No claims on this page</h2>
+                <p class="claims-empty__text">You have reached the end of your claims.</p>
+                <a class="claims-button" asp-action="Mine" asp-route-page="1" asp-route-pageSize="@Model.PageSize">Go to the first page of claims</a>
+            }
+            else
+            {
+                <h2 id="claims-empty-title" class="claims-empty__title">No claims yet</h2>
+                <p class="claims-empty__text">Available food donations you claim will appear here.</p>
+            }
+        </section>
+    }
+
+    @if (hasPrevious || mayHaveNext)
+    {
+        <nav class="claims-pager" aria-label="My claims pages">
+            @if (hasPrevious)
+            {
+                <a class="claims-button claims-button--ghost" asp-action="Mine" asp-route-page="@(Model.Page - 1)" asp-route-pageSize="@Model.PageSize"><span aria-hidden="true">&larr;</span> Previous<span class="visually-hidden"> page of claims</span></a>
+            }
+            <span class="claims-pager__current" aria-current="page">Page @Model.Page</span>
+            @if (mayHaveNext)
+            {
+                <a class="claims-button claims-button--ghost" asp-action="Mine" asp-route-page="@(Model.Page + 1)" asp-route-pageSize="@Model.PageSize">Next<span class="visually-hidden"> page of claims</span> <span aria-hidden="true">&rarr;</span></a>
+            }
+        </nav>
+    }
+</div>

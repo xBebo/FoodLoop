@@ -143,6 +143,23 @@ public sealed partial class ClaimServiceTests
         Assert.Equal(claimId, Assert.Single(model.Claims).ClaimId);
         Assert.Equal((1, 20), (model.Page, model.PageSize));
     }
+    [Fact]
+    public async Task Controller_mine_returns_valid_empty_model_when_organization_has_no_claims()
+    {
+        var (userId, _) = await SeedBeneficiaryAsync(); var (_, otherOrg) = await SeedBeneficiaryAsync();
+        await SeedClaimAsync(otherOrg!.Value, Now);
+        var view = Assert.IsType<ViewResult>(await GetMineAsync(Principal(userId)));
+        Assert.Null(view.ViewName); // Default convention resolves Views/Claims/Mine.cshtml.
+        var model = Assert.IsType<MyClaimsViewModel>(view.Model);
+        Assert.Empty(model.Claims);
+        Assert.Equal((1, 20), (model.Page, model.PageSize));
+    }
+    [Fact]
+    public void My_claims_view_model_exposes_no_organization_data()
+    {
+        var properties = typeof(MyClaimsViewModel).GetProperties().Concat(typeof(ClaimSummary).GetProperties()).Select(x => x.Name);
+        Assert.DoesNotContain(properties, x => x.Contains("Organization", StringComparison.OrdinalIgnoreCase));
+    }
     [Theory]
     [InlineData(OrganizationStatus.Pending)]
     [InlineData(OrganizationStatus.Rejected)]
