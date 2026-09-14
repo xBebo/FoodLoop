@@ -4,7 +4,14 @@
 
 <div class="container mt-5" style="max-width: 450px;">
     <h3 class="text-center mb-4">تسجيل الدخول - FoodLoop</h3>
-    
+
+    @if (TempData["SuccessMessage"] != null)
+    {
+        <div class="alert alert-success">
+            @TempData["SuccessMessage"]
+        </div>
+    }
+
     <form asp-action="Login" method="post">
         <div asp-validation-summary="All" class="text-danger mb-3"></div>
 
@@ -20,4 +27,8 @@
 
         <button type="submit" class="btn btn-primary w-100">دخول</button>
     </form>
+
+    <div class="text-center mt-3">
+        <a asp-action="Register">تسجيل مؤسسة جديدة</a>
+    </div>
 </div>

@@ -17,7 +17,7 @@ namespace FoodLoop.Web.Controllers
             _context = context;
         }
 
-        // عرض المؤسسات المنتظرة للقبول
+        // 1. عرض المؤسسات المنتظرة للقبول
         public async Task<IActionResult> PendingRequests()
         {
             var pendingOrgs = await _context.Organizations
@@ -27,7 +27,7 @@ namespace FoodLoop.Web.Controllers
             return View(pendingOrgs);
         }
 
-        // قبول المؤسسة
+        // 2. قبول المؤسسة
         [HttpPost]
         public async Task<IActionResult> Approve(int id)
         {
@@ -40,7 +40,7 @@ namespace FoodLoop.Web.Controllers
             return RedirectToAction(nameof(PendingRequests));
         }
 
-        // رفض المؤسسة
+        // 3. رفض المؤسسة
         [HttpPost]
         public async Task<IActionResult> Reject(int id)
         {
