@@ -1,0 +1,12 @@
+@model FoodLoop.Application.Admin.DashboardSummary
+@{ ViewData["Title"] = "Admin dashboard"; }
+<div class="d-flex flex-wrap justify-content-between align-items-center gap-3 mb-4">
+    <div><p class="text-success fw-semibold mb-1">FOODLOOP ADMIN</p><h1>Operations overview</h1><p class="text-muted mb-0">Current organization and donation activity.</p></div>
+    <a class="btn btn-outline-success" asp-action="Audit">View audit log</a>
+</div>
+<div class="row g-4">
+    <div class="col-md-4"><section class="card h-100"><div class="card-body"><h2 class="h5">Pending organizations</h2><p class="display-4 fw-semibold" data-testid="pending">@Model.PendingOrganizations</p><p class="text-muted mb-0">Organizations waiting for approval.</p></div></section></div>
+    <div class="col-md-4"><section class="card h-100"><div class="card-body"><h2 class="h5">Available donations</h2><p class="display-4 fw-semibold" data-testid="available">@Model.AvailableDonations</p><p class="text-muted mb-0">Unexpired listings from active donors.</p></div></section></div>
+    <div class="col-md-4"><section class="card h-100"><div class="card-body"><h2 class="h5">Closed deliveries</h2><p class="display-4 fw-semibold" data-testid="closed">@Model.ClosedDeliveries</p><p class="text-muted mb-0">Closed claims and donations with a delivery record.</p></div></section></div>
+</div>
+<p class="text-muted mt-4">Counts refresh when you reload this page. Delivery counts represent completed operations, not food quantities.</p>
