@@ -1,0 +1,36 @@
+using FoodLoop.Application.Interfaces.Auditing;
+using FoodLoop.Application.Interfaces.Identity;
+using FoodLoop.Application.Interfaces.Persistence;
+using FoodLoop.Infrastructure.Auditing;
+using FoodLoop.Infrastructure.Identity;
+using FoodLoop.Infrastructure.Persistence;
+using FoodLoop.Infrastructure.Persistence.Repositories;
+using Microsoft.AspNetCore.Identity;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.DependencyInjection;
+namespace FoodLoop.Infrastructure;
+public static class DependencyInjection
+{
+    public static IServiceCollection AddInfrastructure(this IServiceCollection services, string connectionString)
+    {
+        services.AddDbContext<ApplicationDbContext>(options => options.UseSqlServer(connectionString));
+        services.AddIdentity<ApplicationUser, IdentityRole<Guid>>(options => {
+            options.User.RequireUniqueEmail = true;
+            options.Password.RequiredLength = 10;
+        }).AddEntityFrameworkStores<ApplicationDbContext>().AddDefaultTokenProviders();
+        services.ConfigureApplicationCookie(options => {
+            options.LoginPath = "/Account/Login";
+            options.AccessDeniedPath = "/Account/AccessDenied";
+        });
+        services.AddHttpContextAccessor();
+        services.AddSingleton(TimeProvider.System);
+        services.AddScoped<ICurrentUserService, CurrentUserService>();
+        services.AddScoped(typeof(IRepository<>), typeof(Repository<>));
+        services.AddScoped<IFoodDonationRepository, FoodDonationRepository>();
+        services.AddScoped<IClaimRepository, ClaimRepository>();
+        services.AddScoped<IUnitOfWork, UnitOfWork>();
+        services.AddScoped<IAuditService, AuditService>();
+        services.AddScoped<DevelopmentDataSeeder>();
+        return services;
+    }
+}
