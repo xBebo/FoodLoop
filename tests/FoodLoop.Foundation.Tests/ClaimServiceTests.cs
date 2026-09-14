@@ -12,7 +12,7 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.EntityFrameworkCore;
 
 namespace FoodLoop.Foundation.Tests;
-public sealed class ClaimServiceTests(DatabaseFixture fixture) : IClassFixture<DatabaseFixture>
+public sealed partial class ClaimServiceTests(DatabaseFixture fixture) : IClassFixture<DatabaseFixture>
 {
     private static readonly DateTimeOffset Now = new(2026, 9, 14, 12, 0, 0, TimeSpan.Zero);
 

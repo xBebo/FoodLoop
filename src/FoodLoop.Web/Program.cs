@@ -1,3 +1,4 @@
+using FoodLoop.Application;
 using FoodLoop.Infrastructure;
 using FoodLoop.Infrastructure.Persistence;
 using Microsoft.AspNetCore.Mvc;
@@ -12,6 +13,7 @@ if (string.IsNullOrWhiteSpace(connectionString))
         throw new InvalidOperationException("Configure ConnectionStrings:DefaultConnection before running outside Development.");
     connectionString = "Server=(localdb)\\MSSQLLocalDB;Database=FoodLoop_Development;Trusted_Connection=True;TrustServerCertificate=True";
 }
+builder.Services.AddApplication();
 builder.Services.AddInfrastructure(connectionString);
 var app = builder.Build();
 
