@@ -65,7 +65,7 @@ namespace FoodLoop.Web.Controllers
             return View();
         }
 
-        // 4. منطق تسجيل الدخول
+        // 4. منطق تسجيل الدخول (المعدّل بناءً على ملاحظة زملائك)
         [HttpPost]
         public async Task<IActionResult> Login(string email, string password)
         {
@@ -76,7 +76,7 @@ namespace FoodLoop.Web.Controllers
                 return View();
             }
 
-            // التأكد من أن المؤسسة التابع لها المستخدم مقبولة من الأدمن
+            // يتم الفحص فقط إذا كان المستخدم ينتمي لمؤسسة (أي ليس Admin أو Courier) وكانت المؤسسة ليست Active
             if (user.Organization != null && user.Organization.Status != OrganizationStatus.Active)
             {
                 ModelState.AddModelError("", "حساب المؤسسة الخاص بك في انتظار موافقة الأدمن.");
