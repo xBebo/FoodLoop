@@ -15,10 +15,12 @@ public sealed class ClaimRepository(ApplicationDbContext db) : Repository<Donati
         ArgumentOutOfRangeException.ThrowIfLessThan(page, 1);
         ArgumentOutOfRangeException.ThrowIfLessThan(pageSize, 1);
         ArgumentOutOfRangeException.ThrowIfGreaterThan(pageSize, 100);
-        var skip = checked((page - 1) * pageSize);
+        // Int64 offset cannot overflow for valid Int32 inputs; a page beyond what Skip(int) can address has no rows.
+        var skip = ((long)page - 1) * pageSize;
+        if (skip > int.MaxValue) return [];
         return await Context.DonationClaims.AsNoTracking().Include(x => x.FoodDonation)
             .Where(x => x.BeneficiaryOrganizationId == organizationId)
             .OrderByDescending(x => x.CreatedAtUtc).ThenBy(x => x.Id)
-            .Skip(skip).Take(pageSize).ToListAsync(cancellationToken);
+            .Skip((int)skip).Take(pageSize).ToListAsync(cancellationToken);
     }
 }

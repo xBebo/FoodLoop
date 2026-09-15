@@ -209,6 +209,25 @@ public sealed partial class ClaimServiceTests
         Assert.Single(model.Claims);
     }
 
+    [Fact]
+    public async Task Controller_mine_extreme_page_returns_valid_empty_model_without_changes()
+    {
+        var (userId, organizationId) = await SeedBeneficiaryAsync(); var (_, otherOrg) = await SeedBeneficiaryAsync();
+        var ownClaim = await SeedClaimAsync(organizationId!.Value, Now); var otherClaim = await SeedClaimAsync(otherOrg!.Value, Now);
+
+        var model = AssertMineView(await GetMineAsync(Principal(userId), page: int.MaxValue, pageSize: 20));
+        Assert.Empty(model.Claims);
+        Assert.Equal((int.MaxValue, 20), (model.Page, model.PageSize));
+
+        await using var db = fixture.CreateContext();
+        foreach (var claimId in new[] { ownClaim, otherClaim })
+        {
+            var claim = await db.DonationClaims.AsNoTracking().Include(x => x.FoodDonation).SingleAsync(x => x.Id == claimId);
+            Assert.Equal(ClaimStatus.Booked, claim.Status); Assert.Equal(DonationStatus.Claimed, claim.FoodDonation.Status);
+        }
+        Assert.False(await db.AuditLogs.AnyAsync(x => x.ActorUserId == userId));
+    }
+
     private sealed class NullTempDataProvider : ITempDataProvider
     {
         public IDictionary<string, object> LoadTempData(HttpContext context) => new Dictionary<string, object>();

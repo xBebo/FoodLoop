@@ -399,6 +399,23 @@ public sealed partial class ClaimServiceTests(DatabaseFixture fixture) : IClassF
         Assert.Empty((await GetMyClaimsAsync(Principal(userId), page: 4, pageSize: 2)).Claims);
     }
     [Theory]
+    [InlineData(int.MaxValue, 20)]  // offset beyond Int32: empty page without querying
+    [InlineData(int.MaxValue, 100)]
+    [InlineData(int.MaxValue, 1)]   // offset int.MaxValue - 1 still fits Skip(int): real query, empty page
+    public async Task Extreme_page_returns_empty_success_without_overflow_or_other_organizations_claims(int page, int pageSize)
+    {
+        var (userId, organizationId) = await SeedBeneficiaryAsync(); var (_, otherOrg) = await SeedBeneficiaryAsync();
+        var ownClaim = await SeedClaimAsync(organizationId!.Value, Now); await SeedClaimAsync(otherOrg!.Value, Now);
+
+        var result = await GetMyClaimsAsync(Principal(userId), page, pageSize);
+        Assert.Equal(GetMyClaimsOutcome.Success, result.Outcome);
+        Assert.Empty(result.Claims);
+
+        await using var db = fixture.CreateContext();
+        Assert.Empty(await new ClaimRepository(db).GetForBeneficiaryOrganizationAsync(organizationId.Value, page, pageSize));
+        Assert.Equal([ownClaim], Ids(await GetMyClaimsAsync(Principal(userId))));
+    }
+    [Theory]
     [InlineData(0, 20)]
     [InlineData(1, 0)]
     [InlineData(1, 101)]
