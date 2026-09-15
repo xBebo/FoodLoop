@@ -1,4 +1,5 @@
 using FoodLoop.Application.Identity;
+using FoodLoop.Application.Exceptions;
 using FoodLoop.Application.Interfaces.Auditing;
 using FoodLoop.Application.Interfaces.Identity;
 using FoodLoop.Application.Interfaces.Persistence;
@@ -70,7 +71,8 @@ public sealed class DonationService(
 
         donations.Add(donation);
         audit.Record("DonationCreated", nameof(FoodDonation), donation.Id);
-        await unitOfWork.SaveChangesAsync(cancellationToken);
+        try { await unitOfWork.SaveChangesAsync(cancellationToken); }
+        catch (PersistenceConflictException) { return DonationOperationResult.Failure("This donation changed. Refresh and try again."); }
 
         return DonationOperationResult.Success(donation.Id);
     }
@@ -98,7 +100,8 @@ public sealed class DonationService(
 
         donation.Status = DonationStatus.Available;
         audit.Record("DonationPublished", nameof(FoodDonation), donation.Id);
-        await unitOfWork.SaveChangesAsync(cancellationToken);
+        try { await unitOfWork.SaveChangesAsync(cancellationToken); }
+        catch (PersistenceConflictException) { return DonationOperationResult.Failure("This donation changed. Refresh and try again."); }
 
         return DonationOperationResult.Success(donation.Id);
     }

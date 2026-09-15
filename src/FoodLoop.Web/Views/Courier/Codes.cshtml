@@ -1,0 +1,20 @@
+@model IReadOnlyList<FoodLoop.Domain.Entities.DonationClaim>
+@using FoodLoop.Domain.Enums
+<h1>Handover codes</h1>
+<p>Generate a code at handover and share it with your assigned courier. Generating another code invalidates the previous one.</p>
+@if (TempData["ErrorMessage"] is string error) { <p class="alert alert-danger">@error</p> }
+@foreach (var claim in Model)
+{
+    <div class="border rounded p-3 mb-3">
+    <strong>@claim.FoodDonation.Title</strong> <span>@claim.Status</span>
+    @if ((User.IsInRole("Donor") && claim.Status == ClaimStatus.PickupPending) ||
+         (User.IsInRole("Beneficiary") && claim.Status == ClaimStatus.InTransit))
+    {
+        <form asp-action="IssueCode" method="post">
+            <input type="hidden" name="claimId" value="@claim.Id" />
+            <input type="hidden" name="handoverType" value="@(User.IsInRole("Donor") ? HandoverType.Pickup : HandoverType.Delivery)" />
+            <button class="btn btn-primary">Generate handover code</button>
+        </form>
+    }
+    </div>
+}

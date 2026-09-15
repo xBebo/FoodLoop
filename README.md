@@ -123,3 +123,7 @@ The existing release branch is named `master`; do not assume `main` exists. Conf
 `AddApplication()` in Application/DependencyInjection.cs explicitly registers application services. Keep the existing Infrastructure registrations in AddInfrastructure(); coordinate shared registration-file changes with the other owners.
 
 Read [the admin feature guide](docs/ADMIN-FEATURE.md) for the count definitions, auth integration dependency and manual checks. No migration is required for these read-only screens.
+
+## Integrated team demo
+
+For the combined feature branch, follow [INTEGRATION-HANDOFF.md](docs/INTEGRATION-HANDOFF.md) for the complete registration, approval, donation, claim and handover demo. The implemented lifecycle and code-expiry defaults are in [SHARED-CONTRACTS.md](docs/SHARED-CONTRACTS.md). Application services are registered through AddApplication(); no integration migration is required.

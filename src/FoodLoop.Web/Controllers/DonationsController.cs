@@ -74,6 +74,7 @@ public sealed class DonationsController(DonationService donationService) : Contr
     public async Task<IActionResult> Available(int page = 1, CancellationToken cancellationToken = default)
     {
         if (page < 1) page = 1;
+        ViewBag.Page = page;
         return View(await donationService.GetAvailableAsync(page, 20, cancellationToken));
     }
 

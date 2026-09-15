@@ -1,42 +1,21 @@
-﻿@using FoodLoop.Domain.Entities
-@model DonationClaim
-
-@{
-    ViewData["Title"] = "تعيين مندوب توصيل";
+@using FoodLoop.Application.Courier
+@model IReadOnlyList<FoodLoop.Domain.Entities.DonationClaim>
+<h1>Assign courier</h1>
+@if (TempData["SuccessMessage"] is string success) { <p class="alert alert-success">@success</p> }
+@if (TempData["ErrorMessage"] is string error) { <p class="alert alert-danger">@error</p> }
+@if (!Model.Any()) { <p>No claims waiting for assignment.</p> }
+@foreach (var claim in Model)
+{
+    <form asp-action="AssignCourier" method="post" class="border rounded p-3 mb-3">
+        <strong>@claim.FoodDonation.Title</strong>
+        <p>@claim.Status — @claim.BeneficiaryOrganization.Name</p>
+        <input type="hidden" name="claimId" value="@claim.Id" />
+        <label>Courier
+        <select name="courierUserId" class="form-select" required>
+            <option value="">Choose a courier</option>
+            @foreach (var courier in (IReadOnlyList<CourierOption>)ViewBag.Couriers)
+            { <option value="@courier.Id">@courier.Name</option> }
+        </select></label>
+        <button class="btn btn-primary">Assign</button>
+    </form>
 }
-
-<div class="container mt-4">
-    <div class="row justify-content-center">
-        <div class="col-md-6">
-            <div class="card shadow">
-                <div class="card-header bg-primary text-white">
-                    <h4 class="mb-0">تعيين مندوب للتبرع: @Model?.FoodDonation?.Title</h4>
-                </div>
-                <div class="card-body">
-                    <form asp-action="AssignCourier" method="post">
-                        <input type="hidden" name="claimId" value="@Model?.Id" />
-
-                        <div class="mb-3">
-                            <label class="form-label fw-bold">اختر المندوب</label>
-                            <select name="courierUserId" class="form-select" required>
-                                <option value="" selected disabled>-- اختر مندوب التوصيل --</option>
-                                @if (ViewBag.Couriers != null)
-                                {
-                                    foreach (var courier in ViewBag.Couriers)
-                                    {
-                                        <option value="@courier.Id">@courier.UserName (@courier.Email)</option>
-                                    }
-                                }
-                            </select>
-                        </div>
-
-                        <div class="d-grid gap-2">
-                            <button type="submit" class="btn btn-success">حفظ وتعيين المندوب</button>
-                            <a asp-action="MyTasks" class="btn btn-secondary">إلغاء</a>
-                        </div>
-                    </form>
-                </div>
-            </div>
-        </div>
-    </div>
-</div>

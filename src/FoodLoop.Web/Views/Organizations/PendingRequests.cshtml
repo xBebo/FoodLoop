@@ -1,10 +1,11 @@
-﻿@model IEnumerable<FoodLoop.Domain.Entities.Organization>
+@model IEnumerable<FoodLoop.Domain.Entities.Organization>
 
 @{
     ViewData["Title"] = "طلبات الاعتماد المعلقة";
 }
 
 <div class="container mt-4">
+@if (TempData["ErrorMessage"] is string error) { <p class="alert alert-danger">@error</p> }
     <h2 class="mb-4">طلبات تفعيل المؤسسات المعلقة</h2>
 
     @if (TempData["SuccessMessage"] != null)
@@ -50,14 +51,14 @@
                                 <td class="align-middle text-center">
                                     <div class="d-flex justify-content-center gap-2">
                                         <!-- قبول الطلب باستدعاء Guid id -->
-                                        <form asp-controller="Auth" asp-action="ApproveOrganization" asp-route-id="@org.Id" method="post">
+                                        <form asp-controller="Organizations" asp-action="ApproveOrganization" asp-route-id="@org.Id" method="post">
                                             <button type="submit" class="btn btn-success btn-sm px-3">
                                                 <i class="bi bi-check-circle"></i> قبول (Approve)
                                             </button>
                                         </form>
 
                                         <!-- رفض الطلب باستدعاء Guid id -->
-                                        <form asp-controller="Auth" asp-action="RejectOrganization" asp-route-id="@org.Id" method="post">
+                                        <form asp-controller="Organizations" asp-action="RejectOrganization" asp-route-id="@org.Id" method="post">
                                             <button type="submit" class="btn btn-danger btn-sm px-3">
                                                 <i class="bi bi-x-circle"></i> رفض (Reject)
                                             </button>

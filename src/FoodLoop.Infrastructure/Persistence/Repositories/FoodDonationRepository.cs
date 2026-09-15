@@ -14,7 +14,8 @@ public sealed class FoodDonationRepository(ApplicationDbContext db, TimeProvider
         ArgumentOutOfRangeException.ThrowIfLessThan(pageSize, 1);
         ArgumentOutOfRangeException.ThrowIfGreaterThan(pageSize, 100);
 
-        var skip = checked((page - 1) * pageSize);
+        var skip = ((long)page - 1) * pageSize;
+        if (skip > int.MaxValue) return [];
         var now = clock.GetUtcNow();
 
         return await Context.FoodDonations.AsNoTracking()
@@ -22,10 +23,11 @@ public sealed class FoodDonationRepository(ApplicationDbContext db, TimeProvider
             .Include(x => x.DonorOrganization)
             .Where(x => x.Status == DonationStatus.Available
                 && x.ExpiresAtUtc > now
-                && x.DonorOrganization.Status == OrganizationStatus.Active)
+                && x.DonorOrganization.Status == OrganizationStatus.Active
+                && x.DonorOrganization.Type == OrganizationType.Donor)
             .OrderBy(x => x.ExpiresAtUtc)
             .ThenBy(x => x.Id)
-            .Skip(skip)
+            .Skip((int)skip)
             .Take(pageSize)
             .ToListAsync(cancellationToken);
     }

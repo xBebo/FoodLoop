@@ -1,4 +1,5 @@
 using FoodLoop.Application.Interfaces.Auditing;
+using FoodLoop.Application.Courier;
 using FoodLoop.Application.Interfaces.Identity;
 using FoodLoop.Application.Interfaces.Persistence;
 using FoodLoop.Infrastructure.Auditing;
@@ -32,6 +33,8 @@ public static class DependencyInjection
         services.AddScoped<IUnitOfWork, UnitOfWork>();
         services.AddScoped<IAdminReadRepository, AdminReadRepository>();
         services.AddScoped<IAuditService, AuditService>();
+        services.AddScoped<ICourierRepository, CourierRepository>();
+        services.AddScoped<ICourierDirectory, CourierDirectory>();
         services.AddScoped<DevelopmentDataSeeder>();
         return services;
     }

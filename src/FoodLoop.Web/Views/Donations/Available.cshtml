@@ -22,7 +22,7 @@
                         <th>Category</th>
                         <th>Quantity</th>
                         <th>Pickup</th>
-                        <th>Expires</th>
+                        <th>Expires</th><th>Claim</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -35,11 +35,21 @@
                         <td>@item.Quantity @item.Unit</td>
                         <td>@item.PickupAddress</td>
                         <td>@item.ExpiresAtUtc.ToLocalTime().ToString("g")</td>
+                        <td><form asp-controller="Claims" asp-action="Create" method="post">
+                            <input type="hidden" name="donationId" value="@item.Id" />
+                            <button class="btn btn-primary btn-sm">Claim donation</button>
+                        </form></td>
                     </tr>
                 }
                 </tbody>
             </table>
         </div>
-        <p class="small text-muted">Claim actions belong to Safa's booking feature and are intentionally not implemented here.</p>
+
     }
 </div>
+
+@{ var page = ViewBag.Page is int current ? current : 1; }
+<nav aria-label="Marketplace pages">
+@if (page > 1) { <a asp-action="Available" asp-route-page="@(page-1)">Previous</a> }
+@if (Model.Count == 20 && page < int.MaxValue) { <a asp-action="Available" asp-route-page="@(page+1)">Next</a> }
+</nav>

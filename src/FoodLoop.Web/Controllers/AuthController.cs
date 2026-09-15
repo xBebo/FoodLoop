@@ -1,4 +1,4 @@
-﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -37,12 +37,13 @@ namespace FoodLoop.Web.Controllers
         [HttpPost]
         public async Task<IActionResult> Register(string orgName, string licenseNumber, OrganizationType orgType, string email, string password)
         {
-            if (!Enum.IsDefined(typeof(OrganizationType), orgType))
+            if (!ModelState.IsValid || !Enum.IsDefined(typeof(OrganizationType), orgType))
             {
                 ModelState.AddModelError("", "نوع المؤسسة غير صحيح.");
                 return View();
             }
 
+            await using var transaction = await _context.Database.BeginTransactionAsync();
             var org = new Organization
             {
                 Name = orgName,
@@ -65,7 +66,8 @@ namespace FoodLoop.Web.Controllers
 
                 if (!await _roleManager.RoleExistsAsync(roleName))
                 {
-                    await _roleManager.CreateAsync(new IdentityRole<Guid>(roleName));
+                    ModelState.AddModelError("", "Account roles are not configured. Contact the administrator.");
+                    return View();
                 }
 
                 var roleResult = await _userManager.AddToRoleAsync(user, roleName);
@@ -75,6 +77,7 @@ namespace FoodLoop.Web.Controllers
                     return View();
                 }
 
+                await transaction.CommitAsync();
                 TempData["SuccessMessage"] = "تم تقديم طلب التسجيل بنجاح! في انتظار موافقة الأدمن لتفعيل الحساب.";
                 return RedirectToAction("Login");
             }
@@ -106,7 +109,8 @@ namespace FoodLoop.Web.Controllers
                 return View();
             }
 
-            if (user.Organization != null && user.Organization.Status == OrganizationStatus.Pending)
+            if (user.Organization != null && (user.Organization.Status is OrganizationStatus.Pending or OrganizationStatus.Rejected ||
+                (user.Organization.Status == OrganizationStatus.Suspended && user.Organization.Type != OrganizationType.Beneficiary)))
             {
                 ModelState.AddModelError("", "حساب المؤسسة الخاص بك ما زال في انتظار موافقة الأدمن.");
                 return View();
@@ -120,34 +124,6 @@ namespace FoodLoop.Web.Controllers
 
             ModelState.AddModelError("", "كلمة المرور غير صحيحة.");
             return View();
-        }
-
-        [Authorize(Roles = "Admin")]
-        [HttpPost]
-        public async Task<IActionResult> ApproveOrganization(Guid id)
-        {
-            var org = await _context.Organizations.FindAsync(id);
-            if (org == null) return NotFound();
-
-            org.Status = OrganizationStatus.Active;
-            await _context.SaveChangesAsync();
-
-            TempData["SuccessMessage"] = "تمت الموافقة على المؤسسة بنجاح وتسجيل العملية.";
-            return RedirectToAction("PendingRequests", "Organizations");
-        }
-
-        [Authorize(Roles = "Admin")]
-        [HttpPost]
-        public async Task<IActionResult> RejectOrganization(Guid id)
-        {
-            var org = await _context.Organizations.FindAsync(id);
-            if (org == null) return NotFound();
-
-            org.Status = OrganizationStatus.Rejected;
-            await _context.SaveChangesAsync();
-
-            TempData["SuccessMessage"] = "تم رفض طلب المؤسسة وتسجيل العملية.";
-            return RedirectToAction("PendingRequests", "Organizations");
         }
 
         [HttpPost]
