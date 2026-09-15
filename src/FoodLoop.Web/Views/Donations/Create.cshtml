@@ -1,0 +1,80 @@
+@model FoodLoop.Web.Models.Donations.CreateDonationViewModel
+@{
+    ViewData["Title"] = "Create Donation";
+}
+
+<div class="container py-4" style="max-width: 760px;">
+    <h1 class="h3 mb-1">Create Donation</h1>
+    <p class="text-muted mb-4">Create a simple draft now. You can publish it from My Donations after validation.</p>
+
+    <form asp-action="Create" method="post" class="card card-body shadow-sm">
+        <div asp-validation-summary="ModelOnly" class="text-danger mb-3"></div>
+
+        <div class="mb-3">
+            <label asp-for="Title" class="form-label"></label>
+            <input asp-for="Title" class="form-control" />
+            <span asp-validation-for="Title" class="text-danger"></span>
+        </div>
+
+        <div class="mb-3">
+            <label asp-for="FoodCategoryId" class="form-label"></label>
+            <select asp-for="FoodCategoryId" asp-items="Model.Categories" class="form-select">
+                <option value="">Choose a category</option>
+            </select>
+            <span asp-validation-for="FoodCategoryId" class="text-danger"></span>
+        </div>
+
+        <div class="mb-3">
+            <label asp-for="Description" class="form-label"></label>
+            <textarea asp-for="Description" class="form-control" rows="3"></textarea>
+            <span asp-validation-for="Description" class="text-danger"></span>
+        </div>
+
+        <div class="row">
+            <div class="col-md-6 mb-3">
+                <label asp-for="Quantity" class="form-label"></label>
+                <input asp-for="Quantity" class="form-control" step="0.001" />
+                <span asp-validation-for="Quantity" class="text-danger"></span>
+            </div>
+            <div class="col-md-6 mb-3">
+                <label asp-for="Unit" class="form-label"></label>
+                <select asp-for="Unit" asp-items="Html.GetEnumSelectList<FoodLoop.Domain.Enums.QuantityUnit>()" class="form-select"></select>
+                <span asp-validation-for="Unit" class="text-danger"></span>
+            </div>
+        </div>
+
+        <div class="row">
+            <div class="col-md-6 mb-3">
+                <label asp-for="PreparedAt" class="form-label"></label>
+                <input asp-for="PreparedAt" type="datetime-local" class="form-control" />
+                <span asp-validation-for="PreparedAt" class="text-danger"></span>
+            </div>
+            <div class="col-md-6 mb-3">
+                <label asp-for="ExpiresAt" class="form-label"></label>
+                <input asp-for="ExpiresAt" type="datetime-local" class="form-control" />
+                <span asp-validation-for="ExpiresAt" class="text-danger"></span>
+            </div>
+        </div>
+
+        <div class="mb-3">
+            <label asp-for="StorageInstructions" class="form-label"></label>
+            <textarea asp-for="StorageInstructions" class="form-control" rows="2"></textarea>
+            <span asp-validation-for="StorageInstructions" class="text-danger"></span>
+        </div>
+
+        <div class="mb-3">
+            <label asp-for="PickupAddress" class="form-label"></label>
+            <input asp-for="PickupAddress" class="form-control" />
+            <span asp-validation-for="PickupAddress" class="text-danger"></span>
+        </div>
+
+        <div class="d-flex gap-2">
+            <button type="submit" class="btn btn-success">Create draft</button>
+            <a asp-action="Mine" class="btn btn-outline-secondary">My Donations</a>
+        </div>
+    </form>
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}

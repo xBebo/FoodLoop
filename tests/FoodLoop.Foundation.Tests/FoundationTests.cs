@@ -1,4 +1,5 @@
 using System.Security.Claims;
+using FoodLoop.Application.Donations;
 using FoodLoop.Application.Exceptions;
 using FoodLoop.Application.Identity;
 using FoodLoop.Application.Interfaces.Identity;
@@ -200,11 +201,107 @@ public sealed class FoundationTests(DatabaseFixture fixture) : IClassFixture<Dat
         Assert.Equal(user.Id, current.UserId); Assert.True(current.IsInRole(AppRoles.Donor));
         Assert.Equal(user.OrganizationId, await current.GetOrganizationIdAsync());
     }
+
+    [Fact]
+    public async Task Donation_feature_creates_draft_and_publishes_valid_active_donor_listing()
+    {
+        await using var db = fixture.CreateContext();
+        var organization = Org(OrganizationType.Donor);
+        var category = new FoodCategory { Name = "Donation test " + Guid.NewGuid().ToString("N") };
+        db.AddRange(organization, category);
+        await db.SaveChangesAsync();
+
+        var currentUser = new TestUser(organization.Id, AppRoles.Donor);
+        var service = new DonationService(
+            currentUser,
+            new FoodDonationRepository(db, TimeProvider.System),
+            new FoodCategoryRepository(db),
+            new Repository<Organization>(db),
+            new UnitOfWork(db),
+            new AuditService(db, currentUser, TimeProvider.System),
+            TimeProvider.System);
+
+        var create = await service.CreateAsync(new CreateDonationRequest(
+            category.Id,
+            "50 Rice Meals",
+            "Freshly prepared meals",
+            50,
+            QuantityUnit.Meals,
+            DateTimeOffset.UtcNow.AddMinutes(-10),
+            DateTimeOffset.UtcNow.AddHours(2),
+            "Keep covered",
+            "New Damietta"));
+
+        Assert.True(create.Succeeded);
+        Assert.NotNull(create.DonationId);
+        Assert.Equal(DonationStatus.Draft, (await db.FoodDonations.FindAsync(create.DonationId!.Value))!.Status);
+
+        var publish = await service.PublishAsync(create.DonationId.Value);
+        Assert.True(publish.Succeeded);
+        Assert.Equal(DonationStatus.Available, (await db.FoodDonations.FindAsync(create.DonationId.Value))!.Status);
+        Assert.Equal(2, await db.AuditLogs.CountAsync(x => x.EntityId == create.DonationId.Value));
+    }
+
+    [Fact]
+    public async Task Donation_feature_blocks_pending_donor_and_expired_publish()
+    {
+        await using var db = fixture.CreateContext();
+        var pending = Org(OrganizationType.Donor); pending.Status = OrganizationStatus.Pending;
+        var active = Org(OrganizationType.Donor);
+        var category = new FoodCategory { Name = "Donation validation " + Guid.NewGuid().ToString("N") };
+        db.AddRange(pending, active, category);
+        await db.SaveChangesAsync();
+
+        DonationService Build(ICurrentUserService user) => new(
+            user,
+            new FoodDonationRepository(db, TimeProvider.System),
+            new FoodCategoryRepository(db),
+            new Repository<Organization>(db),
+            new UnitOfWork(db),
+            new AuditService(db, user, TimeProvider.System),
+            TimeProvider.System);
+
+        var pendingResult = await Build(new TestUser(pending.Id, AppRoles.Donor)).CreateAsync(new CreateDonationRequest(
+            category.Id, "Pending donor food", "", 5, QuantityUnit.Meals,
+            DateTimeOffset.UtcNow, DateTimeOffset.UtcNow.AddHours(1), "", "Address"));
+        Assert.False(pendingResult.Succeeded);
+
+        var expiredDraft = new FoodDonation
+        {
+            DonorOrganizationId = active.Id,
+            FoodCategoryId = category.Id,
+            Title = "Expired draft",
+            Description = "",
+            Quantity = 5,
+            Unit = QuantityUnit.Meals,
+            PreparedAtUtc = DateTimeOffset.UtcNow.AddHours(-2),
+            ExpiresAtUtc = DateTimeOffset.UtcNow.AddHours(-1),
+            PickupAddress = "Address",
+            StorageInstructions = "",
+            Status = DonationStatus.Draft
+        };
+        db.Add(expiredDraft);
+        await db.SaveChangesAsync();
+
+        var publish = await Build(new TestUser(active.Id, AppRoles.Donor)).PublishAsync(expiredDraft.Id);
+        Assert.False(publish.Succeeded);
+        Assert.Equal(DonationStatus.Draft, expiredDraft.Status);
+    }
+
     private sealed class AnonymousUser : ICurrentUserService
     {
         public Guid? UserId => null;
         public bool IsAuthenticated => false;
         public bool IsInRole(string role) => false;
         public Task<Guid?> GetOrganizationIdAsync(CancellationToken cancellationToken = default) => Task.FromResult<Guid?>(null);
+    }
+
+    private sealed class TestUser(Guid organizationId, string role) : ICurrentUserService
+    {
+        public Guid? UserId => null;
+        public bool IsAuthenticated => true;
+        public bool IsInRole(string requestedRole) => string.Equals(role, requestedRole, StringComparison.Ordinal);
+        public Task<Guid?> GetOrganizationIdAsync(CancellationToken cancellationToken = default)
+            => Task.FromResult<Guid?>(organizationId);
     }
 }
