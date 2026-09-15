@@ -1,3 +1,4 @@
+using FoodLoop.Application.Donations;
 using FoodLoop.Infrastructure;
 using FoodLoop.Infrastructure.Persistence;
 using Microsoft.AspNetCore.Mvc;
@@ -13,6 +14,7 @@ if (string.IsNullOrWhiteSpace(connectionString))
     connectionString = "Server=(localdb)\\MSSQLLocalDB;Database=FoodLoop_Development;Trusted_Connection=True;TrustServerCertificate=True";
 }
 builder.Services.AddInfrastructure(connectionString);
+builder.Services.AddScoped<DonationService>();
 var app = builder.Build();
 
 // Explicit development command. Normal startup never creates or migrates a database.
