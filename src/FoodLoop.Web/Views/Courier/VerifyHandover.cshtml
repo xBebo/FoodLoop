@@ -1,0 +1,19 @@
+﻿@{
+    ViewData["Title"] = "تأكيد كود التحقق";
+}
+
+<div class="container mt-5" style="max-width: 450px;">
+    <h3 class="text-center mb-4">تأكيد العملية (@ViewBag.Type)</h3>
+
+    <form asp-action="VerifyHandover" method="post">
+        <input type="hidden" name="donationId" value="@ViewBag.DonationId" />
+        <input type="hidden" name="type" value="@ViewBag.Type" />
+
+        <div class="mb-3">
+            <label class="form-label">أدخل كود الاستلام/التسليم (QR Token):</label>
+            <input type="text" name="code" class="form-control text-center fs-4" placeholder="Ex: 948201" required />
+        </div>
+
+        <button type="submit" class="btn btn-primary w-100">تأكيد وتحديث الحالة</button>
+    </form>
+</div>

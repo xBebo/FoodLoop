@@ -1,0 +1,42 @@
+﻿@using FoodLoop.Domain.Entities
+@model DonationClaim
+
+@{
+    ViewData["Title"] = "تعيين مندوب توصيل";
+}
+
+<div class="container mt-4">
+    <div class="row justify-content-center">
+        <div class="col-md-6">
+            <div class="card shadow">
+                <div class="card-header bg-primary text-white">
+                    <h4 class="mb-0">تعيين مندوب للتبرع: @Model?.FoodDonation?.Title</h4>
+                </div>
+                <div class="card-body">
+                    <form asp-action="AssignCourier" method="post">
+                        <input type="hidden" name="claimId" value="@Model?.Id" />
+
+                        <div class="mb-3">
+                            <label class="form-label fw-bold">اختر المندوب</label>
+                            <select name="courierUserId" class="form-select" required>
+                                <option value="" selected disabled>-- اختر مندوب التوصيل --</option>
+                                @if (ViewBag.Couriers != null)
+                                {
+                                    foreach (var courier in ViewBag.Couriers)
+                                    {
+                                        <option value="@courier.Id">@courier.UserName (@courier.Email)</option>
+                                    }
+                                }
+                            </select>
+                        </div>
+
+                        <div class="d-grid gap-2">
+                            <button type="submit" class="btn btn-success">حفظ وتعيين المندوب</button>
+                            <a asp-action="MyTasks" class="btn btn-secondary">إلغاء</a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
