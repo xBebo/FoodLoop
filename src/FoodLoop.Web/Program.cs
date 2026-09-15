@@ -42,3 +42,6 @@ app.UseAuthorization();
 app.MapStaticAssets();
 app.MapControllerRoute(name: "default", pattern: "{controller=Home}/{action=Index}/{id?}").WithStaticAssets();
 app.Run();
+
+// Exposes the entry point to HTTP integration tests.
+public partial class Program { }

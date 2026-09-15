@@ -1,0 +1,37 @@
+@model FoodLoop.Application.Admin.AuditPage
+@{ ViewData["Title"] = "Audit log"; }
+<div class="d-flex flex-wrap justify-content-between align-items-center gap-3 mb-4">
+    <div><p class="text-success fw-semibold mb-1">FOODLOOP ADMIN</p><h1>Audit log</h1><p class="text-muted mb-0">Recorded actions, newest first. All times are UTC.</p></div>
+    <a class="btn btn-outline-success" asp-action="Index">Back to dashboard</a>
+</div>
+@if (Model.Items.Count == 0)
+{
+    <div class="alert alert-light border" role="status">No audit records yet. Recorded actions will appear here.</div>
+}
+else
+{
+    <div class="table-responsive">
+        <table class="table table-striped align-middle">
+            <caption>@Model.TotalCount records. Page @Model.Page of @Model.TotalPages.</caption>
+            <thead><tr><th scope="col">Action</th><th scope="col">Actor</th><th scope="col">Entity</th><th scope="col">Timestamp (UTC)</th></tr></thead>
+            <tbody>
+            @foreach (var entry in Model.Items)
+            {
+                <tr>
+                    <td>@entry.Action</td>
+                    <td>@entry.ActorName @if (entry.ActorUserId.HasValue) { <small class="d-block text-muted text-break">@entry.ActorUserId</small> }</td>
+                    <td>@entry.EntityType<small class="d-block text-muted text-break">@entry.EntityId</small></td>
+                    <td class="text-nowrap"><time datetime="@entry.TimestampUtc.ToUniversalTime().ToString("O")">@entry.TimestampUtc.ToUniversalTime().ToString("yyyy-MM-dd HH:mm:ss")</time></td>
+                </tr>
+            }
+            </tbody>
+        </table>
+    </div>
+    <nav aria-label="Audit pagination"><ul class="pagination">
+        @if (Model.HasPrevious) { <li class="page-item"><a class="page-link" asp-action="Audit" asp-route-page="@(Model.Page - 1)">Previous</a></li> }
+        else { <li class="page-item disabled"><span class="page-link">Previous</span></li> }
+        <li class="page-item active"><span class="page-link" aria-current="page">@Model.Page / @Model.TotalPages</span></li>
+        @if (Model.HasNext) { <li class="page-item"><a class="page-link" asp-action="Audit" asp-route-page="@(Model.Page + 1)">Next</a></li> }
+        else { <li class="page-item disabled"><span class="page-link">Next</span></li> }
+    </ul></nav>
+}

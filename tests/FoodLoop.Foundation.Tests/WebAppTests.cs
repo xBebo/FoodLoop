@@ -58,7 +58,7 @@ public sealed class WebAppTests(WebApplicationFactory<Program> factory) : IClass
         var response = await Client().SendAsync(request);
         // Anonymous caller: antiforgery passed, the action ran and ClaimService's Unauthenticated outcome became a login challenge.
         Assert.Equal(System.Net.HttpStatusCode.Redirect, response.StatusCode);
-        Assert.Contains("/Account/Login", response.Headers.Location!.OriginalString);
+        Assert.Contains("/Auth/Login?ReturnUrl=", response.Headers.Location!.OriginalString);
     }
 
     // ---- My Claims Razor view, rendered by the real view engine without auth or database (authorization is covered by the controller tests).
