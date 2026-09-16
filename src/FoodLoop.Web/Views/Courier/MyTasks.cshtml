@@ -1,52 +1,107 @@
 ﻿@using FoodLoop.Domain.Entities
+@using FoodLoop.Domain.Enums
 @model IEnumerable<DonationClaim>
 
 @{
-    ViewData["Title"] = "مهام التوصيل الخاصة بي";
+    ViewData["Title"] = "My Delivery Tasks";
 }
 
 <div class="container mt-4">
-    <h2>مهامي المسندة</h2>
+    <h2 class="mb-4">My Assigned Tasks</h2>
 
     @if (TempData["SuccessMessage"] != null)
     {
-        <div class="alert alert-success my-3">
+        <div class="alert alert-success alert-dismissible fade show my-3" role="alert">
             @TempData["SuccessMessage"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
         </div>
     }
 
-    <table class="table table-bordered table-striped mt-3">
-        <thead class="table-dark">
-            <tr>
-                <th>اسم التبرع</th>
-                <th>حالة المهمة</th>
-                <th class="text-center">الإجراءات</th>
-            </tr>
-        </thead>
-        <tbody>
-            @if (Model == null || !Model.Any())
-            {
+    <div class="table-responsive">
+        <table class="table table-bordered table-hover align-middle mt-3">
+            <thead class="table-dark">
                 <tr>
-                    <td colspan="3" class="text-center py-4 text-muted">لا توجد مهام مسندة إليك حالياً.</td>
+                    <th>Donation Title</th>
+                    <th>Current Status</th>
+                    <th>Next Action / Step</th>
+                    <th class="text-center">Actions</th>
                 </tr>
-            }
-            else
-            {
-                @foreach (var task in Model)
+            </thead>
+            <tbody>
+                @if (Model == null || !Model.Any())
                 {
                     <tr>
-                        <td class="align-middle fw-bold">@task.FoodDonation?.Title</td>
-                        <td class="align-middle">
-                            <span class="badge bg-info text-dark">@task.Status</span>
-                        </td>
-                        <td class="align-middle text-center">
-                            <a asp-action="VerifyHandover" asp-route-claimId="@task.Id" class="btn btn-primary btn-sm">
-                                إثبات استلام / تسليم
-                            </a>
-                        </td>
+                        <td colspan="4" class="text-center py-4 text-muted">No delivery tasks assigned to you currently.</td>
                     </tr>
                 }
-            }
-        </tbody>
-    </table>
+                else
+                {
+                    @foreach (var task in Model)
+                    {
+                        var isClosed = task.Status == ClaimStatus.Closed;
+                        var isPickupPending = task.Status == ClaimStatus.PickupPending;
+                        var isInTransit = task.Status == ClaimStatus.InTransit;
+
+                        <tr>
+                            <td class="fw-bold">@task.FoodDonation?.Title</td>
+                            
+                            <!-- 1. عرض badge الحالة -->
+                            <td>
+                                @if (isClosed)
+                                {
+                                    <span class="badge bg-secondary">Closed</span>
+                                }
+                                else if (isInTransit)
+                                {
+                                    <span class="badge bg-warning text-dark">In Transit</span>
+                                }
+                                else if (isPickupPending)
+                                {
+                                    <span class="badge bg-info text-dark">Pickup Pending</span>
+                                }
+                                else
+                                {
+                                    <span class="badge bg-primary">@task.Status</span>
+                                }
+                            </td>
+
+                            <!-- 2. توضيح الخطوة التالية المطلوبة -->
+                            <td>
+                                @if (isPickupPending)
+                                {
+                                    <span class="text-primary fw-semibold"><i class="bi bi-box-seam"></i> Awaiting Pickup Verification</span>
+                                }
+                                else if (isInTransit)
+                                {
+                                    <span class="text-warning fw-semibold"><i class="bi bi-truck"></i> Awaiting Delivery Verification</span>
+                                }
+                                else if (isClosed)
+                                {
+                                    <span class="text-success fw-semibold"><i class="bi bi-check-circle-fill"></i> Delivery Completed</span>
+                                }
+                                else
+                                {
+                                    <span class="text-muted">-</span>
+                                }
+                            </td>
+
+                            <!-- 3. زر الإجراءات -->
+                            <td class="text-center">
+                                @if (isClosed)
+                                {
+                                    <button class="btn btn-outline-secondary btn-sm" disabled>Completed</button>
+                                }
+                                else
+                                {
+                                    <a asp-action="VerifyHandover" asp-route-claimId="@task.Id" class="btn btn-primary btn-sm">
+                                        Verify Handover
+                                    </a>
+                                }
+                            </td>
+                        </tr>
+                    }
+                }
+            </tbody>
+        </table>
+    </div>
 </div>

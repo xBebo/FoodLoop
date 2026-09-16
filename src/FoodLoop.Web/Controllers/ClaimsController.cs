@@ -1,3 +1,4 @@
+using FoodLoop.Web.Controllers;
 using FoodLoop.Application.Claims;
 using FoodLoop.Web.Models;
 using Microsoft.AspNetCore.Mvc;

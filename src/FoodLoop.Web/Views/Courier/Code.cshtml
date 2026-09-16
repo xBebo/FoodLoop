@@ -1,5 +1,72 @@
-@model string
-<h1>Your handover code</h1>
-<p>Share this code with your assigned courier now. It expires within 15 minutes, or when the donation expires if sooner. This page shows it only once.</p>
-<pre class="text-wrap border p-3" style="overflow-wrap:anywhere">@Model</pre>
-<a asp-action="Codes">Back to handovers</a>
+@model dynamic
+
+@{
+    ViewData["Title"] = "Handover Code";
+}
+
+<div class="container py-4">
+    <div class="row justify-content-center">
+        <div class="col-md-6 text-center">
+            <h2 class="mb-3">@Model.HandoverType Handover Code</h2>
+            <p class="text-muted">Show this QR code or share the code below with the courier to verify the handover.</p>
+
+            <!-- 1. حاوية عرض الـ QR Code -->
+            <div class="my-4 text-center">
+                <div id="qrcode" class="d-inline-block p-3 bg-white rounded shadow-sm border"></div>
+            </div>
+
+            <!-- 2. حقل الكود وزر الـ Copy -->
+            <div class="input-group mb-2 mx-auto" style="max-width: 350px;">
+                <input type="text" id="handoverCodeInput" class="form-control text-center fw-bold fs-5" value="@Model.RawToken" readonly />
+                <button class="btn btn-primary" type="button" onclick="copyHandoverCode()">Copy</button>
+            </div>
+            
+            <div class="text-center mb-3">
+                <small id="copySuccessMsg" class="text-success fw-bold d-none">✓ Code copied to clipboard!</small>
+            </div>
+
+            <!-- 3. وقت الانتهاء بالـ UTC -->
+            <div class="text-center text-muted mb-4">
+                <small>Expires at: <strong>@Model.ExpiresAtUtc.ToString("yyyy-MM-dd HH:mm:ss") UTC</strong></small>
+            </div>
+
+            <a asp-action="MyTasks" class="btn btn-outline-secondary">Back to My Tasks</a>
+        </div>
+    </div>
+</div>
+
+<!-- 4. السكربت الخاص بتوليد الـ QR والـ Copy مع الـ Fallback -->
+<script>
+    document.addEventListener("DOMContentLoaded", function () {
+        var rawToken = "@Model.RawToken";
+        if (rawToken) {
+            new QRCode(document.getElementById("qrcode"), {
+                text: rawToken,
+                width: 180,
+                height: 180
+            });
+        }
+    });
+
+    function copyHandoverCode() {
+        var copyText = document.getElementById("handoverCodeInput");
+        
+        if (navigator.clipboard && window.isSecureContext) {
+            navigator.clipboard.writeText(copyText.value).then(showSuccess);
+        } else {
+            // Fallback للأجهزة أو المتصفحات القديمة
+            copyText.select();
+            copyText.setSelectionRange(0, 99999);
+            document.execCommand("copy");
+            showSuccess();
+        }
+    }
+
+    function showSuccess() {
+        var msg = document.getElementById("copySuccessMsg");
+        msg.classList.remove("d-none");
+        setTimeout(function () { 
+            msg.classList.add("d-none"); 
+        }, 3000);
+    }
+</script>
