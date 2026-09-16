@@ -1,6 +1,6 @@
 # FoodLoop
 
-ASP.NET Core MVC graduation project. The shared foundation is prepared; feature workflows are not implemented yet.
+ASP.NET Core MVC graduation project with integrated registration/approval, donations, claims, courier handover, Admin dashboard and audit workflows.
 
 ## Team ownership
 
@@ -12,7 +12,7 @@ ASP.NET Core MVC graduation project. The shared foundation is prepared; feature 
 | Haneen | Courier assignment, QR verification and handover |
 | Baraa | Audit, admin dashboard and integration |
 
-Start by reviewing [the shared contracts](docs/SHARED-CONTRACTS.md) and [your first task](docs/TEAM-START.md).
+Start by reviewing [the implemented shared contracts](docs/SHARED-CONTRACTS.md) and [Tasks 2 of 3](docs/TASKS-02.md). The original first assignments remain in [TEAM-START.md](docs/TEAM-START.md) as history.
 
 ## Prerequisites
 
@@ -52,7 +52,7 @@ dotnet run --project src/FoodLoop.Web -- --seed
 
 Seeding creates roles and food categories. To also create demo users, privately add `Seed:DemoPassword` in **Manage User Secrets**, then run the seed command again. Choose at least 10 characters including uppercase, lowercase, a digit, and a symbol. Do not copy passwords into commits, screenshots or PR descriptions.
 
-Demo emails (password comes from your local secret):
+Demo emails (new accounts use Seed:DemoPassword at creation; changing the secret later does NOT reset an existing password):
 
 | Email | Role | Organization |
 |---|---|---|
@@ -69,7 +69,7 @@ Seeding is explicit and Development-only. Re-running does not duplicate seed dat
 dotnet run --project src/FoodLoop.Web
 ```
 
-Open the URL printed by the application. The landing page works now. Jana will add the login and account screens; **seeded users do not mean login UI already exists**. Cookie paths now use `/Auth/Login` (Jana's controller route) and `/Admin/AccessDenied` (implemented here). Jana's authentication branch is not included in this feature; until it is integrated, `/Auth/Login` is unavailable on develop.
+Open the URL printed by the application. Login and registration are available at `/Auth/Login` and `/Auth/Register`. Pending organizations need Admin approval before login. Access-denied responses use `/Admin/AccessDenied`. Follow the integration demo below to test the complete journey.
 
 Normal app startup does not migrate or create a database. Outside Development a connection string must be configured explicitly. HTTPS certificate trust, if required locally, can be set with `dotnet dev-certs https --trust`.
 
@@ -102,7 +102,7 @@ dotnet test FoodLoop.slnx --verbosity minimal
 
 Tests need SQL Server, not EF InMemory or SQLite. By default they use LocalDB. For a different server, set `FOODLOOP_TEST_SQLSERVER` privately. The login must be able to create/drop a test database. Tests **replace any database name in that connection** with their own `FoodLoop_FoundationTests_<random>` name, apply migrations and remove only that generated database afterward. They never target FoodLoop_Development.
 
-Coverage includes migration/model consistency, SQL constraints, competing rowversion updates, one active claim, QR rowversion, unique handovers, transaction rollback, audit immutability through tracked saves, marketplace filtering, and repeatable Identity seeding. These are foundation tests; future feature endpoints still need authorization, expiry, transition, cancellation, replay and HTTP-response tests.
+Coverage includes migration/model consistency, SQL constraints, competing rowversion updates, one active claim, QR rowversion, unique handovers, transaction rollback, audit immutability through tracked saves, marketplace filtering, and repeatable Identity seeding. The integrated suite also covers feature authorization, real MVC forms, registration/login, concurrent publish/approval/pickup, token replay and the complete delivery lifecycle. Cancellation is a planned stage-two task, not an existing endpoint.
 
 ## Working together
 
@@ -122,4 +122,8 @@ The existing release branch is named `master`; do not assume `main` exists. Conf
 
 `AddApplication()` in Application/DependencyInjection.cs explicitly registers application services. Keep the existing Infrastructure registrations in AddInfrastructure(); coordinate shared registration-file changes with the other owners.
 
-Read [the admin feature guide](docs/ADMIN-FEATURE.md) for the count definitions, auth integration dependency and manual checks. No migration is required for these read-only screens.
+Read [the admin feature guide](docs/ADMIN-FEATURE.md) for the count definitions, count semantics and manual checks. No migration is required for these read-only screens.
+
+## Integrated team demo
+
+For the integrated baseline, follow [INTEGRATION-HANDOFF.md](docs/INTEGRATION-HANDOFF.md) for the complete registration, approval, donation, claim and handover demo. The implemented lifecycle and code-expiry defaults are in [SHARED-CONTRACTS.md](docs/SHARED-CONTRACTS.md). Application services are registered through AddApplication(); no integration migration is required.

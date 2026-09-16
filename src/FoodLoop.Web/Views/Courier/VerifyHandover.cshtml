@@ -1,0 +1,18 @@
+@model FoodLoop.Domain.Entities.DonationClaim
+@using FoodLoop.Domain.Enums
+<h1>Verify handover</h1>
+<p>@Model.FoodDonation.Title — @Model.Status</p>
+<div asp-validation-summary="All" class="text-danger"></div>
+@if (Model.Status is ClaimStatus.PickupPending or ClaimStatus.InTransit)
+{
+    var type = Model.Status == ClaimStatus.PickupPending ? HandoverType.Pickup : HandoverType.Delivery;
+    <form asp-action="VerifyHandover" method="post">
+        <input type="hidden" name="claimId" value="@Model.Id" />
+        <input type="hidden" name="handoverType" value="@type" />
+        <label for="handoverToken">@type code supplied by the organization</label>
+        <input id="handoverToken" name="handoverToken" class="form-control" required maxlength="64" autocomplete="off" />
+        <button class="btn btn-primary mt-3">Verify @type</button>
+    </form>
+}
+else { <p>This task is not awaiting handover.</p> }
+<a asp-action="MyTasks">Back to my tasks</a>

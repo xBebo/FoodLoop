@@ -1,5 +1,8 @@
 <Project Sdk="Microsoft.NET.Sdk.Web">
   <PropertyGroup><TargetFramework>net10.0</TargetFramework><Nullable>enable</Nullable><ImplicitUsings>enable</ImplicitUsings><UserSecretsId>FoodLoop-Web-Development</UserSecretsId></PropertyGroup>
+<ItemGroup>
+    <None Include="Views\Courier\AssignCourier.cshtml" />
+  </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\FoodLoop.Infrastructure\FoodLoop.Infrastructure.csproj" />
     <ProjectReference Include="..\FoodLoop.Application\FoodLoop.Application.csproj" />

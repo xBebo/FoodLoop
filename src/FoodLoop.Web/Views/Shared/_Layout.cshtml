@@ -31,6 +31,35 @@
                             <li class="nav-item"><a class="nav-link text-dark" asp-controller="Admin" asp-action="Index">Admin dashboard</a></li>
                             <li class="nav-item"><a class="nav-link text-dark" asp-controller="Admin" asp-action="Audit">Audit log</a></li>
                         }
+
+                        @if (User.IsInRole("Admin"))
+                        {
+                            <li><a class="nav-link" asp-controller="Organizations" asp-action="PendingRequests">Organizations</a></li>
+                            <li><a class="nav-link" asp-controller="Courier" asp-action="AssignCourier">Assign courier</a></li>
+                        }
+                        @if (User.IsInRole("Donor"))
+                        {
+                            <li><a class="nav-link" asp-controller="Donations" asp-action="Create">Create donation</a></li>
+                            <li><a class="nav-link" asp-controller="Donations" asp-action="Mine">My donations</a></li>
+                        }
+                        @if (User.IsInRole("Beneficiary"))
+                        {
+                            <li><a class="nav-link" asp-controller="Donations" asp-action="Available">Marketplace</a></li>
+                            <li><a class="nav-link" asp-controller="Claims" asp-action="Mine">My claims</a></li>
+                        }
+                        @if (User.IsInRole("Courier"))
+                        { <li><a class="nav-link" asp-controller="Courier" asp-action="MyTasks">My tasks</a></li> }
+                        @if (User.IsInRole("Donor") || User.IsInRole("Beneficiary"))
+                        { <li><a class="nav-link" asp-controller="Courier" asp-action="Codes">Handover codes</a></li> }
+                        @if (User.Identity?.IsAuthenticated == true)
+                        {
+                            <li><form asp-controller="Auth" asp-action="Logout" method="post"><button class="btn btn-link nav-link">Logout</button></form></li>
+                        }
+                        else
+                        {
+                            <li><a class="nav-link" asp-controller="Auth" asp-action="Login">Login</a></li>
+                            <li><a class="nav-link" asp-controller="Auth" asp-action="Register">Register</a></li>
+                        }
                     </ul>
                 </div>
             </div>

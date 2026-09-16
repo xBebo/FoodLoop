@@ -1,0 +1,21 @@
+@using FoodLoop.Application.Courier
+@model IReadOnlyList<FoodLoop.Domain.Entities.DonationClaim>
+<h1>Assign courier</h1>
+@if (TempData["SuccessMessage"] is string success) { <p class="alert alert-success">@success</p> }
+@if (TempData["ErrorMessage"] is string error) { <p class="alert alert-danger">@error</p> }
+@if (!Model.Any()) { <p>No claims waiting for assignment.</p> }
+@foreach (var claim in Model)
+{
+    <form asp-action="AssignCourier" method="post" class="border rounded p-3 mb-3">
+        <strong>@claim.FoodDonation.Title</strong>
+        <p>@claim.Status — @claim.BeneficiaryOrganization.Name</p>
+        <input type="hidden" name="claimId" value="@claim.Id" />
+        <label>Courier
+        <select name="courierUserId" class="form-select" required>
+            <option value="">Choose a courier</option>
+            @foreach (var courier in (IReadOnlyList<CourierOption>)ViewBag.Couriers)
+            { <option value="@courier.Id">@courier.Name</option> }
+        </select></label>
+        <button class="btn btn-primary">Assign</button>
+    </form>
+}

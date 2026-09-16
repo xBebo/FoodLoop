@@ -1,0 +1,52 @@
+﻿@using FoodLoop.Domain.Entities
+@model IEnumerable<DonationClaim>
+
+@{
+    ViewData["Title"] = "مهام التوصيل الخاصة بي";
+}
+
+<div class="container mt-4">
+    <h2>مهامي المسندة</h2>
+
+    @if (TempData["SuccessMessage"] != null)
+    {
+        <div class="alert alert-success my-3">
+            @TempData["SuccessMessage"]
+        </div>
+    }
+
+    <table class="table table-bordered table-striped mt-3">
+        <thead class="table-dark">
+            <tr>
+                <th>اسم التبرع</th>
+                <th>حالة المهمة</th>
+                <th class="text-center">الإجراءات</th>
+            </tr>
+        </thead>
+        <tbody>
+            @if (Model == null || !Model.Any())
+            {
+                <tr>
+                    <td colspan="3" class="text-center py-4 text-muted">لا توجد مهام مسندة إليك حالياً.</td>
+                </tr>
+            }
+            else
+            {
+                @foreach (var task in Model)
+                {
+                    <tr>
+                        <td class="align-middle fw-bold">@task.FoodDonation?.Title</td>
+                        <td class="align-middle">
+                            <span class="badge bg-info text-dark">@task.Status</span>
+                        </td>
+                        <td class="align-middle text-center">
+                            <a asp-action="VerifyHandover" asp-route-claimId="@task.Id" class="btn btn-primary btn-sm">
+                                إثبات استلام / تسليم
+                            </a>
+                        </td>
+                    </tr>
+                }
+            }
+        </tbody>
+    </table>
+</div>
