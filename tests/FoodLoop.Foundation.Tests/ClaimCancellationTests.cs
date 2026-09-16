@@ -352,4 +352,45 @@ public sealed partial class ClaimServiceTests
         Assert.Equal(new CancelClaimResult(CancelClaimOutcome.Conflict), await requestB.WaitAsync(TimeSpan.FromSeconds(30)));
         await AssertCancelledAsync(claimId, donationId, userId, DonationStatus.Available);
     }
+
+    // ---- My Claims CanCancel projection: display eligibility must agree with what CancelAsync actually allows.
+    private async Task AssertCanCancelAsync(bool expected, OrganizationStatus beneficiaryStatus = OrganizationStatus.Active,
+        ClaimStatus status = ClaimStatus.Booked, DonationStatus donationStatus = DonationStatus.Claimed, bool assignedCourier = false,
+        DateTimeOffset? expiresAtUtc = null, OrganizationStatus donorStatus = OrganizationStatus.Active)
+    {
+        var (userId, organizationId) = await SeedBeneficiaryAsync(beneficiaryStatus);
+        Guid? courierUserId = assignedCourier ? (await SeedUserAsync(null)).UserId : null;
+        var (claimId, _) = await SeedClaimForCancelAsync(organizationId!.Value, status, donationStatus, expiresAtUtc, donorStatus, courierUserId: courierUserId);
+
+        var summary = Assert.Single((await GetMyClaimsAsync(Principal(userId))).Claims);
+        Assert.Equal(claimId, summary.ClaimId);
+        Assert.Equal(expected, summary.CanCancel);
+        Assert.Equal(expected, (await CancelAsync(Principal(userId), claimId)).Outcome == CancelClaimOutcome.Cancelled);
+    }
+    [Fact]
+    public Task CanCancel_is_true_for_active_beneficiarys_booked_unassigned_claim_on_claimed_donation() => AssertCanCancelAsync(true);
+    [Fact]
+    public Task CanCancel_stays_true_when_cancel_would_return_an_expired_donation_to_draft() => AssertCanCancelAsync(true, expiresAtUtc: Now.AddMinutes(-1));
+    [Fact]
+    public Task CanCancel_stays_true_when_cancel_would_return_an_inactive_donors_donation_to_draft() => AssertCanCancelAsync(true, donorStatus: OrganizationStatus.Suspended);
+    [Fact]
+    public Task CanCancel_is_false_for_suspended_beneficiary() => AssertCanCancelAsync(false, OrganizationStatus.Suspended);
+    [Fact]
+    public Task CanCancel_is_false_when_a_courier_is_assigned() => AssertCanCancelAsync(false, assignedCourier: true);
+    [Theory]
+    [InlineData(ClaimStatus.PickupPending)]
+    [InlineData(ClaimStatus.PickedUp)]
+    [InlineData(ClaimStatus.InTransit)]
+    [InlineData(ClaimStatus.Delivered)]
+    [InlineData(ClaimStatus.Closed)]
+    [InlineData(ClaimStatus.Cancelled)]
+    [InlineData(ClaimStatus.Failed)]
+    public Task CanCancel_is_false_for_claim_that_is_not_booked(ClaimStatus status) => AssertCanCancelAsync(false, status: status);
+    [Theory]
+    [InlineData(DonationStatus.Draft)]
+    [InlineData(DonationStatus.Available)]
+    [InlineData(DonationStatus.PickupPending)]
+    [InlineData(DonationStatus.InTransit)]
+    [InlineData(DonationStatus.Closed)]
+    public Task CanCancel_is_false_when_donation_is_not_claimed(DonationStatus donationStatus) => AssertCanCancelAsync(false, donationStatus: donationStatus);
 }

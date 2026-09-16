@@ -1,4 +1,5 @@
 using FoodLoop.Application.Claims;
+using FoodLoop.Domain.Enums;
 using FoodLoop.Web.Models;
 using Microsoft.AspNetCore.Mvc;
 namespace FoodLoop.Web.Controllers;
@@ -22,6 +23,25 @@ public sealed class ClaimsController(ClaimService claims) : Controller
             CreateClaimOutcome.DonationExpired => RedirectWith("Error", "This donation has expired."),
             CreateClaimOutcome.Conflict => RedirectWith("Error", "This donation was just claimed by someone else."),
             _ => throw new InvalidOperationException($"Unhandled claim outcome {result.Outcome}.")
+        };
+    }
+
+    // claimId is the only client-supplied value; ownership, organization status and eligibility are re-checked by ClaimService.
+    [HttpPost]
+    public async Task<IActionResult> Cancel(Guid claimId, CancellationToken ct)
+    {
+        var result = await claims.CancelAsync(claimId, ct);
+        return result.Outcome switch
+        {
+            CancelClaimOutcome.Cancelled => RedirectWith("Success", result.DonationStatus == DonationStatus.Available
+                ? "Claim cancelled. The donation is available again."
+                : "Claim cancelled. The donation was returned to the donor as a draft."),
+            CancelClaimOutcome.Unauthenticated => Challenge(),
+            CancelClaimOutcome.Forbidden or CancelClaimOutcome.OrganizationNotActive => Forbid(),
+            CancelClaimOutcome.ClaimNotFound => NotFound(),
+            CancelClaimOutcome.NotCancellable => RedirectWith("Error", "This claim can no longer be cancelled."),
+            CancelClaimOutcome.Conflict => RedirectWith("Error", "This claim just changed. Refresh and try again."),
+            _ => throw new InvalidOperationException($"Unhandled cancel claim outcome {result.Outcome}.")
         };
     }
 

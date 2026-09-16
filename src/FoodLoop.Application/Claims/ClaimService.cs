@@ -97,8 +97,11 @@ public sealed class ClaimService(
         if (beneficiary.Status is not (OrganizationStatus.Active or OrganizationStatus.Suspended)) return new(GetMyClaimsOutcome.Forbidden, []);
 
         var items = await claims.GetForBeneficiaryOrganizationAsync(beneficiary.Id, page, pageSize, ct);
+        // Mirrors CancelAsync's eligibility so Suspended history stays read-only; it never authorizes anything.
+        var active = beneficiary.Status == OrganizationStatus.Active;
         return new(GetMyClaimsOutcome.Success, [.. items.Select(x => new ClaimSummary(
             x.Id, x.FoodDonationId, x.FoodDonation.Title, x.FoodDonation.Quantity, x.FoodDonation.Unit, x.FoodDonation.PickupAddress,
-            x.FoodDonation.ExpiresAtUtc, x.Status, x.CreatedAtUtc))]);
+            x.FoodDonation.ExpiresAtUtc, x.Status, x.CreatedAtUtc,
+            active && x.Status == ClaimStatus.Booked && x.AssignedCourierUserId is null && x.FoodDonation.Status == DonationStatus.Claimed))]);
     }
 }

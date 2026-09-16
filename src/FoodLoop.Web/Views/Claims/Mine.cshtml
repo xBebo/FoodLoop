@@ -27,6 +27,8 @@
     var hasPrevious = Model.Page > 1;
     // No total count is returned: a full page only suggests another page may exist, so the page count is never shown.
     var mayHaveNext = claims.Count == Model.PageSize;
+    // CanCancel is false for every row of a Suspended organization, so its read-only history renders no action column at all.
+    var showActions = claims.Any(c => c.CanCancel);
 }
 <div class="claims-page">
     <header class="claims-hero">
@@ -88,6 +90,10 @@
                         <th scope="col">Claimed</th>
                         <th scope="col">Expires</th>
                         <th scope="col">Status</th>
+                        @if (showActions)
+                        {
+                            <th scope="col">Actions</th>
+                        }
                     </tr>
                 </thead>
                 <tbody>
@@ -100,7 +106,7 @@
                             <td data-label="Quantity" class="claims-nowrap">@claim.Quantity.ToString("0.##", CultureInfo.InvariantCulture) @Label(claim.Unit)</td>
                             <td data-label="Pickup address" class="claims-address">@claim.PickupAddress</td>
                             <td data-label="Claimed" class="claims-nowrap"><time datetime="@IsoUtc(claim.ClaimedAtUtc)">@DisplayUtc(claim.ClaimedAtUtc)</time></td>
-                            <td data-label="Expires" class="claims-nowrap"><time datetime="@IsoUtc(claim.ExpiresAtUtc)">@DisplayUtc(claim.ExpiresAtUtc)</time></td>
+                            <td data-label="Expires" class="claims-nowrap claims-expires"><time datetime="@IsoUtc(claim.ExpiresAtUtc)">@DisplayUtc(claim.ExpiresAtUtc)</time></td>
                             <td data-label="Status" class="claims-status">
                                 <span class="claims-badge claims-badge--@tone">
                                     <span class="claims-badge__dot" aria-hidden="true"></span>@Label(claim.ClaimStatus)
@@ -122,6 +128,17 @@
                                     <span class="claims-progress__text">No further steps</span>
                                 }
                             </td>
+                            @if (showActions)
+                            {
+                                @* No whitespace inside the cell when the claim cannot be cancelled: the mobile layout hides it with :empty. *@
+                                <td class="claims-actions">@if (claim.CanCancel)
+                                {
+                                    <form method="post" asp-action="Cancel" class="claims-cancel" onsubmit="return confirm('Cancel this claim? This action cannot be undone.');">
+                                        <input type="hidden" name="claimId" value="@claim.ClaimId" />
+                                        <button type="submit" class="claims-button claims-button--danger">Cancel claim<span class="visually-hidden">: @claim.DonationTitle</span></button>
+                                    </form>
+                                }</td>
+                            }
                         </tr>
                     }
                 </tbody>
