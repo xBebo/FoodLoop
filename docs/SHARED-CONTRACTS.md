@@ -57,3 +57,6 @@ For the basic demo, verified pickup starts transport and verified delivery close
 
 ## Outside this integration
 No LLM, automatic expiry job, SignalR, advanced reports, ordinary cancellation workflow or graphical QR scanner. Existing historical enum values and database indexes are preserved.
+
+## Planned stage two
+[Tasks 2 of 3](TASKS-02.md) defines the next assignments and their acceptance rules. Those additions are not implemented by this integration commit; the lifecycle above remains the currently working behavior.

@@ -1,8 +1,8 @@
 # Team integration fixes
 
 ## Branch and safety
-Local branch: feature/team-integration-fixes.
-It combines Safa, Jana, Haneen and Alaa with the existing Admin feature, preserving their source commit histories. No remote branch was pushed and develop was not changed by this work.
+Integration source branch: feature/team-integration-fixes.
+It combines Safa, Jana, Haneen and Alaa with the existing Admin feature, preserving their source commit histories. Baraa authorized publication and merge into develop after completing the browser smoke test. See the integration PR for merge status.
 
 The separate checkout is under the Codex workspace, work/integration. The original D:\C#\FinalProject checkout remains untouched.
 
@@ -38,5 +38,5 @@ Application services share AddApplication(), the duplicate source tree is remove
 
 Validation: 142 tests passed, including SQL-backed concurrent pickup/publish/approval, real MVC forms with antiforgery, Identity registration/login, and the complete publish-to-closed-delivery service flow. Tests use generated disposable SQL databases; no production or team development database is migrated or deleted.
 
-## Before publishing
-Review this local integration diff and its documented lifecycle defaults. Push/merge is deliberately left to Baraa's explicit next instruction.
+## Next assignments
+After merge, pull develop and follow [Tasks 2 of 3](TASKS-02.md). These are planned features, separate from the implemented contracts.

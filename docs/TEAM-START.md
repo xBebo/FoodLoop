@@ -1,4 +1,6 @@
-# First tasks after pulling the foundation
+# First tasks after pulling the foundation (stage 1 history)
+
+Current assignments: [Tasks 2 of 3](TASKS-02.md).
 
 Baraa merges the reviewed foundation into develop before the team starts from it. Everyone follows README setup, verifies a successful build and uses their own SQL database.
 
