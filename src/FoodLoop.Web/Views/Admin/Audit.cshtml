@@ -4,6 +4,37 @@
     <div><p class="text-success fw-semibold mb-1">FOODLOOP ADMIN</p><h1>Audit log</h1><p class="text-muted mb-0">Recorded actions, newest first. All times are UTC.</p></div>
     <a class="btn btn-outline-success" asp-action="Index">Back to dashboard</a>
 </div>
+<form method="get" asp-action="Audit" class="row gy-2 gx-2 align-items-end mb-4">
+    <div class="col-auto">
+        <label class="form-label" for="actionName">Action</label>
+        <input type="text" class="form-control" id="actionName" name="actionName" value="@Model.Filter.Action" placeholder="e.g. ClaimCreated" />
+    </div>
+    <div class="col-auto">
+        <label class="form-label" for="actor">Actor</label>
+        <input type="text" class="form-control" id="actor" name="actor" value="@Model.Filter.Actor" placeholder="Name or System" />
+    </div>
+    <div class="col-auto">
+        <label class="form-label" for="from">From (UTC)</label>
+        <input type="datetime-local" class="form-control" id="from" name="from" value="@Model.Filter.FromUtc?.UtcDateTime.ToString("yyyy-MM-ddTHH:mm")" />
+    </div>
+    <div class="col-auto">
+        <label class="form-label" for="to">To (UTC, exclusive)</label>
+        <input type="datetime-local" class="form-control" id="to" name="to" value="@Model.Filter.ToUtc?.UtcDateTime.ToString("yyyy-MM-ddTHH:mm")" />
+    </div>
+    <div class="col-auto">
+        <button type="submit" class="btn btn-success">Apply filters</button>
+        <a class="btn btn-outline-secondary" asp-action="Audit">Clear</a>
+    </div>
+</form>
+@if (!ViewData.ModelState.IsValid)
+{
+    <div class="alert alert-danger" role="alert">
+        @foreach (var error in ViewData.ModelState.Values.SelectMany(v => v.Errors))
+        {
+            <p class="mb-0">@error.ErrorMessage</p>
+        }
+    </div>
+}
 @if (Model.Items.Count == 0)
 {
     <div class="alert alert-light border" role="status">No audit records yet. Recorded actions will appear here.</div>
@@ -28,10 +59,24 @@ else
         </table>
     </div>
     <nav aria-label="Audit pagination"><ul class="pagination">
-        @if (Model.HasPrevious) { <li class="page-item"><a class="page-link" asp-action="Audit" asp-route-page="@(Model.Page - 1)">Previous</a></li> }
+        @if (Model.HasPrevious)
+        {
+            <li class="page-item">
+                <a class="page-link" asp-action="Audit" asp-route-page="@(Model.Page - 1)"
+                   asp-route-actionName="@Model.Filter.Action" asp-route-actor="@Model.Filter.Actor"
+                   asp-route-from="@Model.Filter.FromUtc?.UtcDateTime.ToString("o")" asp-route-to="@Model.Filter.ToUtc?.UtcDateTime.ToString("o")">Previous</a>
+            </li>
+        }
         else { <li class="page-item disabled"><span class="page-link">Previous</span></li> }
         <li class="page-item active"><span class="page-link" aria-current="page">@Model.Page / @Model.TotalPages</span></li>
-        @if (Model.HasNext) { <li class="page-item"><a class="page-link" asp-action="Audit" asp-route-page="@(Model.Page + 1)">Next</a></li> }
+        @if (Model.HasNext)
+        {
+            <li class="page-item">
+                <a class="page-link" asp-action="Audit" asp-route-page="@(Model.Page + 1)"
+                   asp-route-actionName="@Model.Filter.Action" asp-route-actor="@Model.Filter.Actor"
+                   asp-route-from="@Model.Filter.FromUtc?.UtcDateTime.ToString("o")" asp-route-to="@Model.Filter.ToUtc?.UtcDateTime.ToString("o")">Next</a>
+            </li>
+        }
         else { <li class="page-item disabled"><span class="page-link">Next</span></li> }
     </ul></nav>
 }

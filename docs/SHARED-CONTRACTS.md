@@ -53,7 +53,8 @@ For the basic demo, verified pickup starts transport and verified delivery close
 ## Admin
 - Admin dashboard and Audit List enforce Admin on the server.
 - Counts: Pending organizations; Available unexpired donations from Active Donors; Closed claims whose donation is Closed and which have Delivery evidence.
-- Audit is read-only and paginated. Never store raw codes, passwords or secrets in Details.
+- Audit is read-only and paginated (page size 20). Never store raw codes, passwords or secrets in Details.
+- Audit supports optional filters, all applied server-side before Count/Skip/Take so TotalCount and pagination reflect the filtered set: exact Action match, substring match on the displayed Actor name (including "System"/"Unknown user"), and a UTC `[FromUtc, ToUtc)` range (from inclusive, to exclusive). FromUtc must be earlier than ToUtc or the request is rejected with a validation message; no 500. Ordering stays CreatedAtUtc desc, then Id desc. Previous/Next links carry the active filters via query string (`actionName`, `actor`, `from`, `to`); the parameter is named `actionName`, not `action`, to avoid colliding with the MVC route value.
 
 ## Outside this integration
 No LLM, automatic expiry job, SignalR, advanced reports, ordinary cancellation workflow or graphical QR scanner. Existing historical enum values and database indexes are preserved.

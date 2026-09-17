@@ -9,10 +9,13 @@ public sealed class AdminService(IAdminReadRepository repository, ICurrentUserSe
         RequireAdmin();
         return repository.GetDashboardAsync(clock.GetUtcNow(), ct);
     }
-    public Task<AuditPage> GetAuditPageAsync(int page, CancellationToken ct = default)
+    public Task<AuditPage> GetAuditPageAsync(int page, AuditFilter? filter = null, CancellationToken ct = default)
     {
         RequireAdmin();
-        return repository.GetAuditPageAsync(Math.Max(1, page), 20, ct);
+        filter ??= new AuditFilter();
+        if (filter.FromUtc.HasValue && filter.ToUtc.HasValue && filter.FromUtc >= filter.ToUtc)
+            throw new ArgumentException("The UTC start time must be earlier than the end time.", nameof(filter));
+        return repository.GetAuditPageAsync(Math.Max(1, page), 20, filter, ct);
     }
     private void RequireAdmin()
     {
