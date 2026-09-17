@@ -7,5 +7,6 @@
     <ProjectReference Include="..\FoodLoop.Infrastructure\FoodLoop.Infrastructure.csproj" />
     <ProjectReference Include="..\FoodLoop.Application\FoodLoop.Application.csproj" />
     <PackageReference Include="Microsoft.EntityFrameworkCore.Design" Version="10.0.12"><PrivateAssets>all</PrivateAssets></PackageReference>
+    <PackageReference Include="QRCoder" Version="1.8.0" />
   </ItemGroup>
 </Project>
