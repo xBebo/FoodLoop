@@ -49,6 +49,13 @@ public sealed class FoodDonationRepository(ApplicationDbContext db, TimeProvider
         return new(items, hasNext);
     }
 
+    // Compatibility overload for existing concrete-repository callers. New marketplace code uses the filtered page contract above.
+    public async Task<IReadOnlyList<FoodDonation>> GetAvailableAsync(
+        int page = 1,
+        int pageSize = 20,
+        CancellationToken cancellationToken = default)
+        => (await GetAvailableAsync(null, null, page, pageSize, cancellationToken)).Items;
+
     public async Task<IReadOnlyList<FoodDonation>> GetForDonorAsync(Guid donorOrganizationId, CancellationToken cancellationToken = default)
         => await Context.FoodDonations.AsNoTracking()
             .Include(x => x.FoodCategory)
