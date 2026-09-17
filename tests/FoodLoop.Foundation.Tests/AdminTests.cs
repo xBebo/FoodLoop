@@ -102,24 +102,40 @@ public sealed class AdminTests(DatabaseFixture fixture) : IClassFixture<Database
     public async Task Audit_pagination_is_stable_projects_actor_and_handles_empty_page()
     {
         await using var db = fixture.CreateContext(); var repo = new AdminReadRepository(db);
-        var empty = await repo.GetAuditPageAsync(int.MaxValue, 20);
+        var tag = Guid.NewGuid().ToString("N");
+        var action = $"Pagination-{tag}";
+        var filter = new AuditFilter(Action: action);
+        var empty = await repo.GetAuditPageAsync(int.MaxValue, 20, filter);
         Assert.Empty(empty.Items); Assert.Equal(1, empty.Page); Assert.Equal(1, empty.TotalPages);
-        var actor = new ApplicationUser { Id = Guid.NewGuid(), DisplayName = "Baraa", UserName = "admin-test" };
+        var actorName = $"Baraa-{tag}";
+        var actor = new ApplicationUser { Id = Guid.NewGuid(), DisplayName = actorName, UserName = $"admin-{tag}" };
         db.Users.Add(actor);
-        var entries = Enumerable.Range(0, 23).Select(i => new AuditLog { Action = i == 0 ? "<script>alert(1)</script>" : "ClaimCreated",
-            ActorUserId = i == 0 ? actor.Id : null, EntityType = "DonationClaim", EntityId = Guid.NewGuid(), CreatedAtUtc = Now }).ToList();
+        var unsafeEntityType = $"<script>alert('{tag}')</script>";
+        var entries = Enumerable.Range(0, 23).Select(i => new AuditLog { Action = action,
+            ActorUserId = i == 0 ? actor.Id : null, EntityType = i == 0 ? unsafeEntityType : "DonationClaim",
+            EntityId = Guid.NewGuid(), CreatedAtUtc = Now }).ToList();
         db.AuditLogs.AddRange(entries); await db.SaveChangesAsync();
-        var first = await repo.GetAuditPageAsync(1, 20); var second = await repo.GetAuditPageAsync(2, 20);
+        var first = await repo.GetAuditPageAsync(1, 20, filter); var second = await repo.GetAuditPageAsync(2, 20, filter);
         Assert.Equal(23, first.TotalCount); Assert.Equal(20, first.Items.Count); Assert.Equal(3, second.Items.Count);
         Assert.Empty(first.Items.Select(x => x.Id).Intersect(second.Items.Select(x => x.Id)));
-        Assert.Equal(first.Items.Select(x => x.Id), (await repo.GetAuditPageAsync(1, 20)).Items.Select(x => x.Id));
-        Assert.Equal(2, (await repo.GetAuditPageAsync(int.MaxValue, 20)).Page);
-        Assert.Contains(first.Items.Concat(second.Items), x => x.ActorName == "Baraa" && x.ActorUserId == actor.Id);
+        Assert.Equal(first.Items.Select(x => x.Id), (await repo.GetAuditPageAsync(1, 20, filter)).Items.Select(x => x.Id));
+        Assert.Equal(2, (await repo.GetAuditPageAsync(int.MaxValue, 20, filter)).Page);
+        Assert.Contains(first.Items.Concat(second.Items), x => x.ActorName == actorName && x.ActorUserId == actor.Id);
         Assert.Contains(first.Items.Concat(second.Items), x => x.ActorName == "System" && x.ActorUserId == null);
         using var host = new WebHost(fixture.ConnectionString); using var client = Client(host, "Admin");
-        var html = await client.GetStringAsync("/Admin/Audit"); html += await client.GetStringAsync("/Admin/Audit?page=2");
-        Assert.DoesNotContain("<script>alert(1)</script>", html);
+        var request = $"/Admin/Audit?actionName={Uri.EscapeDataString(action)}";
+        var html = await client.GetStringAsync(request); html += await client.GetStringAsync($"{request}&page=2");
+        Assert.DoesNotContain(unsafeEntityType, html);
         Assert.Contains("&lt;script&gt;", html);
+    }
+    [Fact]
+    public async Task Dashboard_links_to_admin_workflows()
+    {
+        using var host = new WebHost(fixture.ConnectionString); using var client = Client(host, "Admin");
+        var html = await client.GetStringAsync("/Admin");
+        Assert.Contains("href=\"/Organizations/PendingRequests\"", html);
+        Assert.Contains("href=\"/Courier/AssignCourier\"", html);
+        Assert.Contains("href=\"/Admin/Audit\"", html);
     }
     [Fact]
     public async Task Audit_filter_by_action_returns_only_matching_action_entries()
