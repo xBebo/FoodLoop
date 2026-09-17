@@ -14,16 +14,20 @@ This document describes the implemented integration branch. Failure recovery and
 - Public registration allows Donor or Beneficiary only, assigns that Identity role and creates a Pending organization.
 - User/organization creation and role assignment share a transaction. Seed roles before registration.
 - Admin approval/rejection accepts Guid and only Pending organizations. Both use OrganizationApprovalService and actor-aware audit.
-- Forms post to OrganizationsController. AuthController has no approval/rejection actions.
+- Admin organization management is server-paginated at 20 rows with stable Name/Id ordering and an optional OrganizationStatus filter applied before Count/Skip/Take.
+- New management transitions are allowlisted: Active -> Suspended and Suspended -> Active only. Pending/Rejected remain on the existing approval workflow.
+- Suspension/reactivation records exactly one OrganizationSuspended/OrganizationReactivated audit with the current Admin actor in the same SaveChanges operation. Organization RowVersion provides controlled conflict handling. Identity roles/accounts are not changed or deleted.
+- Forms post to OrganizationsController. AuthController has no approval/rejection or suspension actions.
 - Pending and Rejected organizations cannot log in. Suspended Beneficiaries may log in for read-only history; Suspended Donors cannot log in.
-- Every operation rechecks its permissions and organization state. Login permission does not grant mutation permission.
-- My Claims/history permits Active or Suspended Beneficiaries, only for their own organization. Pending/Rejected are forbidden. Suspension does not automatically cancel old claims; Suspended history is read-only and shows no Cancel action.
+- Every operation rechecks its permissions and organization state. Login permission does not grant mutation permission. Suspension does not automatically cancel existing claims.
+- My Claims/history permits Active or Suspended Beneficiaries, only for their own organization. Pending/Rejected are forbidden. Suspended history is read-only and shows no Cancel action.
 - Cookies use /Auth/Login and /Admin/AccessDenied. Unsafe MVC requests require antiforgery.
 
 ## Donations and claims
 - Only an Active Donor may create or publish its own donation.
+- Active Donors may edit only their own Draft donations. Edit reuses create-field validation, requires the submitted RowVersion to match, and records DonationUpdated in the same save. Published/claimed/delivery-stage donations and foreign donations are not editable.
 - Publish permits Draft -> Available, positive quantity and a future donor-entered expiry date.
-- Marketplace includes Available, unexpired donations from Active Donor organizations.
+- Marketplace includes Available, unexpired donations from Active Donor organizations. Optional title search and category filters are applied before fixed 20-row server pagination with stable expiry/Id ordering; filters persist across navigation.
 - Claim requires an Active Beneficiary, an Active Donor, Available/unexpired donation and no existing active claim.
 - One claim reserves the entire donation. RowVersion and the existing filtered unique index protect concurrent reservations.
 - Successful claim creates one ClaimCreated audit on DonationClaim; Details includes DonationId and Available -> Claimed. No duplicate FoodDonation event.
@@ -62,15 +66,15 @@ For the basic demo, verified pickup starts transport and verified delivery close
 - Repeated/concurrent handover must yield one successful operation; no duplicate handover or orphan audit.
 
 ## Admin
-- Admin dashboard and Audit List enforce Admin on the server.
+- Admin dashboard, organization management, assignment and Audit List enforce Admin on the server.
 - Counts: Pending organizations; Available unexpired donations from Active Donors; Closed claims whose donation is Closed and which have Delivery evidence.
 - Audit is read-only and paginated (page size 20). Never store raw codes, passwords or secrets in Details.
 - Audit supports optional server-side filters applied before Count/Skip/Take: exact Action match, substring Actor match on the displayed actor name (including System and Unknown user), and a UTC `[FromUtc, ToUtc)` range (from inclusive, to exclusive). FromUtc must be earlier than ToUtc; invalid ranges render a validation message rather than an HTTP 500.
 - Audit ordering is stable: CreatedAtUtc descending, then Id descending. Previous/Next links preserve `actionName`, `actor`, `from`, and `to`.
-- The Admin dashboard links directly to organization review, courier assignment, and the Audit List.
+- The Admin dashboard links directly to organization management, pending organization review, courier assignment, and the Audit List.
 
 ## Outside this integration
 No LLM, automatic expiry job, SignalR, advanced reports, cancellation after courier assignment or camera-based QR scanner. Existing historical enum values and database indexes are preserved.
 
-## Planned stage two
-[Tasks 2 of 3](TASKS-02.md) defines the next assignments and their acceptance rules. Cancel unassigned claim (Safa), Admin audit filtering, and handover-code usability are implemented as documented above; remaining assignments are integrated separately.
+## Stage two status
+[Tasks 2 of 3](TASKS-02.md) contains the acceptance rules used for this stage. The Stage 2 slices for Jana, Alaa, Safa, Haneen and Baraa are integrated as documented above; remaining work belongs to final validation/polish rather than adding new Stage 2 behavior.
