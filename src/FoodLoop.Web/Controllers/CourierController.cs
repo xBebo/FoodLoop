@@ -1,8 +1,10 @@
 using FoodLoop.Application.Courier;
 using FoodLoop.Domain.Enums;
+using FoodLoop.Web.Models.Courier;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Filters;
+using QRCoder;
 namespace FoodLoop.Web.Controllers;
 [Authorize]
 public sealed class CourierController(CourierService service) : Controller
@@ -52,6 +54,9 @@ public sealed class CourierController(CourierService service) : Controller
         if (!ModelState.IsValid) return BadRequest("Invalid handover input.");
         var result = await service.IssueAsync(claimId, handoverType, ct);
         if (!result.Succeeded) { TempData["ErrorMessage"] = result.Error; return RedirectToAction(nameof(Codes)); }
-        return View("Code", result.Token);
+        if (result.Token is null || result.ExpiresAtUtc is null) throw new InvalidOperationException("Issued handover code was missing display data.");
+        using var qrData = QRCodeGenerator.GenerateQrCode(result.Token, QRCodeGenerator.ECCLevel.M);
+        using var qr = new SvgQRCode(qrData);
+        return View("Code", new HandoverCodeViewModel(result.Token, handoverType, result.ExpiresAtUtc.Value, qr.GetGraphic()));
     }
 }
