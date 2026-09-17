@@ -29,7 +29,14 @@
             <option value="">All statuses</option>
             @foreach (var value in Enum.GetValues<OrganizationStatus>())
             {
-                <option value="@value" selected="@(Model.Status == value)">@value</option>
+                if (Model.Status == value)
+                {
+                    <option value="@value" selected>@value</option>
+                }
+                else
+                {
+                    <option value="@value">@value</option>
+                }
             }
         </select>
     </div>
