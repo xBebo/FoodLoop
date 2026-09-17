@@ -1,15 +1,40 @@
-@model IReadOnlyList<FoodLoop.Application.Donations.DonationListItem>
+@model FoodLoop.Web.Models.Donations.AvailableDonationsViewModel
+@functions {
+    private static string IsoUtc(DateTimeOffset value) => value.ToUniversalTime().ToString("yyyy-MM-ddTHH:mm:ss'Z'");
+    private static string DisplayUtc(DateTimeOffset value) => value.ToUniversalTime().ToString("dd MMM yyyy, HH:mm 'UTC'");
+}
 @{
     ViewData["Title"] = "Available Donations";
 }
 
 <div class="container py-4">
     <h1 class="h3 mb-1">Available Donations</h1>
-    <p class="text-muted mb-4">Active, unexpired donations currently available to beneficiaries.</p>
+    <p class="text-muted mb-4">Active, unexpired donations from active donor organizations. Times are shown in UTC.</p>
 
-    @if (Model.Count == 0)
+    <form asp-action="Available" method="get" class="card card-body shadow-sm mb-4">
+        <div class="row g-3 align-items-end">
+            <div class="col-md-6">
+                <label for="search" class="form-label">Search title</label>
+                <input id="search" name="search" value="@Model.Search" maxlength="200" class="form-control" placeholder="e.g. Rice" />
+            </div>
+            <div class="col-md-4">
+                <label asp-for="CategoryId" class="form-label">Category</label>
+                <select asp-for="CategoryId" asp-items="Model.Categories" class="form-select">
+                    <option value="">All categories</option>
+                </select>
+            </div>
+            <div class="col-md-2 d-flex gap-2">
+                <button type="submit" class="btn btn-primary">Filter</button>
+                <a asp-action="Available" class="btn btn-outline-secondary">Clear</a>
+            </div>
+        </div>
+    </form>
+
+    @if (Model.Items.Count == 0)
     {
-        <div class="alert alert-light border">There are no available donations right now.</div>
+        <div class="alert alert-light border">
+            @(Model.Page == 1 ? "No donations match these filters." : "No donations are available on this page.")
+        </div>
     }
     else
     {
@@ -22,11 +47,12 @@
                         <th>Category</th>
                         <th>Quantity</th>
                         <th>Pickup</th>
-                        <th>Expires</th><th>Claim</th>
+                        <th>Expires (UTC)</th>
+                        <th>Claim</th>
                     </tr>
                 </thead>
                 <tbody>
-                @foreach (var item in Model)
+                @foreach (var item in Model.Items)
                 {
                     <tr>
                         <td>@item.Title</td>
@@ -34,22 +60,34 @@
                         <td>@item.Category</td>
                         <td>@item.Quantity @item.Unit</td>
                         <td>@item.PickupAddress</td>
-                        <td>@item.ExpiresAtUtc.ToLocalTime().ToString("g")</td>
-                        <td><form asp-controller="Claims" asp-action="Create" method="post">
-                            <input type="hidden" name="donationId" value="@item.Id" />
-                            <button class="btn btn-primary btn-sm">Claim donation</button>
-                        </form></td>
+                        <td><time datetime="@IsoUtc(item.ExpiresAtUtc)">@DisplayUtc(item.ExpiresAtUtc)</time></td>
+                        <td>
+                            <form asp-controller="Claims" asp-action="Create" method="post">
+                                <input type="hidden" name="donationId" value="@item.Id" />
+                                <button class="btn btn-primary btn-sm">Claim donation</button>
+                            </form>
+                        </td>
                     </tr>
                 }
                 </tbody>
             </table>
         </div>
+    }
 
+    @if (Model.HasPrevious || Model.HasNext)
+    {
+        <nav class="d-flex align-items-center gap-3" aria-label="Marketplace pages">
+            @if (Model.HasPrevious)
+            {
+                <a asp-action="Available" asp-route-page="@(Model.Page - 1)" asp-route-search="@Model.Search"
+                   asp-route-categoryId="@Model.CategoryId" class="btn btn-outline-secondary">Previous</a>
+            }
+            <span>Page @Model.Page</span>
+            @if (Model.HasNext)
+            {
+                <a asp-action="Available" asp-route-page="@(Model.Page + 1)" asp-route-search="@Model.Search"
+                   asp-route-categoryId="@Model.CategoryId" class="btn btn-outline-secondary">Next</a>
+            }
+        </nav>
     }
 </div>
-
-@{ var page = ViewBag.Page is int current ? current : 1; }
-<nav aria-label="Marketplace pages">
-@if (page > 1) { <a asp-action="Available" asp-route-page="@(page-1)">Previous</a> }
-@if (Model.Count == 20 && page < int.MaxValue) { <a asp-action="Available" asp-route-page="@(page+1)">Next</a> }
-</nav>

@@ -1,5 +1,9 @@
 @model IReadOnlyList<FoodLoop.Application.Donations.DonationListItem>
 @using FoodLoop.Domain.Enums
+@functions {
+    private static string IsoUtc(DateTimeOffset value) => value.ToUniversalTime().ToString("yyyy-MM-ddTHH:mm:ss'Z'");
+    private static string DisplayUtc(DateTimeOffset value) => value.ToUniversalTime().ToString("dd MMM yyyy, HH:mm 'UTC'");
+}
 @{
     ViewData["Title"] = "My Donations";
 }
@@ -37,7 +41,7 @@
                         <th>Quantity</th>
                         <th>Expires</th>
                         <th>Status</th>
-                        <th style="width: 120px;">Action</th>
+                        <th style="width: 190px;">Actions</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -47,14 +51,17 @@
                         <td>@item.Title</td>
                         <td>@item.Category</td>
                         <td>@item.Quantity @item.Unit</td>
-                        <td>@item.ExpiresAtUtc.ToLocalTime().ToString("g")</td>
+                        <td><time datetime="@IsoUtc(item.ExpiresAtUtc)">@DisplayUtc(item.ExpiresAtUtc)</time></td>
                         <td><span class="badge text-bg-secondary">@item.Status</span></td>
                         <td>
                             @if (item.Status == DonationStatus.Draft)
                             {
-                                <form asp-action="Publish" asp-route-id="@item.Id" method="post">
-                                    <button type="submit" class="btn btn-sm btn-primary">Publish</button>
-                                </form>
+                                <div class="d-flex gap-2">
+                                    <a asp-action="Edit" asp-route-id="@item.Id" class="btn btn-sm btn-outline-secondary">Edit</a>
+                                    <form asp-action="Publish" asp-route-id="@item.Id" method="post">
+                                        <button type="submit" class="btn btn-sm btn-primary">Publish</button>
+                                    </form>
+                                </div>
                             }
                             else
                             {

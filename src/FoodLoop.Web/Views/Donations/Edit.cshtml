@@ -1,13 +1,15 @@
-@model FoodLoop.Web.Models.Donations.CreateDonationViewModel
+@model FoodLoop.Web.Models.Donations.EditDonationViewModel
 @{
-    ViewData["Title"] = "Create Donation";
+    ViewData["Title"] = "Edit Draft Donation";
 }
 
 <div class="container py-4" style="max-width: 760px;">
-    <h1 class="h3 mb-1">Create Donation</h1>
-    <p class="text-muted mb-4">Create a simple draft now. You can publish it from My Donations after validation.</p>
+    <h1 class="h3 mb-1">Edit Draft Donation</h1>
+    <p class="text-muted mb-4">Only a current draft can be saved. If it changes elsewhere, refresh before trying again.</p>
 
-    <form asp-action="Create" method="post" class="card card-body shadow-sm">
+    <form asp-action="Edit" asp-route-id="@Model.Id" method="post" class="card card-body shadow-sm">
+        <input asp-for="Id" type="hidden" />
+        <input asp-for="RowVersion" type="hidden" />
         <div asp-validation-summary="ModelOnly" class="text-danger mb-3"></div>
 
         <div class="mb-3">
@@ -46,12 +48,12 @@
         <div class="row">
             <div class="col-md-6 mb-3">
                 <label asp-for="PreparedAt" class="form-label">Prepared at (local time)</label>
-                <input asp-for="PreparedAt" type="datetime-local" class="form-control" />
+                <input asp-for="PreparedAt" asp-format="{0:yyyy-MM-ddTHH:mm}" type="datetime-local" class="form-control" />
                 <span asp-validation-for="PreparedAt" class="text-danger"></span>
             </div>
             <div class="col-md-6 mb-3">
                 <label asp-for="ExpiresAt" class="form-label">Expires at (local time)</label>
-                <input asp-for="ExpiresAt" type="datetime-local" class="form-control" />
+                <input asp-for="ExpiresAt" asp-format="{0:yyyy-MM-ddTHH:mm}" type="datetime-local" class="form-control" />
                 <span asp-validation-for="ExpiresAt" class="text-danger"></span>
             </div>
         </div>
@@ -70,8 +72,8 @@
         </div>
 
         <div class="d-flex gap-2">
-            <button type="submit" class="btn btn-success">Create draft</button>
-            <a asp-action="Mine" class="btn btn-outline-secondary">My Donations</a>
+            <button type="submit" class="btn btn-success">Save changes</button>
+            <a asp-action="Mine" class="btn btn-outline-secondary">Cancel</a>
         </div>
     </form>
 </div>
