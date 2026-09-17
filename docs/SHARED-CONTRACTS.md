@@ -56,7 +56,7 @@ For the basic demo, verified pickup starts transport and verified delivery close
 - Donor organization issues the Pickup code; Beneficiary organization issues the Delivery code. No cross-organization issuance.
 - Codes use 32 cryptographically random bytes, displayed as 64 hexadecimal characters. Store only SHA-256 hashes bound to claim, courier and purpose.
 - Integration default: codes live at most 15 minutes, capped by donation expiry. Regeneration invalidates outstanding codes and touches the claim's RowVersion to serialize races.
-- The code is displayed once in a no-store response and manually pasted by the courier. A graphical QR/scanner UI is not included.
+- The raw code is displayed only on the no-store issuance response. That page renders an in-app QR for the same token, provides a Copy action, and shows the actual server expiry. No raw code is stored in localStorage, the database or Audit; text copy/paste remains a complete verification path.
 - Verify purpose, expiry, unused status, assignment, ownership and exact workflow state. Delivery also requires persisted pickup evidence.
 - Consume the code, update BOTH entities, add HandoverRecord with timestamp and stage actor-aware audit in one atomic save.
 - Repeated/concurrent handover must yield one successful operation; no duplicate handover or orphan audit.
@@ -70,7 +70,7 @@ For the basic demo, verified pickup starts transport and verified delivery close
 - The Admin dashboard links directly to organization review, courier assignment, and the Audit List.
 
 ## Outside this integration
-No LLM, automatic expiry job, SignalR, advanced reports, cancellation after courier assignment or graphical QR scanner. Existing historical enum values and database indexes are preserved.
+No LLM, automatic expiry job, SignalR, advanced reports, cancellation after courier assignment or camera-based QR scanner. Existing historical enum values and database indexes are preserved.
 
 ## Planned stage two
-[Tasks 2 of 3](TASKS-02.md) defines the next assignments and their acceptance rules. Cancel unassigned claim (Safa) and Admin audit filtering are implemented as documented above; remaining assignments are integrated separately.
+[Tasks 2 of 3](TASKS-02.md) defines the next assignments and their acceptance rules. Cancel unassigned claim (Safa), Admin audit filtering, and handover-code usability are implemented as documented above; remaining assignments are integrated separately.
