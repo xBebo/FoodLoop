@@ -13,6 +13,31 @@ public sealed record CreateDonationRequest(
     string StorageInstructions,
     string PickupAddress);
 
+public sealed record UpdateDonationRequest(
+    Guid FoodCategoryId,
+    string Title,
+    string Description,
+    decimal Quantity,
+    QuantityUnit Unit,
+    DateTimeOffset PreparedAt,
+    DateTimeOffset ExpiresAt,
+    string StorageInstructions,
+    string PickupAddress,
+    string RowVersion);
+
+public sealed record DonationEditItem(
+    Guid Id,
+    Guid FoodCategoryId,
+    string Title,
+    string Description,
+    decimal Quantity,
+    QuantityUnit Unit,
+    DateTimeOffset PreparedAtUtc,
+    DateTimeOffset ExpiresAtUtc,
+    string StorageInstructions,
+    string PickupAddress,
+    string RowVersion);
+
 public sealed record DonationListItem(
     Guid Id,
     string Title,
@@ -26,6 +51,24 @@ public sealed record DonationListItem(
     string? DonorName = null);
 
 public sealed record DonationCategoryItem(Guid Id, string Name);
+
+public sealed record AvailableDonationsPage(
+    IReadOnlyList<DonationListItem> Items,
+    int Page,
+    bool HasPrevious,
+    bool HasNext,
+    string Search,
+    Guid? CategoryId);
+
+public enum GetDonationForEditOutcome
+{
+    Success,
+    NotFound,
+    Forbidden,
+    NotDraft
+}
+
+public sealed record GetDonationForEditResult(GetDonationForEditOutcome Outcome, DonationEditItem? Donation = null);
 
 public sealed record DonationOperationResult(bool Succeeded, string? Error = null, Guid? DonationId = null)
 {

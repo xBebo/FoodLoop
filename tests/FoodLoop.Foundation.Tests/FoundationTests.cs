@@ -128,9 +128,9 @@ public sealed class FoundationTests(DatabaseFixture fixture) : IClassFixture<Dat
         var expired = Donation(); expired.ExpiresAtUtc = DateTimeOffset.UtcNow.AddMinutes(-1);
         var suspended = Donation(); suspended.DonorOrganization.Status = OrganizationStatus.Suspended;
         db.AddRange(good, expired, suspended); await db.SaveChangesAsync();
-        var result = await new FoodDonationRepository(db, TimeProvider.System).GetAvailableAsync(1, 100);
-        Assert.Contains(result, x => x.Id == good.Id);
-        Assert.DoesNotContain(result, x => x.Id == expired.Id || x.Id == suspended.Id);
+        var result = await new FoodDonationRepository(db, TimeProvider.System).GetAvailableAsync(null, null, 1, 100);
+        Assert.Contains(result.Items, x => x.Id == good.Id);
+        Assert.DoesNotContain(result.Items, x => x.Id == expired.Id || x.Id == suspended.Id);
     }
     [Fact]
     public async Task Foreign_keys_prevent_deleting_an_organization_with_donations()

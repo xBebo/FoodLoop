@@ -155,7 +155,7 @@ public sealed class TeamIntegrationTests(DatabaseFixture fixture) : IClassFixtur
     public async Task Marketplace_extreme_page_is_empty()
     {
         await using var db = fixture.CreateContext();
-        Assert.Empty(await new FoodDonationRepository(db,TimeProvider.System).GetAvailableAsync(int.MaxValue,100));
+        Assert.Empty((await new FoodDonationRepository(db,TimeProvider.System).GetAvailableAsync(null, null, int.MaxValue,100)).Items);
     }
     private sealed class Gate
     {
