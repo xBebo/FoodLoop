@@ -1,0 +1,42 @@
+name: CI
+
+on:
+  push:
+    branches: [develop]
+  pull_request:
+    branches: [develop]
+
+permissions:
+  contents: read
+
+jobs:
+  build-test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    services:
+      sqlserver:
+        image: mcr.microsoft.com/mssql/server:2022-latest
+        env:
+          ACCEPT_EULA: Y
+          MSSQL_SA_PASSWORD: FoodLoop_CI_Only_2026!
+        ports:
+          - 1433:1433
+        options: >-
+          --health-cmd="/opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P 'FoodLoop_CI_Only_2026!' -C -Q 'SELECT 1' || /opt/mssql-tools/bin/sqlcmd -S localhost -U sa -P 'FoodLoop_CI_Only_2026!' -Q 'SELECT 1' || exit 1"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=20
+    env:
+      FOODLOOP_TEST_SQLSERVER: "Server=localhost,1433;User ID=sa;Password=FoodLoop_CI_Only_2026!;Encrypt=True;TrustServerCertificate=True"
+
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 10.0.x
+      - name: Restore
+        run: dotnet restore FoodLoop.slnx
+      - name: Build
+        run: dotnet build FoodLoop.slnx -c Release --no-restore
+      - name: Test
+        run: dotnet test FoodLoop.slnx -c Release --no-build --verbosity minimal
