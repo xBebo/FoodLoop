@@ -1,0 +1,103 @@
+@model FoodLoop.Application.Organizations.OrganizationAdminPage
+@using FoodLoop.Domain.Enums
+@{
+    ViewData["Title"] = "Organization management";
+}
+
+<div class="d-flex flex-wrap justify-content-between align-items-center gap-3 mb-4">
+    <div>
+        <p class="text-success fw-semibold mb-1">FOODLOOP ADMIN</p>
+        <h1>Organization management</h1>
+        <p class="text-muted mb-0">Review organization status and suspend or reactivate existing accounts.</p>
+    </div>
+    <a class="btn btn-outline-success" asp-action="PendingRequests">Pending requests</a>
+</div>
+
+@if (TempData["SuccessMessage"] is string success)
+{
+    <div class="alert alert-success" role="status">@success</div>
+}
+@if (TempData["ErrorMessage"] is string error)
+{
+    <div class="alert alert-danger" role="alert">@error</div>
+}
+
+<form method="get" asp-action="Manage" class="row g-2 align-items-end mb-4">
+    <div class="col-sm-6 col-md-4">
+        <label for="status" class="form-label">Status</label>
+        <select id="status" name="status" class="form-select">
+            <option value="">All statuses</option>
+            @foreach (var value in Enum.GetValues<OrganizationStatus>())
+            {
+                <option value="@value" selected="@(Model.Status == value)">@value</option>
+            }
+        </select>
+    </div>
+    <div class="col-auto"><button type="submit" class="btn btn-success">Filter</button></div>
+    <div class="col-auto"><a asp-action="Manage" class="btn btn-outline-secondary">Clear</a></div>
+</form>
+
+@if (Model.Items.Count == 0)
+{
+    <div class="alert alert-light border">No organizations match this filter.</div>
+}
+else
+{
+    <div class="table-responsive">
+        <table class="table table-striped align-middle">
+            <caption>@Model.TotalCount organizations. Page @Model.Page of @Model.TotalPages.</caption>
+            <thead>
+            <tr><th>Name</th><th>Type</th><th>License</th><th>Status</th><th class="text-end">Action</th></tr>
+            </thead>
+            <tbody>
+            @foreach (var organization in Model.Items)
+            {
+                <tr>
+                    <td>@organization.Name</td>
+                    <td>@organization.Type</td>
+                    <td class="text-break">@organization.LicenseNumber</td>
+                    <td><span class="badge bg-secondary">@organization.Status</span></td>
+                    <td class="text-end">
+                        @if (organization.Status == OrganizationStatus.Active)
+                        {
+                            <form asp-action="Suspend" asp-route-status="@Model.Status" asp-route-page="@Model.Page" method="post" class="d-inline"
+                                  onsubmit="return confirm('Suspend this organization? This stops new operations and current delivery actions, but does not automatically cancel existing claims.');">
+                                <input type="hidden" name="id" value="@organization.Id" />
+                                <button class="btn btn-outline-danger btn-sm" type="submit">Suspend</button>
+                            </form>
+                        }
+                        else if (organization.Status == OrganizationStatus.Suspended)
+                        {
+                            <form asp-action="Reactivate" asp-route-status="@Model.Status" asp-route-page="@Model.Page" method="post" class="d-inline"
+                                  onsubmit="return confirm('Reactivate this organization? Operations will still be subject to normal rules such as expiry.');">
+                                <input type="hidden" name="id" value="@organization.Id" />
+                                <button class="btn btn-outline-success btn-sm" type="submit">Reactivate</button>
+                            </form>
+                        }
+                        else
+                        {
+                            <span class="text-muted">Use Pending Requests for approval decisions.</span>
+                        }
+                    </td>
+                </tr>
+            }
+            </tbody>
+        </table>
+    </div>
+
+    <nav aria-label="Organization pages">
+        <ul class="pagination">
+            @if (Model.HasPrevious)
+            {
+                <li class="page-item"><a class="page-link" asp-action="Manage" asp-route-status="@Model.Status" asp-route-page="@(Model.Page - 1)">Previous</a></li>
+            }
+            else { <li class="page-item disabled"><span class="page-link">Previous</span></li> }
+            <li class="page-item active"><span class="page-link" aria-current="page">@Model.Page / @Model.TotalPages</span></li>
+            @if (Model.HasNext)
+            {
+                <li class="page-item"><a class="page-link" asp-action="Manage" asp-route-status="@Model.Status" asp-route-page="@(Model.Page + 1)">Next</a></li>
+            }
+            else { <li class="page-item disabled"><span class="page-link">Next</span></li> }
+        </ul>
+    </nav>
+}
