@@ -64,10 +64,13 @@ For the basic demo, verified pickup starts transport and verified delivery close
 ## Admin
 - Admin dashboard and Audit List enforce Admin on the server.
 - Counts: Pending organizations; Available unexpired donations from Active Donors; Closed claims whose donation is Closed and which have Delivery evidence.
-- Audit is read-only and paginated. Never store raw codes, passwords or secrets in Details.
+- Audit is read-only and paginated (page size 20). Never store raw codes, passwords or secrets in Details.
+- Audit supports optional server-side filters applied before Count/Skip/Take: exact Action match, substring Actor match on the displayed actor name (including System and Unknown user), and a UTC `[FromUtc, ToUtc)` range (from inclusive, to exclusive). FromUtc must be earlier than ToUtc; invalid ranges render a validation message rather than an HTTP 500.
+- Audit ordering is stable: CreatedAtUtc descending, then Id descending. Previous/Next links preserve `actionName`, `actor`, `from`, and `to`.
+- The Admin dashboard links directly to organization review, courier assignment, and the Audit List.
 
 ## Outside this integration
 No LLM, automatic expiry job, SignalR, advanced reports, cancellation after courier assignment or graphical QR scanner. Existing historical enum values and database indexes are preserved.
 
 ## Planned stage two
-[Tasks 2 of 3](TASKS-02.md) defines the next assignments and their acceptance rules. Cancel unassigned claim (Safa) is implemented as documented above; the other assignments are not yet part of the working lifecycle.
+[Tasks 2 of 3](TASKS-02.md) defines the next assignments and their acceptance rules. Cancel unassigned claim (Safa) and Admin audit filtering are implemented as documented above; remaining assignments are integrated separately.
