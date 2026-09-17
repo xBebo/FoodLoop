@@ -44,9 +44,9 @@ public sealed class CourierService(ICurrentUserService user, ICourierRepository 
     {
         foreach (var token in await repo.OutstandingAsync(id, ct)) token.UsedAtUtc = clock.GetUtcNow();
     }
-    private async Task<CourierResult> SaveAsync(CancellationToken ct, string? token = null)
+    private async Task<CourierResult> SaveAsync(CancellationToken ct, string? token = null, DateTimeOffset? expiresAtUtc = null)
     {
-        try { await uow.SaveChangesAsync(ct); return new(true, Token: token); }
+        try { await uow.SaveChangesAsync(ct); return new(true, Token: token, ExpiresAtUtc: expiresAtUtc); }
         catch (PersistenceConflictException) { return new(false, "This task changed. Refresh and try again."); }
     }
     public async Task<CourierResult> AssignAsync(Guid id, Guid courierId, CancellationToken ct)
@@ -78,15 +78,16 @@ public sealed class CourierService(ICurrentUserService user, ICourierRepository 
         await RevokeAsync(id, ct);
         string raw = Convert.ToHexString(RandomNumberGenerator.GetBytes(32));
         var now = clock.GetUtcNow();
+        var expiresAtUtc = c.FoodDonation.ExpiresAtUtc < now.AddMinutes(15) ? c.FoodDonation.ExpiresAtUtc : now.AddMinutes(15);
         repo.AddToken(new QrVerificationToken {
             DonationClaimId = id, CourierUserId = courierId,
             Purpose = type == HandoverType.Pickup ? QrPurpose.Pickup : QrPurpose.Delivery,
             TokenHash = Hash(raw), CreatedAtUtc = now,
-            ExpiresAtUtc = c.FoodDonation.ExpiresAtUtc < now.AddMinutes(15) ? c.FoodDonation.ExpiresAtUtc : now.AddMinutes(15)
+            ExpiresAtUtc = expiresAtUtc
         });
         repo.Touch(c);
         audit.Record("HandoverCodeIssued", nameof(DonationClaim), id, $"Type={type}");
-        return await SaveAsync(ct, raw);
+        return await SaveAsync(ct, raw, expiresAtUtc);
     }
     private static string Hash(string raw) => Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(raw)));
     public async Task<CourierResult> VerifyAsync(Guid id, string? raw, HandoverType type, CancellationToken ct)

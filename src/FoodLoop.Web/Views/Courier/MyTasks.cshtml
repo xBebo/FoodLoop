@@ -1,52 +1,73 @@
 ﻿@using FoodLoop.Domain.Entities
+@using FoodLoop.Domain.Enums
 @model IEnumerable<DonationClaim>
 
 @{
-    ViewData["Title"] = "مهام التوصيل الخاصة بي";
+    ViewData["Title"] = "My delivery tasks";
 }
 
 <div class="container mt-4">
-    <h2>مهامي المسندة</h2>
+    <h1 class="h3 mb-1">My delivery tasks</h1>
+    <p class="text-muted mb-4">Your assigned claims and the next handover step.</p>
 
     @if (TempData["SuccessMessage"] != null)
     {
-        <div class="alert alert-success my-3">
+        <div class="alert alert-success alert-dismissible fade show" role="alert">
             @TempData["SuccessMessage"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
         </div>
     }
 
-    <table class="table table-bordered table-striped mt-3">
-        <thead class="table-dark">
-            <tr>
-                <th>اسم التبرع</th>
-                <th>حالة المهمة</th>
-                <th class="text-center">الإجراءات</th>
-            </tr>
-        </thead>
-        <tbody>
+    <div class="table-responsive">
+        <table class="table table-bordered table-hover align-middle">
+            <thead class="table-dark">
+                <tr>
+                    <th>Donation</th>
+                    <th>Status</th>
+                    <th>Next step</th>
+                    <th class="text-center">Action</th>
+                </tr>
+            </thead>
+            <tbody>
             @if (Model == null || !Model.Any())
             {
-                <tr>
-                    <td colspan="3" class="text-center py-4 text-muted">لا توجد مهام مسندة إليك حالياً.</td>
-                </tr>
+                <tr><td colspan="4" class="text-center py-4 text-muted">No delivery tasks are assigned to you right now.</td></tr>
             }
             else
             {
                 @foreach (var task in Model)
                 {
+                    var closed = task.Status == ClaimStatus.Closed;
+                    var pickupPending = task.Status == ClaimStatus.PickupPending;
+                    var inTransit = task.Status == ClaimStatus.InTransit;
                     <tr>
-                        <td class="align-middle fw-bold">@task.FoodDonation?.Title</td>
-                        <td class="align-middle">
-                            <span class="badge bg-info text-dark">@task.Status</span>
+                        <td class="fw-semibold">@task.FoodDonation?.Title</td>
+                        <td>
+                            @if (closed) { <span class="badge bg-secondary">Closed</span> }
+                            else if (inTransit) { <span class="badge bg-warning text-dark">In Transit</span> }
+                            else if (pickupPending) { <span class="badge bg-info text-dark">Pickup Pending</span> }
+                            else { <span class="badge bg-primary">@task.Status</span> }
                         </td>
-                        <td class="align-middle text-center">
-                            <a asp-action="VerifyHandover" asp-route-claimId="@task.Id" class="btn btn-primary btn-sm">
-                                إثبات استلام / تسليم
-                            </a>
+                        <td>
+                            @if (pickupPending) { <span>Awaiting pickup verification</span> }
+                            else if (inTransit) { <span>Awaiting delivery verification</span> }
+                            else if (closed) { <span>Delivery completed</span> }
+                            else { <span class="text-muted">No handover action available</span> }
+                        </td>
+                        <td class="text-center">
+                            @if (closed)
+                            {
+                                <button class="btn btn-outline-secondary btn-sm" type="button" disabled>Completed</button>
+                            }
+                            else
+                            {
+                                <a asp-action="VerifyHandover" asp-route-claimId="@task.Id" class="btn btn-primary btn-sm">Verify handover</a>
+                            }
                         </td>
                     </tr>
                 }
             }
-        </tbody>
-    </table>
+            </tbody>
+        </table>
+    </div>
 </div>
