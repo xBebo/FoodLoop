@@ -20,6 +20,7 @@
                         <input id="handoverCode" class="form-control font-monospace" type="text" readonly value="@Model.RawToken" />
                         <button id="copyCode" class="btn btn-primary" type="button">Copy code</button>
                     </div>
+                    <pre class="visually-hidden" aria-hidden="true">@Model.RawToken</pre>
                     <p id="copyStatus" class="small mt-2 mb-3" aria-live="polite"></p>
 
                     <p class="mb-1"><strong>Type:</strong> @Model.HandoverType</p>
