@@ -15,6 +15,7 @@ public static class DependencyInjection
         services.AddScoped<ClaimService>();
         services.AddScoped<CourierService>();
         services.AddScoped<OrganizationApprovalService>();
+        services.AddScoped<OrganizationManagementService>();
         services.AddScoped<DonationService>();
 
         return services;
