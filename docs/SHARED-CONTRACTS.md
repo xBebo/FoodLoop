@@ -1,6 +1,6 @@
 # FoodLoop shared contracts — integration revision
 
-This document describes the implemented integration branch. Cancellation, failure recovery and scheduled expiry remain future work; do not infer that an enum value has a working endpoint.
+This document describes the implemented integration branch. Failure recovery and scheduled expiry remain future work; do not infer that an enum value has a working endpoint.
 
 ## Common conventions
 - Keep the four projects: Domain, Application, Infrastructure, Web.
@@ -17,7 +17,7 @@ This document describes the implemented integration branch. Cancellation, failur
 - Forms post to OrganizationsController. AuthController has no approval/rejection actions.
 - Pending and Rejected organizations cannot log in. Suspended Beneficiaries may log in for read-only history; Suspended Donors cannot log in.
 - Every operation rechecks its permissions and organization state. Login permission does not grant mutation permission.
-- My Claims/history permits Active or Suspended Beneficiaries, only for their own organization. Pending/Rejected are forbidden. Suspension does not automatically cancel old claims.
+- My Claims/history permits Active or Suspended Beneficiaries, only for their own organization. Pending/Rejected are forbidden. Suspension does not automatically cancel old claims; Suspended history is read-only and shows no Cancel action.
 - Cookies use /Auth/Login and /Admin/AccessDenied. Unsafe MVC requests require antiforgery.
 
 ## Donations and claims
@@ -29,10 +29,21 @@ This document describes the implemented integration branch. Cancellation, failur
 - Successful claim creates one ClaimCreated audit on DonationClaim; Details includes DonationId and Available -> Claimed. No duplicate FoodDonation event.
 - Large paging inputs return empty results when the offset exceeds the supported integer range.
 
-## Courier lifecycle implemented in this integration
+## Claim cancellation before assignment
+- Every cancel POST is authorized on the server: authenticated Beneficiary role, Beneficiary organization with status Active. Suspended, Pending and Rejected Beneficiaries cannot cancel; hiding the button is not the control.
+- Claim lookup is scoped to the current Beneficiary organization. A foreign claim ID and a nonexistent ID are indistinguishable: both return ClaimNotFound / HTTP 404 and disclose no other organization's data.
+- Allowlist: claim status exactly Booked, AssignedCourierUserId null, donation status exactly Claimed. PickupPending, PickedUp, InTransit, Delivered, Closed, Cancelled and Failed claims are not cancellable.
+- Claim Booked -> Cancelled; the claim stays in history and no record is deleted.
+- Donation Claimed -> Available only when the donor organization exists, is type Donor, is Active and ExpiresAtUtc is later than the current UTC time. Otherwise Claimed -> Draft (expired donation, or Pending/Rejected/Suspended donor). Cancellation never writes Expired.
+- Exactly one ClaimCancelled audit on DonationClaim; Details includes DonationId and Claimed->Available or Claimed->Draft. Claim status, donation status and audit are staged and persisted in one SaveChangesAsync, so no explicit transaction and no orphan audit.
+- A repeat request after a successful cancellation is rejected as not cancellable. A truly concurrent duplicate may lose on RowVersion and return a controlled conflict. Neither path creates a second ClaimCancelled audit.
+- Cancel and Admin assignment cannot both succeed: both rely on the existing DonationClaim and FoodDonation RowVersions. The loser gets a controlled PersistenceConflictException result; do not retry the stale tracked DbContext.
+
+## Claim and courier lifecycle implemented in this integration
 | Operation | Donation | Claim |
 |---|---|---|
 | Claim | Available -> Claimed | New Booked |
+| Cancel before assignment (Active owning Beneficiary, no AssignedCourierUserId, donation Claimed) | Claimed -> Available \| Draft | Booked -> Cancelled |
 | Admin assignment | Claimed -> PickupPending | Booked -> PickupPending |
 | Verified pickup | PickupPending -> InTransit | PickupPending -> InTransit |
 | Verified delivery and closure | InTransit -> Closed | InTransit -> Closed |
@@ -56,7 +67,7 @@ For the basic demo, verified pickup starts transport and verified delivery close
 - Audit is read-only and paginated. Never store raw codes, passwords or secrets in Details.
 
 ## Outside this integration
-No LLM, automatic expiry job, SignalR, advanced reports, ordinary cancellation workflow or graphical QR scanner. Existing historical enum values and database indexes are preserved.
+No LLM, automatic expiry job, SignalR, advanced reports, cancellation after courier assignment or graphical QR scanner. Existing historical enum values and database indexes are preserved.
 
 ## Planned stage two
-[Tasks 2 of 3](TASKS-02.md) defines the next assignments and their acceptance rules. Those additions are not implemented by this integration commit; the lifecycle above remains the currently working behavior.
+[Tasks 2 of 3](TASKS-02.md) defines the next assignments and their acceptance rules. Cancel unassigned claim (Safa) is implemented as documented above; the other assignments are not yet part of the working lifecycle.

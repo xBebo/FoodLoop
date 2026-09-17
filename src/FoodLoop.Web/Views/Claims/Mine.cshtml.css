@@ -372,9 +372,31 @@
   color: var(--claims-green-strong);
 }
 
+.claims-button--danger {
+  background: var(--claims-surface);
+  color: #8f1d14;
+  border-color: #f3c3bd;
+  font-size: .875rem;
+  white-space: nowrap;
+}
+
+.claims-button--danger:hover {
+  background: #fdeeec;
+  color: #8f1d14;
+  border-color: #e6a39a;
+}
+
+.claims-cancel {
+  margin: 0;
+}
+
 .claims-button:focus-visible {
   outline: 3px solid var(--claims-green);
   outline-offset: 3px;
+}
+
+.claims-button--danger:focus-visible {
+  outline-color: #c0392b;
 }
 
 .claims-pager {
@@ -451,9 +473,26 @@
     min-width: 0;
   }
 
-  /* Status is last in the DOM but moved up visually, so Expires is the card's final line. */
-  .claims-table tbody td:nth-last-child(2) {
+  /* Status is moved up visually, so Expires is the card's final data line; a Cancel action, when present, follows it. */
+  .claims-table tbody td.claims-expires {
     border-bottom: 0;
+  }
+
+  .claims-table tbody td.claims-actions {
+    order: 1;
+    margin-top: .45rem;
+    padding-top: .85rem;
+    border-top: 1px solid var(--claims-line);
+    border-bottom: 0;
+  }
+
+  .claims-table tbody td.claims-actions:empty {
+    display: none;
+  }
+
+  .claims-actions .claims-button {
+    width: 100%;
+    justify-content: center;
   }
 
   .claims-table tbody td.claims-status {
@@ -470,14 +509,14 @@
     padding-bottom: .75rem;
   }
 
-  .claims-table tbody td:not(.claims-status) {
+  .claims-table tbody td:not(.claims-status):not(.claims-actions) {
     display: grid;
     grid-template-columns: 7.5rem 1fr;
     gap: .75rem;
     white-space: normal;
   }
 
-  .claims-table tbody td:not(.claims-status)::before {
+  .claims-table tbody td:not(.claims-status):not(.claims-actions)::before {
     content: attr(data-label);
     color: var(--claims-muted);
     font-size: .8rem;

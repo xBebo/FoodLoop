@@ -1,4 +1,5 @@
 using System.Security.Claims;
+using System.Text.RegularExpressions;
 using FoodLoop.Application.Claims;
 using FoodLoop.Application.Exceptions;
 using FoodLoop.Application.Identity;
@@ -57,6 +58,7 @@ public sealed partial class ClaimServiceTests
         static string[] Inputs(string action) => [.. typeof(ClaimsController).GetMethod(action)!.GetParameters()
             .Where(x => x.ParameterType != typeof(CancellationToken)).Select(x => $"{x.ParameterType.Name} {x.Name}")];
         Assert.Equal(["Guid donationId"], Inputs(nameof(ClaimsController.Create)));
+        Assert.Equal(["Guid claimId"], Inputs(nameof(ClaimsController.Cancel)));
         Assert.Equal(["Int32 page", "Int32 pageSize"], Inputs(nameof(ClaimsController.Mine)));
     }
     [Fact]
@@ -226,6 +228,121 @@ public sealed partial class ClaimServiceTests
             Assert.Equal(ClaimStatus.Booked, claim.Status); Assert.Equal(DonationStatus.Claimed, claim.FoodDonation.Status);
         }
         Assert.False(await db.AuditLogs.AnyAsync(x => x.ActorUserId == userId));
+    }
+
+    // ---- Controller: Cancel claim
+    private Task<(IActionResult Result, ITempDataDictionary TempData)> PostCancelAsync(ClaimsPrincipal principal, Guid claimId, IUnitOfWork? unitOfWork = null)
+        => InvokeAsync(principal, c => c.Cancel(claimId, CancellationToken.None), unitOfWork);
+    // Unchanged RowVersions and audit count prove the rejected POST wrote nothing.
+    private async Task<(IActionResult Result, ITempDataDictionary TempData)> PostCancelRejectedAsync(ClaimsPrincipal principal, Guid claimId, IUnitOfWork? unitOfWork = null)
+    {
+        var before = await ReadStateAsync(claimId);
+        var response = await PostCancelAsync(principal, claimId, unitOfWork);
+        Assert.Equal(before, await ReadStateAsync(claimId));
+        return response;
+    }
+
+    [Fact]
+    public async Task Controller_cancel_success_redirects_to_mine_and_returns_donation_to_marketplace()
+    {
+        var (userId, organizationId) = await SeedBeneficiaryAsync(); var (claimId, donationId) = await SeedClaimForCancelAsync(organizationId!.Value);
+        AssertRedirectedToMine(await PostCancelAsync(Principal(userId), claimId), "Success", "Claim cancelled. The donation is available again.");
+        await AssertCancelledAsync(claimId, donationId, userId, DonationStatus.Available);
+    }
+    [Fact]
+    public async Task Controller_cancel_success_is_honest_when_donation_returns_to_draft()
+    {
+        var (userId, organizationId) = await SeedBeneficiaryAsync();
+        var (claimId, donationId) = await SeedClaimForCancelAsync(organizationId!.Value, expiresAtUtc: Now.AddMinutes(-1));
+        AssertRedirectedToMine(await PostCancelAsync(Principal(userId), claimId), "Success", "Claim cancelled. The donation was returned to the donor as a draft.");
+        await AssertCancelledAsync(claimId, donationId, userId, DonationStatus.Draft);
+    }
+    [Fact]
+    public async Task Controller_cancel_reports_not_cancellable_claim()
+    {
+        var (userId, organizationId) = await SeedBeneficiaryAsync(); var (courierId, _) = await SeedUserAsync(null);
+        var (claimId, _) = await SeedClaimForCancelAsync(organizationId!.Value, courierUserId: courierId);
+        AssertRedirectedToMine(await PostCancelRejectedAsync(Principal(userId), claimId), "Error", "This claim can no longer be cancelled.");
+    }
+    [Fact]
+    public async Task Controller_cancel_persistence_conflict_shows_controlled_message_without_database_details()
+    {
+        var (userId, organizationId) = await SeedBeneficiaryAsync(); var (claimId, _) = await SeedClaimForCancelAsync(organizationId!.Value);
+        var response = await PostCancelRejectedAsync(Principal(userId), claimId, new ConflictingUnitOfWork());
+        AssertRedirectedToMine(response, "Error", "This claim just changed. Refresh and try again.");
+        var shown = string.Join(" ", response.TempData.Values);
+        foreach (var secret in new[] { "UX_Claim", "Sql", "constraint", "Exception", "RowVersion", "dbo." }) Assert.DoesNotContain(secret, shown, StringComparison.OrdinalIgnoreCase);
+    }
+    [Theory]
+    [InlineData(OrganizationStatus.Active)]
+    [InlineData(OrganizationStatus.Suspended)]
+    public async Task Controller_cancel_of_foreign_or_missing_claim_is_the_same_not_found(OrganizationStatus callerStatus)
+    {
+        var (userId, _) = await SeedBeneficiaryAsync(callerStatus); var (_, otherOrganizationId) = await SeedBeneficiaryAsync();
+        var (foreignClaimId, _) = await SeedClaimForCancelAsync(otherOrganizationId!.Value);
+        var foreign = await PostCancelRejectedAsync(Principal(userId), foreignClaimId);
+        var missing = await PostCancelAsync(Principal(userId), Guid.NewGuid());
+        Assert.IsType<NotFoundResult>(foreign.Result); Assert.IsType<NotFoundResult>(missing.Result);
+        Assert.Empty(foreign.TempData); Assert.Empty(missing.TempData); // no message that could hint the id exists
+        await using var db = fixture.CreateContext();
+        Assert.False(await db.AuditLogs.AnyAsync(x => x.ActorUserId == userId));
+    }
+    [Fact]
+    public async Task Controller_cancel_challenges_unauthenticated_user()
+    {
+        var (_, organizationId) = await SeedBeneficiaryAsync(); var (claimId, _) = await SeedClaimForCancelAsync(organizationId!.Value);
+        Assert.IsType<ChallengeResult>((await PostCancelRejectedAsync(new ClaimsPrincipal(new ClaimsIdentity()), claimId)).Result);
+    }
+    [Theory]
+    [InlineData(AppRoles.Donor)]
+    [InlineData(AppRoles.Courier)]
+    [InlineData(AppRoles.Admin)]
+    public async Task Controller_cancel_forbids_wrong_role(string role)
+    {
+        var (userId, organizationId) = await SeedBeneficiaryAsync(); var (claimId, _) = await SeedClaimForCancelAsync(organizationId!.Value);
+        Assert.IsType<ForbidResult>((await PostCancelRejectedAsync(Principal(userId, role), claimId)).Result);
+    }
+    [Theory]
+    [InlineData(OrganizationStatus.Pending)]
+    [InlineData(OrganizationStatus.Rejected)]
+    [InlineData(OrganizationStatus.Suspended)]
+    public async Task Controller_cancel_forbids_inactive_beneficiary(OrganizationStatus status)
+    {
+        var (userId, organizationId) = await SeedBeneficiaryAsync(status); var (claimId, _) = await SeedClaimForCancelAsync(organizationId!.Value);
+        Assert.IsType<ForbidResult>((await PostCancelRejectedAsync(Principal(userId), claimId)).Result);
+    }
+    [Fact]
+    public async Task Suspended_beneficiary_my_claims_is_read_only_and_direct_cancel_post_is_forbidden()
+    {
+        var (userId, organizationId) = await SeedBeneficiaryAsync(OrganizationStatus.Suspended);
+        var (claimId, _) = await SeedClaimForCancelAsync(organizationId!.Value); // would be cancellable for an Active organization
+
+        var model = AssertMineView(await GetMineAsync(Principal(userId)));
+        var summary = Assert.Single(model.Claims);
+        Assert.Equal((claimId, ClaimStatus.Booked, false), (summary.ClaimId, summary.ClaimStatus, summary.CanCancel));
+        var html = await WebAppTests.RenderMineAsync(web, model);
+        Assert.Contains("Cancellable food", html);
+        Assert.DoesNotContain("/Claims/Cancel", html);
+        Assert.DoesNotContain("Cancel claim", html);
+        Assert.DoesNotContain(claimId.ToString(), html);
+
+        Assert.IsType<ForbidResult>((await PostCancelRejectedAsync(Principal(userId), claimId)).Result);
+        await using var db = fixture.CreateContext();
+        Assert.False(await db.AuditLogs.AnyAsync(x => x.Action == "ClaimCancelled" && x.EntityId == claimId));
+    }
+    [Fact]
+    public async Task Active_beneficiary_my_claims_renders_cancel_only_for_the_eligible_claim()
+    {
+        var (userId, organizationId) = await SeedBeneficiaryAsync(); var (courierId, _) = await SeedUserAsync(null);
+        var (eligible, _) = await SeedClaimForCancelAsync(organizationId!.Value);
+        var (assigned, _) = await SeedClaimForCancelAsync(organizationId.Value, courierUserId: courierId);
+        var (delivered, _) = await SeedClaimForCancelAsync(organizationId.Value, ClaimStatus.Delivered, DonationStatus.Delivered);
+
+        var html = await WebAppTests.RenderMineAsync(web, AssertMineView(await GetMineAsync(Principal(userId))));
+        Assert.Single(Regex.Matches(html, "action=\"/Claims/Cancel\""));
+        Assert.Contains($"name=\"claimId\" value=\"{eligible}\"", html);
+        Assert.DoesNotContain(assigned.ToString(), html);
+        Assert.DoesNotContain(delivered.ToString(), html);
     }
 
     private sealed class NullTempDataProvider : ITempDataProvider
