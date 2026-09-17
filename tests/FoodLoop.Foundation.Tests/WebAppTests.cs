@@ -60,31 +60,62 @@ public sealed class WebAppTests(WebApplicationFactory<Program> factory) : IClass
         Assert.Equal(System.Net.HttpStatusCode.Redirect, response.StatusCode);
         Assert.Contains("/Auth/Login?ReturnUrl=", response.Headers.Location!.OriginalString);
     }
+    [Fact]
+    public async Task Cancel_claim_post_without_antiforgery_token_is_rejected()
+    {
+        var response = await Client().PostAsync("/Claims/Cancel", new FormUrlEncodedContent(
+            new Dictionary<string, string> { ["claimId"] = Guid.NewGuid().ToString() }));
+        Assert.Equal(System.Net.HttpStatusCode.BadRequest, response.StatusCode);
+    }
+    [Fact]
+    public async Task Cancel_claim_post_with_token_from_the_rendered_form_reaches_the_action()
+    {
+        // The token comes from the real My Claims form, proving the form tag helper emits a token the global filter accepts.
+        using var scope = factory.Services.CreateScope();
+        var httpContext = new DefaultHttpContext { RequestServices = scope.ServiceProvider };
+        var html = await RenderMineAsync(factory, new MyClaimsViewModel([Summary(ClaimStatus.Booked, canCancel: true)], 1, 20), httpContext: httpContext);
+        var formToken = Regex.Match(html, "name=\"__RequestVerificationToken\" type=\"hidden\" value=\"([^\"]+)\"").Groups[1].Value;
+        Assert.NotEmpty(formToken);
+        var cookie = httpContext.Response.Headers.SetCookie.ToString().Split(';')[0];
+
+        using var request = new HttpRequestMessage(HttpMethod.Post, "/Claims/Cancel")
+        {
+            Content = new FormUrlEncodedContent(new Dictionary<string, string>
+            { ["claimId"] = Guid.NewGuid().ToString(), ["__RequestVerificationToken"] = formToken })
+        };
+        request.Headers.Add("Cookie", cookie);
+        var response = await Client().SendAsync(request);
+        // Anonymous caller: antiforgery passed, the action ran and ClaimService's Unauthenticated outcome became a login challenge.
+        Assert.Equal(System.Net.HttpStatusCode.Redirect, response.StatusCode);
+        Assert.Contains("/Auth/Login?ReturnUrl=", response.Headers.Location!.OriginalString);
+    }
 
     // ---- My Claims Razor view, rendered by the real view engine without auth or database (authorization is covered by the controller tests).
-    private async Task<string> RenderMineAsync(MyClaimsViewModel model, string? success = null, string? error = null)
+    private Task<string> RenderMineAsync(MyClaimsViewModel model, string? success = null, string? error = null) => RenderMineAsync(factory, model, success, error);
+    internal static async Task<string> RenderMineAsync(WebApplicationFactory<Program> factory, MyClaimsViewModel model,
+        string? success = null, string? error = null, DefaultHttpContext? httpContext = null)
     {
         using var scope = factory.Services.CreateScope();
         var routeValues = new RouteValueDictionary { ["controller"] = "Claims", ["action"] = "Mine" };
-        var httpContext = new DefaultHttpContext { RequestServices = scope.ServiceProvider };
+        httpContext ??= new DefaultHttpContext { RequestServices = scope.ServiceProvider };
         httpContext.Request.RouteValues = routeValues;
         httpContext.SetEndpoint(new Endpoint(null, null, "Claims/Mine")); // Makes tag helpers use endpoint-routing link generation, as in the real app.
         using var body = new MemoryStream();
         httpContext.Response.Body = body;
-        var tempData = new TempDataDictionary(httpContext, scope.ServiceProvider.GetRequiredService<ITempDataProvider>());
+        var tempData = new TempDataDictionary(httpContext, httpContext.RequestServices.GetRequiredService<ITempDataProvider>());
         if (success is not null) tempData["Success"] = success;
         if (error is not null) tempData["Error"] = error;
         var view = new ViewResult
         {
             ViewName = nameof(ClaimsController.Mine),
-            ViewData = new ViewDataDictionary<MyClaimsViewModel>(scope.ServiceProvider.GetRequiredService<IModelMetadataProvider>(), new ModelStateDictionary()) { Model = model },
+            ViewData = new ViewDataDictionary<MyClaimsViewModel>(httpContext.RequestServices.GetRequiredService<IModelMetadataProvider>(), new ModelStateDictionary()) { Model = model },
             TempData = tempData
         };
         await view.ExecuteResultAsync(new ActionContext(httpContext, new RouteData(routeValues), new ControllerActionDescriptor { RouteValues = { ["controller"] = "Claims", ["action"] = "Mine" } }));
         return Encoding.UTF8.GetString(body.ToArray());
     }
-    private static ClaimSummary Summary(ClaimStatus status, string title = "Bread") => new(Guid.NewGuid(), Guid.NewGuid(), title, 12.5m, QuantityUnit.Kilograms,
-        "1 Main Street", new DateTimeOffset(2026, 9, 20, 18, 0, 0, TimeSpan.Zero), status, new DateTimeOffset(2026, 9, 14, 9, 5, 0, TimeSpan.Zero));
+    private static ClaimSummary Summary(ClaimStatus status, string title = "Bread", bool canCancel = false) => new(Guid.NewGuid(), Guid.NewGuid(), title, 12.5m, QuantityUnit.Kilograms,
+        "1 Main Street", new DateTimeOffset(2026, 9, 20, 18, 0, 0, TimeSpan.Zero), status, new DateTimeOffset(2026, 9, 14, 9, 5, 0, TimeSpan.Zero), canCancel);
 
     [Fact]
     public async Task Mine_view_renders_every_status_with_readable_label_and_honest_progress()
@@ -138,5 +169,35 @@ public sealed class WebAppTests(WebApplicationFactory<Program> factory) : IClass
         Assert.Contains("No claims on this page", beyondEnd);
         Assert.Contains("href=\"/Claims/Mine?page=2&amp;pageSize=2\"", beyondEnd);
         Assert.DoesNotContain("page=4", beyondEnd);
+    }
+    [Fact]
+    public async Task Mine_view_renders_post_cancel_form_with_confirmation_only_for_cancellable_claims()
+    {
+        var cancellable = Summary(ClaimStatus.Booked, "Soup", canCancel: true);
+        var html = await RenderMineAsync(new MyClaimsViewModel([cancellable, Summary(ClaimStatus.Booked), Summary(ClaimStatus.PickupPending)], 1, 20));
+        var form = Assert.Single(Regex.Matches(html, "<form[^>]*>.*?</form>", RegexOptions.Singleline)).Value;
+        Assert.Contains("method=\"post\"", form);
+        Assert.Contains("action=\"/Claims/Cancel\"", form);
+        Assert.Contains("onsubmit=\"return confirm('Cancel this claim? This action cannot be undone.');\"", form);
+        Assert.Matches($"<input [^>]*type=\"hidden\" name=\"claimId\" value=\"{cancellable.ClaimId}\"", form);
+        Assert.Matches("<input name=\"__RequestVerificationToken\" type=\"hidden\" value=\"[^\"]+\"", form);
+        Assert.Matches("<button [^>]*type=\"submit\"[^>]*>Cancel claim<span [^>]*class=\"visually-hidden\">: Soup</span></button>", form);
+        // Only claimId and the antiforgery token are posted: no ownership, status or organization input.
+        Assert.Equal(["claimId", "__RequestVerificationToken"], Regex.Matches(form, "name=\"([^\"]+)\"").Select(m => m.Groups[1].Value));
+        Assert.DoesNotMatch("Marketplace|available again", form);
+        Assert.Matches("<th [^>]*scope=\"col\">Actions</th>", html);
+        // Non-cancellable rows get a truly empty cell (hidden on mobile by :empty), never a disabled button.
+        Assert.Equal(3, Regex.Matches(html, "<td [^>]*class=\"claims-actions\"").Count);
+        Assert.Equal(2, Regex.Matches(html, "<td [^>]*class=\"claims-actions\"></td>").Count);
+        Assert.DoesNotContain("disabled", html);
+    }
+    [Fact]
+    public async Task Mine_view_without_cancellable_claims_is_read_only()
+    {
+        var html = await RenderMineAsync(new MyClaimsViewModel([.. Enum.GetValues<ClaimStatus>().Select(s => Summary(s))], 1, 20));
+        Assert.DoesNotContain("<form", html);
+        Assert.DoesNotContain("Cancel claim", html);
+        Assert.DoesNotContain("Actions", html);
+        Assert.DoesNotContain("claims-actions", html);
     }
 }

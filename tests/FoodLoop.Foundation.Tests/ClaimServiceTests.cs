@@ -9,10 +9,13 @@ using FoodLoop.Infrastructure.Identity;
 using FoodLoop.Infrastructure.Persistence;
 using FoodLoop.Infrastructure.Persistence.Repositories;
 using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.EntityFrameworkCore;
 
 namespace FoodLoop.Foundation.Tests;
-public sealed partial class ClaimServiceTests(DatabaseFixture fixture) : IClassFixture<DatabaseFixture>
+// The web factory is used only to render Razor views from real service results; it never touches this database.
+public sealed partial class ClaimServiceTests(DatabaseFixture fixture, WebApplicationFactory<Program> web)
+    : IClassFixture<DatabaseFixture>, IClassFixture<WebApplicationFactory<Program>>
 {
     private static readonly DateTimeOffset Now = new(2026, 9, 14, 12, 0, 0, TimeSpan.Zero);
 
@@ -439,7 +442,7 @@ public sealed partial class ClaimServiceTests(DatabaseFixture fixture) : IClassF
 
         var summary = Assert.Single((await GetMyClaimsAsync(Principal(userId))).Claims);
         Assert.Equal(new ClaimSummary(claimId, donation.Id, "Vegetable soup", 12.5m, QuantityUnit.Kilograms, "12 Market Street",
-            Now.AddHours(6), ClaimStatus.Delivered, claimedAt), summary);
+            Now.AddHours(6), ClaimStatus.Delivered, claimedAt, CanCancel: false), summary);
     }
     [Fact]
     public async Task My_claims_rejects_unauthenticated_user()

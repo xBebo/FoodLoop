@@ -10,6 +10,9 @@ public sealed class ClaimRepository(ApplicationDbContext db) : Repository<Donati
             && (x.Status == ClaimStatus.Booked || x.Status == ClaimStatus.PickupPending
                 || x.Status == ClaimStatus.PickedUp || x.Status == ClaimStatus.InTransit || x.Status == ClaimStatus.Delivered), cancellationToken);
 
+    public Task<DonationClaim?> GetByIdForBeneficiaryOrganizationAsync(Guid claimId, Guid organizationId, CancellationToken cancellationToken = default)
+        => Context.DonationClaims.SingleOrDefaultAsync(x => x.Id == claimId && x.BeneficiaryOrganizationId == organizationId, cancellationToken);
+
     public async Task<IReadOnlyList<DonationClaim>> GetForBeneficiaryOrganizationAsync(Guid organizationId, int page = 1, int pageSize = 20, CancellationToken cancellationToken = default)
     {
         ArgumentOutOfRangeException.ThrowIfLessThan(page, 1);
