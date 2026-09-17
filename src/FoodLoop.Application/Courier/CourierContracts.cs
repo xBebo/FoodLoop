@@ -2,7 +2,7 @@ using FoodLoop.Domain.Entities;
 using FoodLoop.Domain.Enums;
 namespace FoodLoop.Application.Courier;
 public record CourierOption(Guid Id, string Name);
-public record CourierResult(bool Succeeded, string? Error = null, string? Token = null);
+public record CourierResult(bool Succeeded, string? Error = null, string? Token = null, DateTimeOffset? ExpiresAtUtc = null);
 public interface ICourierRepository
 {
     Task<DonationClaim?> GetAsync(Guid id, CancellationToken ct);
