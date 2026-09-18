@@ -1,320 +1,344 @@
 # FoodLoop — Tasks 3 of 3
-## Release Candidate & Demo Readiness
+## Functional Completion, Hardening & Demo Readiness
 
-هذه آخر مرحلة قبل التسليم والعرض. أحدث `develop` يحتوي على Stage 2 مدمجة ومختبرة؛ الهدف هنا هو **إخراج Release Candidate مستقرة وسهلة العرض**: إصلاح العيوب، تحسين UX، توحيد الواجهات، تقوية الاختبارات، وتحديث التوثيق. لا نضيف lifecycle جديد أو تغييرات كبيرة في الـDomain.
+هذه آخر مرحلة وظيفية للفريق قبل أن يقوم براء بعمل **Final UI Redesign** مركزيًا. أحدث `develop` يحتوي على Stage 2 كاملة ومختبرة؛ Stage 3 تضيف فقط الوظائف الصغيرة الناقصة ذات القيمة العالية، ثم تقفل المشروع بالـhardening والاختبارات والتوثيق.
+
+> مهم: لا تعملوا redesign عام. لا تغيّروا theme/navbar/typography/global visual system. المطلوب UI وظيفي وواضح وresponsive فقط. الـfinal look سيُعمل مركزيًا بعد هذه المرحلة.
 
 ## البداية والتسليم للجميع
 
-1. اسحبوا آخر `develop` قبل البدء:
+1. ابدأوا من آخر `develop` فقط:
    ```powershell
    git checkout develop
    git pull --ff-only origin develop
    ```
-2. ابدأوا فقط من الفروع المذكورة أدناه. لا تكملوا على فروع Stage 1 أو Stage 2.
-3. لا migrations أو enums أو schema changes في Stage 3 إلا بعد مراجعة براء والمالك المتأثر ووجود سبب ضروري.
-4. خارج النطاق: LLM، SignalR، automatic expiry job، camera scanner، advanced reports، cancellation بعد courier assignment.
-5. كل شاشة متغيرة يجب تجربتها على Desktop وعلى Mobile قريب من `390 × 844`.
-6. إخفاء الزر ليس authorization؛ كل قاعدة صلاحيات وownership تظل enforced على السيرفر.
-7. كل المواعيد الجديدة/المعدلة في الواجهة تعرض بوضوح على أنها UTC.
-8. ممنوع وضع passwords أو secrets أو raw handover codes داخل Audit، logs، screenshots أو PR descriptions.
-9. كل PR يجب أن يذكر:
-   - Success scenario + result.
-   - Rejected scenario + result.
-   - Manual mobile check.
-   - `dotnet build FoodLoop.slnx -c Release` result.
-   - `dotnet test FoodLoop.slnx -c Release --verbosity minimal` result.
-   - Screenshots للشاشات التي تغيرت.
-10. براء ينسق تغييرات الملفات المشتركة مثل `_Layout.cshtml` والـglobal CSS وREADME لتقليل تعارضات الدمج.
-11. لو blocker استمر أكثر من 30 دقيقة، اكتب سببه وما جربته قبل طلب المساعدة.
-12. قبل طلب merge: pull آخر `develop`، حل التعارضات مع صاحب الـfeature لو كانت Business Logic، ثم أعد build/tests.
+2. لا تستخدموا فروع Stage 1 أو Stage 2 القديمة.
+3. لا schema changes أو migrations أو enums جديدة إلا بعد مراجعة براء والـfeature owner المتأثر.
+4. خارج النطاق: LLM، SignalR، full notification system، camera scanner، live GPS، advanced analytics، cancellation بعد courier assignment.
+5. Automatic Donation Expiry **داخل Stage 3** وموزع بين Alaa (القواعد/use case) وبراء (scheduled execution/integration).
+6. كل شاشة متغيرة تُجرّب على Desktop وعلى Mobile قريب من `390 × 844`.
+7. UI لا يستبدل server authorization/ownership/state validation.
+8. كل التوقيتات المعروضة بوضوح UTC.
+9. ممنوع passwords/secrets/raw handover codes في Audit أو logs أو screenshots أو PR descriptions.
+10. لا تغيّروا `_Layout.cshtml` أو global theme/CSS إلا لإصلاح functional/responsive bug وبعد تنسيق مع براء.
+11. كل PR يحتوي:
+    - Success scenario.
+    - Rejected scenario.
+    - Manual mobile check.
+    - Tests added/updated.
+    - `dotnet build FoodLoop.slnx -c Release`.
+    - `dotnet test FoodLoop.slnx -c Release --verbosity minimal`.
+    - Screenshots لأي شاشة تغيّرت.
+12. Business-logic conflict لا يُحل باختيار نسخة ملف كاملة؛ يرجع للـfeature owner + براء.
 
 ---
 
-## Jana — Authentication and Organization UX
+## Jana — Auth Hardening + Organization Profile
 
-**Branch:** `feature/jana-stage3-auth-ux`
+**Branch:** `feature/jana-stage3-auth-profile`
 
-### المطلوب
+### الجزء الجديد
 
-1. دعم `ReturnUrl` في Login:
-   - المستخدم المحول إلى Login يرجع للصفحة المطلوبة بعد نجاح الدخول.
-   - يسمح فقط بـlocal URLs.
-   - أي external URL يتم تجاهله ويعود المستخدم إلى Home/default safe destination.
+1. **My Organization / Organization Profile** للمستخدم المرتبط بجهة:
+   - يعرض Name, LicenseNumber, Type, Status, Address.
+   - يسمح بتعديل الحقول الآمنة فقط: **Name وAddress**.
+   - لا يسمح من هذه الصفحة بتغيير Type أو LicenseNumber أو Status أو Identity Role.
+   - Admin/Courier الذين لا يملكون Organization يحصلون على سلوك واضح وليس NullReference/500.
+   - أي update يستخدم server-side ownership check وRowVersion إن كانت الصفحة تعدل Organization tracked state.
 
-2. تحسين رسائل حالة المؤسسة:
-   - Pending: الحساب ينتظر موافقة الإدارة.
-   - Rejected: طلب المؤسسة مرفوض.
-   - Suspended Donor: الحساب موقوف.
-   - Suspended Beneficiary: يسمح له بالدخول لقراءة My Claims فقط.
+2. بعد الحفظ يظهر التغيير بعد Refresh ويسجل Audit مناسب مثل `OrganizationUpdated` بنفس SaveChanges إن كانت عملية update فعلية.
 
-3. توحيد Login/Register باللغة الإنجليزية:
-   - Labels واضحة.
-   - Validation messages واضحة.
-   - الاحتفاظ بالبيانات غير الحساسة عند فشل التسجيل.
-   - لا تعيد عرض كلمة المرور في HTML.
+### Hardening
 
-4. تحسين صفحات إدارة المؤسسات على Mobile:
-   - Status badges واضحة.
-   - Approve/Reject/Suspend/Reactivate actions واضحة.
-   - Confirmation قبل تغيير الحالة.
-   - لا تغيير في transitions أو Identity roles الحالية.
+3. دعم `ReturnUrl` في Login:
+   - local URLs فقط.
+   - external/scheme-relative URLs يتم تجاهلها.
+   - fallback آمن عند عدم وجود ReturnUrl.
 
-5. اختبارات regression:
-   - Safe local ReturnUrl.
-   - رفض external ReturnUrl/open redirect.
-   - Pending/Rejected/Suspended behavior.
-   - Admin وCourier بدون Organization.
-   - منع non-Admin من صفحات المؤسسات وdirect URLs.
+4. تحسين حالات الحساب:
+   - Pending وRejected برسالة واضحة.
+   - Suspended Donor ممنوع.
+   - Suspended Beneficiary يستطيع login للـread-only history فقط.
+
+5. Regression:
+   - duplicate/invalid auth scenarios الحالية.
+   - non-Admin لا يدخل organization management.
+   - direct URL لا يكشف Organization أخرى.
+   - password لا يعاد عرضه في HTML بعد registration/login failure.
 
 ### قبول التسليم
 
-- Admin الذي يفتح صفحة محمية ثم يسجل الدخول يعود لنفس الصفحة.
-- External ReturnUrl لا يعمل.
-- كل Organization status تعرض رسالة صحيحة.
-- لا password يعاد عرضه داخل HTML.
-- الصفحات تعمل على Mobile بدون horizontal overflow.
-- لا authorization rule تعتمد على UI فقط.
+- مستخدم Organization يشاهد بيانات جهته فقط ويعدل Name/Address فقط.
+- Foreign organization ID لا يعطي data disclosure.
+- Admin/Courier بدون Organization لا يكسروا الصفحة.
+- local ReturnUrl يعمل وexternal ReturnUrl لا يعمل.
+- كل authorization على السيرفر.
+- Mobile usable بدون redesign عام.
 
 ---
 
-## Alaa — Donation Screens and Marketplace Polish
+## Alaa — Donation Details + My Donations + Expiry Policy
 
-**Branch:** `feature/alaa-stage3-donations-ux`
+**Branch:** `feature/alaa-stage3-donations-expiry`
 
-### المطلوب
+### الجزء الجديد
 
-1. تحسين Create Donation وEdit Donation وMy Donations وMarketplace على Mobile.
+1. **Donation Details**:
+   - Donor يرى تفاصيل Donation التابعة لجهته.
+   - Marketplace/Beneficiary لا يحصل على بيانات غير مسموحة خارج الـpublic/available flow.
+   - تعرض title, category, quantity/unit, prepared/expiry UTC, pickup address, storage instructions, status.
 
-2. توحيد عرض:
-   - Status badges.
-   - Quantity + unit.
-   - Prepared/Expiry times مع UTC واضح.
-   - Success/error messages.
-   - Empty states.
-
-3. الأزرار الظاهرة تطابق الحالة:
-   - Draft: Edit وPublish.
-   - Available/Claimed/delivery stages/Closed: لا Edit ولا Publish.
-   - server-side validation يظل المرجع.
-
-4. تحسين Marketplace:
-   - search وcategory يظلان محفوظين مع Previous/Next.
-   - رسالة واضحة عند عدم وجود نتائج.
-   - لا تعرض Next عندما لا توجد صفحة لاحقة فعلًا.
-   - الجداول/cards تعمل على Mobile أو داخل responsive container واضح.
-
-5. مراجعة validation والownership:
-   - Quantity > 0.
-   - Expiry بعد PreparedAt.
-   - Publish يتطلب expiry مستقبلية.
-   - Donor آخر لا يستطيع Edit عبر direct URL.
-   - Available marketplace لا يعرض expired أو suspended-donor donations.
-
-### قبول التسليم
-
-- Draft يمكن إنشاؤها، تعديلها، نشرها وتظهر النتيجة بعد Refresh.
-- Filters تبقى محفوظة أثناء pagination.
-- Donation غير المؤهلة لا تظهر في Marketplace.
-- Foreign donor direct URL مرفوض.
-- كل الوقت المعروض موسوم UTC.
-- Mobile لا يفقد actions أو البيانات الأساسية.
-
----
-
-## Safa — Claims History and Cancellation UX
-
-**Branch:** `feature/safa-stage3-claims-ux`
-
-### المطلوب
-
-1. إنهاء responsive design لـMy Claims:
-   - Status والخطوة الحالية واضحتان.
-   - Cancelled وClosed يظلان في History.
-   - لا فقد بيانات على Mobile.
-
-2. Cancel UX:
-   - يظهر فقط عندما `CanCancel = true`.
-   - Confirmation قبل POST.
-   - منع double submission من الواجهة.
-   - السيرفر يظل مسؤولًا عن كل authorization/state checks.
-
-3. Pagination/order:
-   - لا Next إذا لا توجد صفحة أخرى.
+2. **My Donations history/filtering**:
+   - فلتر Status بسيط.
    - ترتيب ثابت.
-   - لا كشف لأي Claim تابعة لمؤسسة أخرى.
+   - pagination server-side إن كانت القائمة paginated حاليًا.
+   - Draft/Available/Claimed/Closed/Expired واضحة وظيفيًا.
 
-4. توحيد rejected states:
-   - nonexistent أو foreign claim => NotFound بدون disclosure.
-   - Suspended Beneficiary => read-only history ولا Cancel.
-   - Assigned/PickupPending/InTransit/Closed => لا cancellation.
+3. **Automatic Expiry application use case** — Alaa تملك القاعدة:
+   - المرشحون فقط: `FoodDonation.Status == Available` و `ExpiresAtUtc <= TimeProvider.GetUtcNow()`.
+   - الانتقال: `Available -> Expired`.
+   - لا تغيّر Draft أو Claimed أو PickupPending/InTransit/Closed.
+   - لكل Donation انتهت فعليًا: Audit واحد `DonationExpired`.
+   - الحالة + Audit في نفس save/transaction boundary المناسب.
+   - العملية idempotent: تشغيلها مرة ثانية لا ينشئ Audit إضافيًا.
+   - تعتمد على repository/application service، وليس DbContext مباشرة من hosted worker.
+   - تعامل controlled مع RowVersion race مع Claim/Publish؛ لا retry لنفس stale tracked entities.
 
-5. Regression tests:
-   - Cancelled claim تبقى في History بعد Refresh.
+### Hardening
+
+4. Marketplace:
+   - search/category قبل pagination.
+   - filters محفوظة مع navigation.
+   - expired أو donor suspended لا يظهر.
+   - Next لا يؤدي لصفحة فارغة بلا داعٍ.
+
+5. Validation/ownership:
+   - Quantity > 0.
+   - Expiry > PreparedAt.
+   - Publish يتطلب future expiry.
+   - foreign donor direct Edit/Details مرفوض.
+
+### Tests المطلوبة
+
+- Available قبل expiry لا تتغير.
+- Available عند/بعد expiry تصبح Expired.
+- تشغيل expiry مرتين => Audit واحد فقط.
+- Draft/Claimed/Closed لا تتغير.
+- Expired لا تظهر في Marketplace.
+- race بين Claim وExpiry: لا ينجح المساران في إنتاج state غير متسقة.
+- My Donations status filter + ownership.
+
+### قبول التسليم
+
+- يمكن إظهار Donation تتحول تلقائيًا منطقيًا من Available إلى Expired عبر use case.
+- Audit واحد بالضبط.
+- لا active claim يتم كسره بواسطة expiry.
+- Donation Details/My Donations تعمل بعد Refresh وعلى Mobile.
+
+---
+
+## Safa — Claim Details + Timeline + Cancellation Hardening
+
+**Branch:** `feature/safa-stage3-claim-details`
+
+### الجزء الجديد
+
+1. **Claim Details**:
+   - Beneficiary يرى Claim التابعة لمؤسسته فقط.
+   - يعرض Donation summary، status، created time، assigned courier إن وجد بالقدر المسموح، والحالة الحالية.
+   - foreign/nonexistent ID يبقيان indistinguishable => NotFound.
+
+2. **Claim Timeline**:
+   - timeline read model من البيانات الموجودة بالفعل (Claim status/audit/handover evidence حسب المتاح).
+   - لا schema جديدة ولا duplicate history table.
+   - أحداث واضحة مثل Claimed/Cancelled/Assigned/Pickup/Delivery/Closed عندما توجد أدلتها.
+   - UTC واضح.
+   - لا raw QR tokens أو sensitive audit details.
+
+### Hardening
+
+3. My Claims:
+   - Cancelled وClosed يظلان في History.
+   - pagination/order ثابت.
    - Suspended Beneficiary read-only.
-   - Cross-organization request.
-   - Repeated Cancel لا ينشئ Audit جديد.
-   - Cancel vs Assign concurrency: واحد فقط ينجح.
+   - Mobile usable.
+
+4. Cancel:
+   - `CanCancel` يتحكم في الزر فقط، والسيرفر يعيد التحقق كاملًا.
+   - confirmation + prevent accidental double submit.
+   - repeated Cancel لا يضيف Audit.
+   - assigned/PickupPending/InTransit/Closed لا تُلغى.
+
+### Tests المطلوبة
+
+- Claim Details own vs foreign/nonexistent.
+- Timeline لا يكشف بيانات جهة أخرى.
+- Cancelled claim تظهر بعد Refresh وفي timeline.
+- Suspended Beneficiary تستطيع القراءة ولا تستطيع mutation.
+- repeated cancel.
+- Cancel vs Assign concurrency.
 
 ### قبول التسليم
 
-- Claim قابلة للإلغاء تتحول Cancelled وتبقى في History.
-- Donation ترجع للحالة الصحيحة حسب العقد الحالي.
-- UI لا يعرض Cancel عندما لا يسمح، والـdirect POST يظل مرفوضًا.
-- Pagination لا تنقل المستخدم إلى صفحة فارغة.
-- لا duplicate audit أو stale-success في races.
+- Claim Details وTimeline يعملان من البيانات الحالية بدون schema change.
+- ownership لا يمكن تجاوزه بـdirect URL.
+- timeline يطابق الأحداث المحفوظة فعلًا.
+- cancellation regression كلها خضراء.
 
 ---
 
-## Haneen — Courier and Handover Demo UX
+## Haneen — Courier Task Details + Progress + Handover Hardening
 
-**Branch:** `feature/haneen-stage3-courier-ux`
+**Branch:** `feature/haneen-stage3-task-details`
 
-### المطلوب
+### الجزء الجديد
 
-1. تحسين Assign Courier لعرض:
-   - Donation title.
-   - Donor + Beneficiary.
-   - Pickup address.
-   - Expiry UTC.
-   - Current status.
-   - Courier selection بشكل واضح.
+1. **Courier Task Details**:
+   - assigned Courier فقط يرى task.
+   - يعرض Donation title، donor/beneficiary names بالقدر اللازم، pickup address، expiry UTC، current status، next required step.
+   - Admin assignment screen يعرض نفس الـcontext الضروري قبل assignment.
 
-2. تحسين My Tasks على Mobile:
-   - المهمة الحالية.
-   - Pickup address.
-   - الحالة والخطوة التالية.
-   - Closed تظهر Completed بلا Verification action.
+2. **Progress / handover evidence**:
+   - يعرض progress من Assigned/PickupPending إلى InTransit ثم Closed وفق الـimplemented lifecycle.
+   - يظهر Pickup/Delivery HandoverRecord evidence/timestamps عند وجودها.
+   - لا يعرض raw token بعد مغادرة issuance page.
+   - Closed task تظهر Completed بلا actions تنفيذية.
 
-3. تحسين Code issuance:
+### Hardening
+
+3. Code issuance:
    - Pickup/Delivery واضح.
-   - Actual server expiry UTC واضح.
-   - QR والraw text يمثلان نفس token.
-   - Copy button مع feedback وfallback.
-   - لا localStorage ولا raw token في DB/Audit.
+   - QR = نفس raw token.
+   - actual server expiry UTC.
+   - Copy feedback + fallback.
+   - regeneration يبطل القديم.
 
-4. تحسين Verify Handover:
-   - رسائل واضحة لـwrong/expired/reused code.
-   - منع double submission من الواجهة.
-   - Pickup الناجح => InTransit.
-   - Delivery الناجح => Closed.
+4. Verification:
+   - wrong/expired/reused/wrong-purpose/wrong-courier رسائل واضحة.
+   - prevent accidental double submit.
+   - delivery before pickup مرفوض.
+   - rejected attempts لا تغير DB ولا تخلق Audit/Handover إضافي.
 
-5. Regression tests:
-   - Old token بعد regeneration مرفوض.
-   - Expired/reused token مرفوض.
-   - Wrong courier/wrong purpose مرفوض.
-   - Delivery before Pickup مرفوض.
-   - Closed task لا تتنفذ مرة ثانية.
+### Tests المطلوبة
+
+- Task Details assigned courier vs other courier/direct URL.
+- Expired/reused/regenerated token.
+- Wrong courier + wrong purpose.
+- Delivery before pickup.
+- Closed task cannot execute again.
+- Handover evidence visible after Refresh.
 
 ### قبول التسليم
 
-- رحلة Pickup ثم Delivery تعمل كاملة على Mobile.
-- QR يفك إلى نفس raw token الموجود في صفحة الإصدار.
-- raw token لا يظهر في صفحات لاحقة ولا Audit.
-- حالات الرفض لا تغير DB ولا تنشئ Audit/Handover إضافيًا.
-- Closed task تظهر بوضوح كـCompleted.
+- courier journey مفهومة وظيفيًا من Task Details حتى Closed.
+- evidence بعد Refresh مطابق للـDB.
+- لا token leakage.
+- Mobile usable بدون visual redesign.
 
 ---
 
-## Baraa — Final Integration, Shared UI and Release
+## Baraa — Expiry Scheduler + Basic Impact + Final Integration
 
 **Branch:** `feature/baraa-stage3-release`
 
-> يبدأ الدمج النهائي بعد جاهزية PRs الخاصة بباقي الفريق. لا يعيد كتابة Business Logic الخاصة بهم.
+> لا يعيد كتابة Donation expiry rules؛ يستدعي الـapplication use case الذي تملكه Alaa.
 
-### المطلوب
+### الجزء الجديد
 
-1. توحيد shared layout:
-   - Responsive navigation.
-   - Role-specific navigation.
-   - Active page indication إن أمكن بدون تعقيد.
-   - Logout/alerts/page spacing بشكل موحد.
-   - لا تعرض روابط عمليات غير مسموحة للدور، مع بقاء server authorization.
+1. **Automatic Expiry scheduling/orchestration**:
+   - Hosted service/BackgroundService بسيط يستخدم scope جديد لكل run.
+   - يستدعي expiry application service فقط.
+   - interval قابل للـconfiguration، مع default مناسب للـdemo/development.
+   - cancellation token/shutdown محترم.
+   - exception في run واحدة تُسجل بشكل آمن ولا تقتل web app.
+   - لا overlapping runs.
+   - لا DbContext singleton أو scoped service محتفظ به داخل hosted service.
+   - اختبارات application expiry تبقى deterministic باستخدام TimeProvider؛ لا تعتمد tests على الانتظار الحقيقي.
 
-2. توحيد العناصر المشتركة:
-   - Success/error alerts.
-   - Empty states.
-   - Status badges.
-   - UTC date presentation.
-   - AccessDenied/Error pages.
-   - global CSS بعد دمج feature-specific UI لتقليل conflicts.
+2. **Basic Impact / Admin summary** بدون schema جديد:
+   - Closed operations count.
+   - Cancelled claims count.
+   - Expired donations count.
+   - Current Available donations count.
+   - لو عُرض quantity impact، يتم **group by Unit** ولا تجمع وحدات مختلفة.
+   - Admin-only server authorization.
+   - read-only queries فقط.
 
-3. Security/integration regression pass:
+### Final hardening/integration
+
+3. Security regression:
    - direct URL authorization.
    - cross-organization access.
-   - antiforgery للـunsafe MVC requests.
-   - open-redirect protection في ReturnUrl.
-   - no raw QR tokens in audit/localStorage.
-   - no secrets في repo/screenshots.
-   - server-side role/organization checks ما زالت تعمل.
+   - antiforgery.
+   - ReturnUrl open-redirect protection.
+   - no secrets/raw QR in Audit/logs/localStorage.
+   - role + organization state checks.
 
-4. تشغيل رحلة كاملة بقاعدة جديدة:
+4. Fresh DB journey:
    - Register Donor + Beneficiary.
-   - Admin approval.
-   - Create/Edit/Publish Donation.
-   - Marketplace search/filter + Claim.
-   - Cancel claim مرة.
-   - Claim جديد.
+   - Admin approve.
+   - Create/Edit/Publish.
+   - Marketplace + Claim.
+   - Cancel مرة ثم Claim جديد.
    - Assign Courier.
-   - Pickup code + verification.
-   - Delivery code + verification.
-   - Closed dashboard count.
+   - Pickup -> InTransit.
+   - Delivery -> Closed.
    - Audit filters.
+   - Impact counts.
+   - Expiry demo على Donation Available قصيرة العمر أو TimeProvider-controlled test path.
 
-5. التوثيق:
+5. Docs/release:
    - README.
-   - SHARED-CONTRACTS.
+   - SHARED-CONTRACTS بعد اكتمال التنفيذ.
    - TASKS-03.
    - Demo script.
-   - Troubleshooting/setup checks.
-   - ERD + physical database diagram ضمن deliverables النهائية/التقرير، مع التأكد أنها تصف schema الفعلية.
-   - الوثائق يجب أن تصف الكود المنفذ فعلًا لا الـoriginal proposal.
-
-6. Final verification:
-   - Release build.
-   - Full SQL-backed tests.
-   - إنشاء **قاعدة جديدة** وتطبيق الـcommitted migrations الموجودة ثم seed؛ لا تنشئ migration جديدة إلا لو تمت الموافقة عليها.
-   - Manual Desktop test.
-   - Manual Mobile test (~390×844).
-   - repo hygiene: لا secrets، duplicate project folders، MDF/generated DB files أو build artifacts.
-   - تأكد أن GitHub Actions على develop خضراء بعد الدمج النهائي.
+   - Troubleshooting.
+   - ERD + physical DB diagram ضمن deliverables.
+   - Release build + full SQL-backed tests + GitHub Actions.
+   - fresh database applies existing migrations then seed.
+   - repo hygiene/security scan يدوي للـsecrets/generated DB/build artifacts.
 
 ### قبول التسليم
 
-- الرحلة كاملة تعمل من Registration إلى Closed.
-- الأدوار الأربعة تعمل بصلاحياتها الصحيحة: Admin, Donor, Beneficiary, Courier.
-- Release build بلا errors/warnings وفق baseline الحالي.
-- جميع الاختبارات ناجحة.
-- Demo قابل للتنفيذ في أقل من 8 دقائق.
-- ERD/database diagram + README + shared contracts جاهزة للعرض.
-- لا blocker معروف قبل العرض.
+- automatic expiry تعمل end-to-end ولا تنتج duplicate Audit.
+- scheduler لا يحتوي business rules.
+- impact summary صحيحة ومحمية Admin-only.
+- الرحلة الكاملة من Registration إلى Closed تعمل.
+- الأربع roles: Admin/Donor/Beneficiary/Courier تعمل بصلاحياتها.
+- Release build/tests/CI كلها خضراء.
+- لا blocker معروف قبل final UI redesign.
 
 ---
 
-## ترتيب الدمج المقترح
+## ترتيب الاعتماد والدمج
 
-1. Jana — Auth and organizations.
-2. Alaa — Donations.
-3. Safa — Claims.
-4. Haneen — Courier and handover.
-5. Baraa — Shared UI and final integration.
+يمكن للفريق البدء بالتوازي، لكن يوجد dependency واحد مهم:
 
-يمكن تجهيز PRs بالتوازي، لكن لا تبدأ تعديلات shared layout/global CSS النهائية قبل استقرار PRs الخاصة بالأعضاء. إذا حدث conflict في Claim/Courier business logic، يحله أصحاب الـfeatures مع براء؛ لا يتم اختيار نسخة ملف كاملة عشوائيًا.
+1. Jana — Auth/Profile.
+2. Safa — Claim Details/Timeline.
+3. Haneen — Task Details/Handover.
+4. **Alaa — Expiry application contract يجب مراجعته قبل جزء scheduler عند Baraa.**
+5. Baraa — scheduler/impact/final integration بعد ثبات contracts.
 
-## العرض النهائي لكل عضو
+عمليًا يمكن دمج Jana/Alaa/Safa/Haneen حسب جاهزية الـPRs، ثم Baraa أخيرًا. أي conflict في business logic يراجع مع الـowner.
 
-كل عضو يعرض في حوالي دقيقتين:
+## العرض لكل عضو
 
-1. Success scenario.
-2. Rejected scenario واحد.
-3. Refresh يثبت أن النتيجة محفوظة.
-4. اختبار يغطي السلوك.
-5. Known limitation إن وجد.
+كل عضو يجهز 2–3 دقائق:
 
-## Final demo baseline
+1. الوظيفة الجديدة في Stage 3.
+2. Success scenario.
+3. Rejected/edge scenario.
+4. Refresh يثبت persistence.
+5. Test يثبت السلوك.
 
-استخدموا قاعدة جديدة وحسابات demo/seed فقط. لا تستخدموا passwords أو بيانات حقيقية في العرض أو screenshots.
+## بعد Stage 3
 
-المسار المقترح:
-Admin approval → Donor create/edit/publish → Beneficiary marketplace/claim → Admin assign courier → Pickup verification → Delivery verification → Closed → Audit review.
+بعد دمج Stage 3 وإغلاق الـfunctional scope، يقوم براء بمرحلة منفصلة للـ**Final UI Redesign**:
+- visual system/theme.
+- navbar/layout النهائي.
+- typography/colors/spacing.
+- page composition.
+- presentation screenshots.
 
-اختبروا cancellation كسيناريو Stage 2 مستقل قبل مسار التوصيل الكامل.
+لا يُعاد فتح Business Logic أثناء الـredesign إلا لإصلاح bug حقيقي.
