@@ -12,7 +12,7 @@ ASP.NET Core MVC graduation project with integrated registration/approval, donat
 | Haneen | Courier assignment, QR verification and handover |
 | Baraa | Audit, admin dashboard and integration |
 
-Start by reviewing [the implemented shared contracts](docs/SHARED-CONTRACTS.md) and the current [Tasks 3 of 3 — Release Candidate & Demo Readiness](docs/TASKS-03.md). [Tasks 2 of 3](docs/TASKS-02.md) and [TEAM-START.md](docs/TEAM-START.md) remain as Stage 2 and Stage 1 history.
+Start by reviewing [the implemented shared contracts](docs/SHARED-CONTRACTS.md) and the current [Tasks 3 of 3 — Functional Completion, Hardening & Demo Readiness](docs/TASKS-03.md). [Tasks 2 of 3](docs/TASKS-02.md) and [TEAM-START.md](docs/TEAM-START.md) remain as Stage 2 and Stage 1 history.
 
 ## Prerequisites
 
