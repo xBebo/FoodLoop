@@ -77,4 +77,16 @@ For the basic demo, verified pickup starts transport and verified delivery close
 No LLM, automatic expiry job, SignalR, advanced reports, cancellation after courier assignment or camera-based QR scanner. Existing historical enum values and database indexes are preserved.
 
 ## Stage two status
-[Tasks 2 of 3](TASKS-02.md) contains the acceptance rules used for this stage. The Stage 2 slices for Jana, Alaa, Safa, Haneen and Baraa are integrated as documented above; remaining work belongs to final validation/polish rather than adding new Stage 2 behavior.
+[Tasks 2 of 3](TASKS-02.md) contains the acceptance rules used for Stage 2. The Stage 2 slices for Jana, Alaa, Safa, Haneen and Baraa are integrated as documented above.
+
+## Stage three release-candidate scope
+[Tasks 3 of 3](TASKS-03.md) is the current team plan. Stage 3 is final validation, UX consistency, responsive/mobile hardening, regression testing, documentation and demo readiness.
+
+- Do not add a new lifecycle, enum, schema migration or large feature unless Baraa and the affected feature owner explicitly approve a necessary change.
+- LLM, SignalR, automatic expiry jobs, advanced reports, cancellation after courier assignment and camera-based QR scanning remain deferred.
+- Every changed screen must be checked on Desktop and approximately 390×844 Mobile.
+- Server-side authorization/ownership/state checks remain authoritative even when UI actions are hidden.
+- New/changed time displays must state UTC clearly.
+- PRs must include a success scenario, a rejected scenario, manual mobile result, Release build/test result and screenshots for changed UI.
+- Shared layout/global CSS/README changes are coordinated by Baraa after feature-specific PRs to minimize merge conflicts.
+- Final documentation deliverables include the current ERD and physical database diagram, and must describe the implemented schema/behavior rather than the original proposal.
