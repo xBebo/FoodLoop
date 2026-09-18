@@ -41,10 +41,13 @@
 
 1. **My Organization / Organization Profile** للمستخدم المرتبط بجهة:
    - يعرض Name, LicenseNumber, Type, Status, Address.
-   - يسمح بتعديل الحقول الآمنة فقط: **Name وAddress**.
+   - القراءة تظل حسب access rules الحالية.
+   - تعديل الحقول الآمنة فقط **Name وAddress** مسموح إذا كانت Organization حالتها **Active**.
+   - Suspended Beneficiary يمكنه العرض فقط ولا يمكنه تعديل الـprofile.
+   - Pending/Rejected/Suspended organizations لا تنفذ profile mutation حتى عبر direct POST.
    - لا يسمح من هذه الصفحة بتغيير Type أو LicenseNumber أو Status أو Identity Role.
    - Admin/Courier الذين لا يملكون Organization يحصلون على سلوك واضح وليس NullReference/500.
-   - أي update يستخدم server-side ownership check وRowVersion إن كانت الصفحة تعدل Organization tracked state.
+   - أي update يستخدم server-side ownership + organization-status checks وRowVersion إن كانت الصفحة تعدل Organization tracked state.
 
 2. بعد الحفظ يظهر التغيير بعد Refresh ويسجل Audit مناسب مثل `OrganizationUpdated` بنفس SaveChanges إن كانت عملية update فعلية.
 
@@ -61,6 +64,9 @@
    - Suspended Beneficiary يستطيع login للـread-only history فقط.
 
 5. Regression:
+   - Active organization تستطيع تعديل Name/Address.
+   - Suspended Beneficiary تستطيع عرض profile فقط ولا تستطيع تعديله.
+   - direct POST من Suspended/Pending/Rejected organization مرفوض.
    - duplicate/invalid auth scenarios الحالية.
    - non-Admin لا يدخل organization management.
    - direct URL لا يكشف Organization أخرى.
@@ -68,7 +74,9 @@
 
 ### قبول التسليم
 
-- مستخدم Organization يشاهد بيانات جهته فقط ويعدل Name/Address فقط.
+- مستخدم Organization يشاهد بيانات جهته فقط.
+- **Only Active organizations** تستطيع تعديل Name/Address.
+- Suspended Beneficiary تظل read-only حتى عبر direct POST.
 - Foreign organization ID لا يعطي data disclosure.
 - Admin/Courier بدون Organization لا يكسروا الصفحة.
 - local ReturnUrl يعمل وexternal ReturnUrl لا يعمل.
