@@ -65,7 +65,7 @@ public sealed class TeamIntegrationTests(DatabaseFixture fixture) : IClassFixtur
         var created = await service.CreateAsync(new(d.Category.Id, "New donation", "", 5, QuantityUnit.Meals, DateTimeOffset.UtcNow.AddMinutes(-1), DateTimeOffset.UtcNow.AddHours(1), "", "Address"));
         Assert.True(created.Succeeded);
         Assert.True((await service.PublishAsync(created.DonationId!.Value)).Succeeded);
-        var claims = new ClaimService(d.BeneficiaryUser, donations, new Repository<Organization>(db), new ClaimRepository(db), new AuditService(db, d.BeneficiaryUser, TimeProvider.System), new UnitOfWork(db), TimeProvider.System);
+        var claims = new ClaimService(d.BeneficiaryUser, donations, new Repository<Organization>(db), new ClaimRepository(db), new ClaimDetailsReadRepository(db), new AuditService(db, d.BeneficiaryUser, TimeProvider.System), new UnitOfWork(db), TimeProvider.System);
         var booked = await claims.CreateAsync(created.DonationId.Value, default);
         var claim = await db.DonationClaims.SingleAsync(x => x.FoodDonationId == created.DonationId.Value);
         d = d with { Claim = claim };

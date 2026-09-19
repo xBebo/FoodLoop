@@ -1,0 +1,268 @@
+/* Scoped to Views/Claims/Details.cshtml through Razor CSS isolation; tokens and badge tones match Mine.cshtml.css. */
+
+.claim-page {
+  --claim-green: #198754;
+  --claim-green-strong: #0f5132;
+  --claim-green-soft: #e9f5ee;
+  --claim-warm: #9a4a06;
+  --claim-warm-soft: #fff4e5;
+  --claim-ink: #1d2a24;
+  --claim-muted: #56655d;
+  --claim-line: #e2e8e4;
+  --claim-surface: #ffffff;
+  --claim-radius: 1rem;
+  --claim-shadow: 0 1px 2px rgba(16, 40, 28, .04), 0 10px 30px rgba(16, 40, 28, .06);
+  color: var(--claim-ink);
+  padding-block: 1rem 2.5rem;
+}
+
+/* ---- Header */
+.claim-hero {
+  padding: 1.75rem 2.25rem 2rem;
+  margin-bottom: 1.5rem;
+  border: 1px solid var(--claim-line);
+  border-radius: calc(var(--claim-radius) * 1.25);
+  background: linear-gradient(120deg, var(--claim-green-soft) 0%, #f6faf7 55%, var(--claim-warm-soft) 100%);
+}
+
+.claim-back {
+  display: inline-flex;
+  gap: .4rem;
+  margin-bottom: 1rem;
+  color: var(--claim-green-strong);
+  font-size: .9rem;
+  font-weight: 650;
+  text-decoration: none;
+}
+
+.claim-back:hover {
+  text-decoration: underline;
+  text-underline-offset: .2em;
+}
+
+.claim-eyebrow {
+  margin: 0 0 .5rem;
+  color: var(--claim-green-strong);
+  font-size: .78rem;
+  font-weight: 700;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+}
+
+.claim-title {
+  margin: 0;
+  font-size: clamp(1.9rem, 1.4rem + 1.6vw, 2.6rem);
+  font-weight: 750;
+  letter-spacing: -.02em;
+  line-height: 1.1;
+}
+
+.claim-lead {
+  max-width: 38rem;
+  margin: .6rem 0 0;
+  color: var(--claim-muted);
+  font-size: 1.05rem;
+}
+
+/* ---- Cards */
+.claim-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 2fr) minmax(0, 3fr);
+  gap: 1.25rem;
+  align-items: start;
+  margin-bottom: 1.25rem;
+}
+
+.claim-card {
+  min-width: 0;
+  padding: 1.35rem 1.5rem;
+  border: 1px solid var(--claim-line);
+  border-radius: var(--claim-radius);
+  background: var(--claim-surface);
+  box-shadow: var(--claim-shadow);
+}
+
+.claim-section-title {
+  margin: 0 0 1rem;
+  color: var(--claim-muted);
+  font-size: .8rem;
+  font-weight: 700;
+  letter-spacing: .06em;
+  text-transform: uppercase;
+}
+
+.claim-donation {
+  margin: 0 0 1rem;
+  font-size: 1.3rem;
+  font-weight: 700;
+  overflow-wrap: anywhere;
+}
+
+.claim-fields {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(11rem, 1fr));
+  gap: 1rem 1.25rem;
+  margin: 0;
+}
+
+.claim-field {
+  min-width: 0;
+}
+
+.claim-field--wide {
+  grid-column: 1 / -1;
+}
+
+.claim-field dt {
+  margin-bottom: .2rem;
+  color: var(--claim-muted);
+  font-size: .8rem;
+  font-weight: 600;
+}
+
+.claim-field dd {
+  margin: 0;
+  font-variant-numeric: tabular-nums;
+  overflow-wrap: anywhere;
+}
+
+.claim-text {
+  overflow-wrap: anywhere;
+  white-space: pre-line;
+}
+
+.claim-muted {
+  color: var(--claim-muted);
+}
+
+.claim-note {
+  margin: 1.1rem 0 0;
+  padding-top: 1rem;
+  border-top: 1px solid var(--claim-line);
+  color: var(--claim-muted);
+  font-size: .9rem;
+}
+
+.claim-back:focus-visible,
+.claim-note a:focus-visible {
+  outline: 3px solid var(--claim-green);
+  outline-offset: 2px;
+  border-radius: .25rem;
+}
+
+/* ---- Status badge: the text label always carries the meaning; color only reinforces it */
+.claim-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: .4rem;
+  max-width: 100%;
+  padding: .25rem .65rem;
+  border: 1px solid;
+  border-radius: 999px;
+  font-size: .8rem;
+  font-weight: 700;
+  line-height: 1.3;
+}
+
+.claim-badge__dot {
+  flex: none;
+  width: .45rem;
+  height: .45rem;
+  border-radius: 50%;
+  background: currentColor;
+}
+
+.claim-badge--pending { color: var(--claim-warm); background: var(--claim-warm-soft); border-color: #f6d3a8; }
+.claim-badge--transit { color: #1d4f91; background: #eaf1fb; border-color: #bcd3f0; }
+.claim-badge--done { color: var(--claim-green-strong); background: var(--claim-green-soft); border-color: #b7dfc7; }
+.claim-badge--stopped { color: #8f1d14; background: #fdeeec; border-color: #f3c3bd; }
+.claim-badge--neutral { color: #475467; background: #f2f4f7; border-color: #d0d5dd; }
+
+/* ---- Timeline: recorded history only, so every marker is a completed event */
+.claim-history__lead {
+  margin: -.5rem 0 1.1rem;
+  font-size: .9rem;
+}
+
+.claim-timeline {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.claim-event {
+  position: relative;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: .15rem 1rem;
+  padding: 0 0 1.1rem 1.75rem;
+}
+
+.claim-event:last-child {
+  padding-bottom: 0;
+}
+
+/* Connector line between consecutive markers. */
+.claim-event:not(:last-child)::before {
+  content: "";
+  position: absolute;
+  left: .4rem;
+  top: 1.1rem;
+  bottom: 0;
+  width: 2px;
+  background: var(--claim-line);
+}
+
+.claim-event__marker {
+  position: absolute;
+  left: 0;
+  top: .3rem;
+  width: .95rem;
+  height: .95rem;
+  border: 3px solid var(--claim-surface);
+  border-radius: 50%;
+  background: var(--claim-muted);
+  box-shadow: 0 0 0 1px var(--claim-line);
+}
+
+.claim-event--claimed .claim-event__marker { background: #e8833a; }
+.claim-event--courier .claim-event__marker { background: #2563b0; }
+.claim-event--pickup .claim-event__marker { background: #2563b0; }
+.claim-event--delivery .claim-event__marker,
+.claim-event--closed .claim-event__marker { background: var(--claim-green); }
+.claim-event--cancelled .claim-event__marker { background: #c0392b; }
+
+.claim-event__label {
+  font-weight: 650;
+  overflow-wrap: anywhere;
+}
+
+.claim-event__time {
+  color: var(--claim-muted);
+  font-size: .88rem;
+  font-variant-numeric: tabular-nums;
+}
+
+/* ---- Mobile: stack every section */
+@media (max-width: 767.98px) {
+  .claim-hero {
+    padding: 1.25rem 1.25rem 1.5rem;
+  }
+
+  .claim-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .claim-card {
+    padding: 1.15rem;
+  }
+
+  .claim-fields {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .claim-event {
+    flex-direction: column;
+  }
+}

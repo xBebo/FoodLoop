@@ -20,12 +20,13 @@ public sealed partial class ClaimServiceTests(DatabaseFixture fixture, WebApplic
     private static readonly DateTimeOffset Now = new(2026, 9, 14, 12, 0, 0, TimeSpan.Zero);
 
     // ---- Wiring: each service gets its own DbContext, real repositories, real CurrentUserService, UnitOfWork and AuditService.
-    private static ClaimService Service(ApplicationDbContext db, ClaimsPrincipal principal, IUnitOfWork? unitOfWork = null)
+    private static ClaimService Service(ApplicationDbContext db, ClaimsPrincipal principal, IUnitOfWork? unitOfWork = null,
+        IClaimDetailsReadRepository? claimDetails = null)
     {
         var clock = new FixedClock(Now);
         var currentUser = new CurrentUserService(new FixedHttpContextAccessor(new DefaultHttpContext { User = principal }), db);
         return new ClaimService(currentUser, new FoodDonationRepository(db, clock), new Repository<Organization>(db),
-            new ClaimRepository(db), new AuditService(db, currentUser, clock), unitOfWork ?? new UnitOfWork(db), clock);
+            new ClaimRepository(db), claimDetails ?? new ClaimDetailsReadRepository(db), new AuditService(db, currentUser, clock), unitOfWork ?? new UnitOfWork(db), clock);
     }
     private async Task<CreateClaimResult> CreateAsync(ClaimsPrincipal principal, Guid donationId)
     {

@@ -2,6 +2,7 @@
 using System.Threading.Tasks;
 using FoodLoop.Application.Organizations;
 using FoodLoop.Domain.Enums;
+using FoodLoop.Web.Models.Organizations;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
@@ -19,30 +20,38 @@ public sealed class MyOrganizationController(OrganizationProfileService profileS
             return Forbid();
         }
 
-        ViewBag.IsReadOnly = org.Status == OrganizationStatus.Suspended;
-        return View(org);
+        var model = new OrganizationProfileViewModel
+        {
+            Id = org.Id,
+            Name = org.Name,
+            Address = org.Address,
+            LicenseNumber = org.LicenseNumber,
+            Type = org.Type,
+            Status = org.Status,
+            IsReadOnly = org.Status == OrganizationStatus.Suspended,
+            RowVersion = org.RowVersion
+        };
+
+        return View(model);
     }
 
     [HttpPost]
     [ValidateAntiForgeryToken]
-    public async Task<IActionResult> Update(string name, string address, byte[] rowVersion, CancellationToken ct)
+    public async Task<IActionResult> Edit(OrganizationProfileViewModel model, CancellationToken ct)
     {
-        if (string.IsNullOrWhiteSpace(name) || string.IsNullOrWhiteSpace(address))
+        if (!ModelState.IsValid)
         {
-            TempData["ErrorMessage"] = "Name and Address are required.";
-            return RedirectToAction(nameof(Index));
+            return View("Index", model);
         }
 
-        var error = await profileService.UpdateProfileAsync(name, address, rowVersion, ct);
+        var error = await profileService.UpdateProfileAsync(model.Name, model.Address, model.RowVersion, ct);
         if (error != null)
         {
             TempData["ErrorMessage"] = error;
-        }
-        else
-        {
-            TempData["SuccessMessage"] = "Profile updated successfully.";
+            return RedirectToAction(nameof(Index));
         }
 
+        TempData["SuccessMessage"] = "Profile updated successfully.";
         return RedirectToAction(nameof(Index));
     }
 }

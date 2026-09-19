@@ -1,25 +1,26 @@
-﻿using System.ComponentModel.DataAnnotations;
+﻿using System;
+using System.ComponentModel.DataAnnotations;
 using FoodLoop.Domain.Enums;
 
 namespace FoodLoop.Web.Models.Organizations;
 
-public sealed class OrganizationProfileViewModel
+public class OrganizationProfileViewModel
 {
-    public Guid Id { get; init; }
+    public Guid Id { get; set; }
 
-    [Required(ErrorMessage = "Name is required.")]
-    [StringLength(100, ErrorMessage = "Name cannot exceed 100 characters.")]
+    [Required]
     public string Name { get; set; } = string.Empty;
 
-    public string LicenseNumber { get; init; } = string.Empty;
-    public OrganizationType Type { get; init; }
-    public OrganizationStatus Status { get; init; }
-
-    [Required(ErrorMessage = "Address is required.")]
-    [StringLength(200, ErrorMessage = "Address cannot exceed 200 characters.")]
+    [Required]
     public string Address { get; set; } = string.Empty;
 
-    public byte[] RowVersion { get; set; } = Array.Empty<byte>();
+    public string LicenseNumber { get; set; } = string.Empty;
 
-    public bool IsReadOnly => Status != OrganizationStatus.Active;
+    public OrganizationType Type { get; set; }
+
+    public OrganizationStatus Status { get; set; }
+
+    public bool IsReadOnly { get; set; }
+
+    public byte[] RowVersion { get; set; } = [];
 }
