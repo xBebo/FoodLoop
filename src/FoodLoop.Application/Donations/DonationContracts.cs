@@ -50,6 +50,25 @@ public sealed record DonationListItem(
     string PickupAddress,
     string? DonorName = null);
 
+public sealed record DonationDetailsItem(
+    Guid Id,
+    string Title,
+    string Description,
+    string Category,
+    decimal Quantity,
+    QuantityUnit Unit,
+    DateTimeOffset PreparedAtUtc,
+    DateTimeOffset ExpiresAtUtc,
+    string PickupAddress,
+    string StorageInstructions,
+    DonationStatus Status);
+
+public sealed record DonationExpiryResult(bool Succeeded, int ExpiredCount, string? Error = null)
+{
+    public static DonationExpiryResult Success(int expiredCount) => new(true, expiredCount);
+    public static DonationExpiryResult Conflict() => new(false, 0, "One or more donations changed while expiry was running.");
+}
+
 public sealed record DonationCategoryItem(Guid Id, string Name);
 
 public sealed record AvailableDonationsPage(
