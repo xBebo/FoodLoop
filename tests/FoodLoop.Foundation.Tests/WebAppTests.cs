@@ -90,16 +90,21 @@ public sealed class WebAppTests(WebApplicationFactory<Program> factory) : IClass
         Assert.Contains("/Auth/Login?ReturnUrl=", response.Headers.Location!.OriginalString);
     }
 
-    // ---- My Claims Razor view, rendered by the real view engine without auth or database (authorization is covered by the controller tests).
+    // ---- Claims Razor views, rendered by the real view engine without auth or database (authorization is covered by the controller tests).
     private Task<string> RenderMineAsync(MyClaimsViewModel model, string? success = null, string? error = null) => RenderMineAsync(factory, model, success, error);
-    internal static async Task<string> RenderMineAsync(WebApplicationFactory<Program> factory, MyClaimsViewModel model,
+    internal static Task<string> RenderMineAsync(WebApplicationFactory<Program> factory, MyClaimsViewModel model,
+        string? success = null, string? error = null, DefaultHttpContext? httpContext = null)
+        => RenderClaimsViewAsync(factory, nameof(ClaimsController.Mine), model, success, error, httpContext);
+    internal static Task<string> RenderDetailsAsync(WebApplicationFactory<Program> factory, ClaimDetails model)
+        => RenderClaimsViewAsync(factory, nameof(ClaimsController.Details), model);
+    private static async Task<string> RenderClaimsViewAsync<TModel>(WebApplicationFactory<Program> factory, string action, TModel model,
         string? success = null, string? error = null, DefaultHttpContext? httpContext = null)
     {
         using var scope = factory.Services.CreateScope();
-        var routeValues = new RouteValueDictionary { ["controller"] = "Claims", ["action"] = "Mine" };
+        var routeValues = new RouteValueDictionary { ["controller"] = "Claims", ["action"] = action };
         httpContext ??= new DefaultHttpContext { RequestServices = scope.ServiceProvider };
         httpContext.Request.RouteValues = routeValues;
-        httpContext.SetEndpoint(new Endpoint(null, null, "Claims/Mine")); // Makes tag helpers use endpoint-routing link generation, as in the real app.
+        httpContext.SetEndpoint(new Endpoint(null, null, $"Claims/{action}")); // Makes tag helpers use endpoint-routing link generation, as in the real app.
         using var body = new MemoryStream();
         httpContext.Response.Body = body;
         var tempData = new TempDataDictionary(httpContext, httpContext.RequestServices.GetRequiredService<ITempDataProvider>());
@@ -107,11 +112,11 @@ public sealed class WebAppTests(WebApplicationFactory<Program> factory) : IClass
         if (error is not null) tempData["Error"] = error;
         var view = new ViewResult
         {
-            ViewName = nameof(ClaimsController.Mine),
-            ViewData = new ViewDataDictionary<MyClaimsViewModel>(httpContext.RequestServices.GetRequiredService<IModelMetadataProvider>(), new ModelStateDictionary()) { Model = model },
+            ViewName = action,
+            ViewData = new ViewDataDictionary<TModel>(httpContext.RequestServices.GetRequiredService<IModelMetadataProvider>(), new ModelStateDictionary()) { Model = model },
             TempData = tempData
         };
-        await view.ExecuteResultAsync(new ActionContext(httpContext, new RouteData(routeValues), new ControllerActionDescriptor { RouteValues = { ["controller"] = "Claims", ["action"] = "Mine" } }));
+        await view.ExecuteResultAsync(new ActionContext(httpContext, new RouteData(routeValues), new ControllerActionDescriptor { RouteValues = { ["controller"] = "Claims", ["action"] = action } }));
         return Encoding.UTF8.GetString(body.ToArray());
     }
     private static ClaimSummary Summary(ClaimStatus status, string title = "Bread", bool canCancel = false) => new(Guid.NewGuid(), Guid.NewGuid(), title, 12.5m, QuantityUnit.Kilograms,
@@ -178,7 +183,7 @@ public sealed class WebAppTests(WebApplicationFactory<Program> factory) : IClass
         var form = Assert.Single(Regex.Matches(html, "<form[^>]*>.*?</form>", RegexOptions.Singleline)).Value;
         Assert.Contains("method=\"post\"", form);
         Assert.Contains("action=\"/Claims/Cancel\"", form);
-        Assert.Contains("onsubmit=\"return confirm('Cancel this claim? This action cannot be undone.');\"", form);
+        Assert.Contains("confirm('Cancel this claim? This action cannot be undone.')", form);
         Assert.Matches($"<input [^>]*type=\"hidden\" name=\"claimId\" value=\"{cancellable.ClaimId}\"", form);
         Assert.Matches("<input name=\"__RequestVerificationToken\" type=\"hidden\" value=\"[^\"]+\"", form);
         Assert.Matches("<button [^>]*type=\"submit\"[^>]*>Cancel claim<span [^>]*class=\"visually-hidden\">: Soup</span></button>", form);
@@ -192,6 +197,23 @@ public sealed class WebAppTests(WebApplicationFactory<Program> factory) : IClass
         Assert.DoesNotContain("disabled", html);
     }
     [Fact]
+    public async Task Mine_view_cancel_form_blocks_double_submit_only_after_confirmation()
+    {
+        var html = await RenderMineAsync(new MyClaimsViewModel([Summary(ClaimStatus.Booked, "Soup", canCancel: true)], 1, 20));
+        var form = Assert.Single(Regex.Matches(html, "<form[^>]*>.*?</form>", RegexOptions.Singleline)).Value;
+        var handler = Regex.Match(form, "onsubmit=\"([^\"]*)\"").Groups[1].Value;
+        // Order is the guard: an already-submitted form is dropped before confirm runs; a declined confirm returns before the flag
+        // is set (so the user can retry); only a confirmed submit sets the flag and lets the POST proceed.
+        Assert.Equal("if (this.dataset.submitted) return false; "
+            + "if (!confirm('Cancel this claim? This action cannot be undone.')) return false; "
+            + "this.dataset.submitted = 'true'; return true;", handler);
+        // A form-local flag, not a disabled button: the button name, keyboard submit and posted fields are unchanged.
+        Assert.DoesNotContain("disabled", form);
+        Assert.DoesNotContain("data-submitted", form);
+        Assert.Matches("<button [^>]*type=\"submit\"[^>]*>Cancel claim<span [^>]*class=\"visually-hidden\">: Soup</span></button>", form);
+        Assert.Equal(["claimId", "__RequestVerificationToken"], Regex.Matches(form, "name=\"([^\"]+)\"").Select(m => m.Groups[1].Value));
+    }
+    [Fact]
     public async Task Mine_view_without_cancellable_claims_is_read_only()
     {
         var html = await RenderMineAsync(new MyClaimsViewModel([.. Enum.GetValues<ClaimStatus>().Select(s => Summary(s))], 1, 20));
@@ -199,5 +221,129 @@ public sealed class WebAppTests(WebApplicationFactory<Program> factory) : IClass
         Assert.DoesNotContain("Cancel claim", html);
         Assert.DoesNotContain("Actions", html);
         Assert.DoesNotContain("claims-actions", html);
+    }
+
+    // ---- My Claims: Details link (a read action, so it is independent of CanCancel)
+    private static string DetailsLink(Guid claimId, string title)
+        => $"<a [^>]*href=\"/Claims/Details\\?claimId={claimId}\"[^>]*>View details<span [^>]*class=\"visually-hidden\">: {title}</span></a>";
+    [Fact]
+    public async Task Mine_view_links_every_claim_to_its_details_and_posts_only_the_eligible_claim_to_cancel()
+    {
+        var cancellable = Summary(ClaimStatus.Booked, "Soup", canCancel: true);
+        ClaimSummary[] claims = [cancellable, .. Enum.GetValues<ClaimStatus>().Select(s => Summary(s))];
+        var html = await RenderMineAsync(new MyClaimsViewModel(claims, 1, 20));
+        Assert.Equal(claims.Length, Regex.Matches(html, "href=\"/Claims/Details\\?claimId=").Count);
+        foreach (var claim in claims) Assert.Matches(DetailsLink(claim.ClaimId, claim.DonationTitle), html);
+        var form = Assert.Single(Regex.Matches(html, "<form[^>]*>.*?</form>", RegexOptions.Singleline)).Value;
+        Assert.Contains($"name=\"claimId\" value=\"{cancellable.ClaimId}\"", form);
+        // Booked-but-assigned, PickupPending, InTransit, Closed, Cancelled and every other status: Details link only, no Cancel input.
+        foreach (var claim in claims.Skip(1))
+        {
+            Assert.DoesNotContain($"name=\"claimId\" value=\"{claim.ClaimId}\"", html);
+            Assert.Single(Regex.Matches(html, claim.ClaimId.ToString()));
+        }
+    }
+    [Fact]
+    public async Task Mine_view_read_only_history_still_links_every_claim_to_details()
+    {
+        // A Suspended organization's rows all have CanCancel false.
+        ClaimSummary[] claims = [.. Enum.GetValues<ClaimStatus>().Select(s => Summary(s))];
+        var html = await RenderMineAsync(new MyClaimsViewModel(claims, 1, 20));
+        foreach (var claim in claims) Assert.Matches(DetailsLink(claim.ClaimId, claim.DonationTitle), html);
+        Assert.DoesNotContain("<form", html);
+        Assert.DoesNotContain("Cancel claim", html);
+        Assert.DoesNotContain("name=\"claimId\"", html);
+    }
+
+    // ---- Claim Details Razor view
+    private static readonly DateTimeOffset ClaimedAtUtc = new(2026, 9, 14, 9, 5, 0, TimeSpan.Zero);
+    private static ClaimDetails Details(ClaimStatus status = ClaimStatus.Booked, string? courier = null, bool canCancel = false,
+        string storage = "Keep chilled", string description = "Vegetable rice", IReadOnlyList<ClaimTimelineEvent>? timeline = null)
+        => new(Guid.NewGuid(), status, ClaimedAtUtc, canCancel, courier,
+            new ClaimDonationSummary("Rice trays", "Cooked meals", 12.5m, QuantityUnit.Kilograms, ClaimedAtUtc.AddHours(-3), ClaimedAtUtc.AddHours(8),
+                "1 Pickup Street", storage, description, DonationStatus.PickupPending),
+            timeline ?? [new("Claimed", "Claimed", ClaimedAtUtc)]);
+    // The page body only: the shared layout's navbar has its own toggle button.
+    internal static string PageBody(string html) => Regex.Match(html, "<main [^>]*>.*</main>", RegexOptions.Singleline).Value;
+    private static string Timeline(string html) => Regex.Match(html, "<ol [^>]*class=\"claim-timeline\"[^>]*>.*?</ol>", RegexOptions.Singleline).Value;
+    private static string[] TimelineLabels(string html)
+        => [.. Regex.Matches(Timeline(html), "class=\"claim-event__label\">([^<]*)</span>").Select(m => m.Groups[1].Value)];
+
+    [Fact]
+    public async Task Details_view_renders_status_donation_courier_and_explicit_utc_times()
+    {
+        var html = await RenderDetailsAsync(factory, Details(ClaimStatus.PickupPending, courier: "Sam Courier"));
+        Assert.Contains("<title>Claim Details", html);
+        Assert.Matches("<h1 [^>]*>Claim Details</h1>", html);
+        Assert.Matches("<a [^>]*href=\"/Claims/Mine\"[^>]*><span [^>]*aria-hidden=\"true\">&larr;</span> Back to My Claims</a>", html);
+        Assert.Contains("All times are shown in UTC", html);
+        Assert.Matches("<span [^>]*class=\"claim-badge claim-badge--pending\">\\s*<span [^>]*aria-hidden=\"true\"></span>Pickup Pending", html);
+        Assert.Contains("Sam Courier", html);
+        Assert.DoesNotContain("Not assigned yet", html);
+        Assert.Matches("<h3 [^>]*>Rice trays</h3>", html);
+        foreach (var text in new[] { "Cooked meals", "12.5 Kilograms", "1 Pickup Street", "Keep chilled", "Vegetable rice", "Donation status" })
+            Assert.Contains(text, html);
+        Assert.Matches("<time [^>]*datetime=\"2026-09-14T09:05:00Z\">14 Sep 2026, 09:05 UTC</time>", html); // claimed + timeline
+        Assert.Matches("<time [^>]*datetime=\"2026-09-14T06:05:00Z\">14 Sep 2026, 06:05 UTC</time>", html); // prepared
+        Assert.Matches("<time [^>]*datetime=\"2026-09-14T17:05:00Z\">14 Sep 2026, 17:05 UTC</time>", html); // expires
+        // Every rendered time is machine-readable ISO UTC and labelled UTC.
+        var times = Regex.Matches(html, "<time [^>]*datetime=\"([^\"]+)\">([^<]+)</time>");
+        Assert.Equal(4, times.Count); // claimed, prepared, expires, timeline Claimed
+        Assert.All(times, m => { Assert.Matches("^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}Z$", m.Groups[1].Value); Assert.EndsWith(" UTC", m.Groups[2].Value); });
+        Assert.DoesNotContain("<form", PageBody(html));
+        Assert.DoesNotContain("can still be cancelled", html);
+    }
+    [Fact]
+    public async Task Details_view_shows_unassigned_courier_and_empty_optional_fields_gracefully()
+    {
+        var html = await RenderDetailsAsync(factory, Details(courier: null, canCancel: true, storage: "", description: "   "));
+        Assert.Contains("Not assigned yet", html);
+        Assert.Equal(2, Regex.Matches(html, ">Not provided</dd>").Count);
+        // CanCancel only points to My Claims; this page never posts.
+        Assert.Matches("can still be cancelled from <a [^>]*href=\"/Claims/Mine\"[^>]*>My Claims</a>", html);
+        Assert.DoesNotContain("<form", PageBody(html));
+        Assert.DoesNotContain("<button", PageBody(html));
+    }
+    [Fact]
+    public async Task Details_view_html_encodes_donation_and_courier_text()
+    {
+        var model = Details(courier: "<b>Sam</b>") with { Donation = Details().Donation with { Title = "<script>alert(1)</script>" } };
+        var html = await RenderDetailsAsync(factory, model);
+        Assert.DoesNotContain("<script>alert(1)", html);
+        Assert.DoesNotContain("<b>Sam</b>", html);
+        Assert.Contains("&lt;script&gt;alert(1)&lt;/script&gt;", html);
+    }
+    [Fact]
+    public async Task Details_timeline_with_only_Claimed_renders_no_fabricated_or_pending_steps()
+    {
+        var html = await RenderDetailsAsync(factory, Details(ClaimStatus.Closed));
+        Assert.Equal(["Claimed"], TimelineLabels(html));
+        Assert.Single(Regex.Matches(Timeline(html), "<li "));
+        foreach (var fabricated in new[] { "Courier assigned", "Courier reassigned", "Pickup verified", "Delivery verified", "Cancelled" })
+            Assert.DoesNotContain(fabricated, html, StringComparison.OrdinalIgnoreCase);
+        Assert.DoesNotContain("Closed", Timeline(html)); // the current status badge says Closed; the timeline must not
+        Assert.DoesNotContain("pending", Timeline(html), StringComparison.OrdinalIgnoreCase);
+    }
+    [Fact]
+    public async Task Details_timeline_renders_exactly_the_supplied_events_in_order_with_utc_times()
+    {
+        ClaimTimelineEvent[] events =
+        [
+            new("Claimed", "Claimed", ClaimedAtUtc), new("CourierAssigned", "Courier assigned", ClaimedAtUtc.AddMinutes(10)),
+            new("CourierReassigned", "Courier reassigned", ClaimedAtUtc.AddMinutes(20)), new("PickupVerified", "Pickup verified", ClaimedAtUtc.AddMinutes(30)),
+            new("DeliveryVerified", "Delivery verified", ClaimedAtUtc.AddMinutes(40)), new("Closed", "Closed", ClaimedAtUtc.AddMinutes(40))
+        ];
+        var timeline = Timeline(await RenderDetailsAsync(factory, Details(ClaimStatus.Closed, courier: "Sam Courier", timeline: events)));
+        Assert.Equal(events.Select(e => e.Label), TimelineLabels($"<ol class=\"claim-timeline\">{timeline}</ol>"));
+        Assert.Equal(["2026-09-14T09:05:00Z", "2026-09-14T09:15:00Z", "2026-09-14T09:25:00Z", "2026-09-14T09:35:00Z", "2026-09-14T09:45:00Z", "2026-09-14T09:45:00Z"],
+            Regex.Matches(timeline, "<time [^>]*datetime=\"([^\"]+)\">[^<]+ UTC</time>").Select(m => m.Groups[1].Value));
+        Assert.Equal(["claimed", "courier", "courier", "pickup", "delivery", "closed"],
+            Regex.Matches(timeline, "<li [^>]*class=\"claim-event claim-event--([a-z]+)\"").Select(m => m.Groups[1].Value));
+    }
+    [Fact]
+    public async Task Details_timeline_presentation_follows_the_event_kind_not_its_label()
+    {
+        var timeline = Timeline(await RenderDetailsAsync(factory, Details(timeline: [new("Claimed", "Closed", ClaimedAtUtc), new("SomethingNew", "Cancelled", ClaimedAtUtc)])));
+        Assert.Equal(["claimed", "neutral"], Regex.Matches(timeline, "<li [^>]*class=\"claim-event claim-event--([a-z]+)\"").Select(m => m.Groups[1].Value));
     }
 }

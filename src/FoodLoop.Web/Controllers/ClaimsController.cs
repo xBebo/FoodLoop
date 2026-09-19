@@ -61,6 +61,22 @@ public sealed class ClaimsController(ClaimService claims) : Controller
         };
     }
 
+    // claimId is the only client-supplied value; ownership is filtered by ClaimService, so a foreign claim is the same 404 as a missing one.
+    [HttpGet]
+    public async Task<IActionResult> Details(Guid claimId, CancellationToken ct)
+    {
+        var result = await claims.GetDetailsAsync(claimId, ct);
+        return result.Outcome switch
+        {
+            GetClaimDetailsOutcome.Success => View(result.Details),
+            GetClaimDetailsOutcome.Unauthenticated => Challenge(),
+            GetClaimDetailsOutcome.Forbidden or GetClaimDetailsOutcome.OrganizationNotBeneficiary
+                or GetClaimDetailsOutcome.OrganizationNotActive => Forbid(),
+            GetClaimDetailsOutcome.NotFound => NotFound(),
+            _ => throw new InvalidOperationException($"Unhandled claim details outcome {result.Outcome}.")
+        };
+    }
+
     private RedirectToActionResult RedirectWith(string tempDataKey, string message)
     {
         TempData[tempDataKey] = message;

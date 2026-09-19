@@ -217,6 +217,26 @@
   overflow-wrap: anywhere;
 }
 
+.claims-details-link {
+  display: block;
+  width: fit-content;
+  margin-top: .35rem;
+  color: var(--claims-green-strong);
+  font-size: .85rem;
+  font-weight: 600;
+  text-underline-offset: .2em;
+}
+
+.claims-details-link:hover {
+  color: var(--claims-green);
+}
+
+.claims-details-link:focus-visible {
+  outline: 3px solid var(--claims-green);
+  outline-offset: 2px;
+  border-radius: .25rem;
+}
+
 .claims-address {
   max-width: 16rem;
   color: var(--claims-muted);

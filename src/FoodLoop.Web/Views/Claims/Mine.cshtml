@@ -1,23 +1,10 @@
-@using System.Globalization
-@using System.Text.RegularExpressions
 @using FoodLoop.Domain.Enums
+@using static FoodLoop.Web.Models.ClaimDisplay
 @model MyClaimsViewModel
 @functions {
     // Forward lifecycle only; Cancelled/Failed are historical end states and deliberately not part of the progress track.
     private static readonly ClaimStatus[] Lifecycle =
         [ClaimStatus.Booked, ClaimStatus.PickupPending, ClaimStatus.PickedUp, ClaimStatus.InTransit, ClaimStatus.Delivered, ClaimStatus.Closed];
-    private static string Label(Enum value) => Regex.Replace(value.ToString(), "(?<=[a-z])(?=[A-Z])", " ");
-    private static string Tone(ClaimStatus status) => status switch
-    {
-        ClaimStatus.Booked or ClaimStatus.PickupPending => "pending",
-        ClaimStatus.PickedUp or ClaimStatus.InTransit => "transit",
-        ClaimStatus.Delivered or ClaimStatus.Closed => "done",
-        ClaimStatus.Cancelled or ClaimStatus.Failed => "stopped",
-        _ => "neutral"
-    };
-    // TODO: shown in UTC with an explicit label; switch to the viewer's timezone once a shared localization approach exists.
-    private static string DisplayUtc(DateTimeOffset value) => value.ToUniversalTime().ToString("d MMM yyyy, HH:mm 'UTC'", CultureInfo.InvariantCulture);
-    private static string IsoUtc(DateTimeOffset value) => value.ToUniversalTime().ToString("yyyy-MM-dd'T'HH:mm:ss'Z'", CultureInfo.InvariantCulture);
 }
 @{
     ViewData["Title"] = "My Claims";
@@ -102,8 +89,12 @@
                         var step = Array.IndexOf(Lifecycle, claim.ClaimStatus) + 1;
                         var tone = Tone(claim.ClaimStatus);
                         <tr class="claims-row">
-                            <th scope="row" class="claims-donation">@claim.DonationTitle</th>
-                            <td data-label="Quantity" class="claims-nowrap">@claim.Quantity.ToString("0.##", CultureInfo.InvariantCulture) @Label(claim.Unit)</td>
+                            <th scope="row" class="claims-donation">
+                                @claim.DonationTitle
+                                @* Details is a read action, so every row links to it regardless of CanCancel. *@
+                                <a class="claims-details-link" asp-action="Details" asp-route-claimId="@claim.ClaimId">View details<span class="visually-hidden">: @claim.DonationTitle</span></a>
+                            </th>
+                            <td data-label="Quantity" class="claims-nowrap">@Quantity(claim.Quantity, claim.Unit)</td>
                             <td data-label="Pickup address" class="claims-address">@claim.PickupAddress</td>
                             <td data-label="Claimed" class="claims-nowrap"><time datetime="@IsoUtc(claim.ClaimedAtUtc)">@DisplayUtc(claim.ClaimedAtUtc)</time></td>
                             <td data-label="Expires" class="claims-nowrap claims-expires"><time datetime="@IsoUtc(claim.ExpiresAtUtc)">@DisplayUtc(claim.ExpiresAtUtc)</time></td>
@@ -133,7 +124,8 @@
                                 @* No whitespace inside the cell when the claim cannot be cancelled: the mobile layout hides it with :empty. *@
                                 <td class="claims-actions">@if (claim.CanCancel)
                                 {
-                                    <form method="post" asp-action="Cancel" class="claims-cancel" onsubmit="return confirm('Cancel this claim? This action cannot be undone.');">
+                                    @* UX guard only: a declined confirm leaves the form re-submittable; a confirmed one flags it so a second submit is dropped. Server-side status/RowVersion checks stay authoritative. *@
+                                    <form method="post" asp-action="Cancel" class="claims-cancel" onsubmit="if (this.dataset.submitted) return false; if (!confirm('Cancel this claim? This action cannot be undone.')) return false; this.dataset.submitted = 'true'; return true;">
                                         <input type="hidden" name="claimId" value="@claim.ClaimId" />
                                         <button type="submit" class="claims-button claims-button--danger">Cancel claim<span class="visually-hidden">: @claim.DonationTitle</span></button>
                                     </form>
