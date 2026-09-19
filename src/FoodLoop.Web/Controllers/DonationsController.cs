@@ -1,5 +1,6 @@
 using FoodLoop.Application.Donations;
 using FoodLoop.Application.Identity;
+using FoodLoop.Domain.Enums;
 using FoodLoop.Web.Models.Donations;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -119,8 +120,20 @@ public sealed class DonationsController(DonationService donationService) : Contr
 
     [Authorize(Roles = AppRoles.Donor)]
     [HttpGet]
-    public async Task<IActionResult> Mine(CancellationToken cancellationToken)
-        => View(await donationService.GetMineAsync(cancellationToken));
+    public async Task<IActionResult> Mine(DonationStatus? status, CancellationToken cancellationToken)
+    {
+        if (status is DonationStatus selectedStatus && !Enum.IsDefined(selectedStatus)) status = null;
+        var items = await donationService.GetMineAsync(status, cancellationToken);
+        return View(new MyDonationsViewModel(items, status));
+    }
+
+    [Authorize(Roles = AppRoles.Donor)]
+    [HttpGet]
+    public async Task<IActionResult> Details(Guid id, CancellationToken cancellationToken)
+    {
+        var donation = await donationService.GetDetailsAsync(id, cancellationToken);
+        return donation is null ? NotFound() : View(donation);
+    }
 
     [Authorize(Roles = AppRoles.Donor)]
     [HttpPost]
