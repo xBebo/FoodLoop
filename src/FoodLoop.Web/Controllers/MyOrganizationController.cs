@@ -1,6 +1,7 @@
-﻿using FoodLoop.Application.Organizations;
+﻿using System.Threading;
+using System.Threading.Tasks;
+using FoodLoop.Application.Organizations;
 using FoodLoop.Domain.Enums;
-using FoodLoop.Web.Models.Organizations;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
@@ -10,50 +11,38 @@ namespace FoodLoop.Web.Controllers;
 public sealed class MyOrganizationController(OrganizationProfileService profileService) : Controller
 {
     [HttpGet]
-    public async Task<IActionResult> Index(Guid id, CancellationToken ct)
+    public async Task<IActionResult> Index(CancellationToken ct)
     {
-        var org = await profileService.GetMyOrganizationAsync(id, ct);
-
+        var org = await profileService.GetMyOrganizationAsync(ct);
         if (org == null)
         {
-            TempData["ErrorMessage"] = "Your account is not associated with an Organization or access was denied.";
-            return RedirectToAction("Index", "Home");
+            return Forbid();
         }
 
-        var vm = new OrganizationProfileViewModel
-        {
-            Id = org.Id,
-            Name = org.Name,
-            LicenseNumber = org.LicenseNumber,
-            Type = org.Type,
-            Status = org.Status,
-            Address = org.Address,
-            RowVersion = org.RowVersion
-        };
-
-        return View(vm);
+        ViewBag.IsReadOnly = org.Status == OrganizationStatus.Suspended;
+        return View(org);
     }
 
     [HttpPost]
     [ValidateAntiForgeryToken]
-    public async Task<IActionResult> Edit(OrganizationProfileViewModel model, CancellationToken ct)
+    public async Task<IActionResult> Update(string name, string address, byte[] rowVersion, CancellationToken ct)
     {
-        if (!ModelState.IsValid) return View("Index", model);
+        if (string.IsNullOrWhiteSpace(name) || string.IsNullOrWhiteSpace(address))
+        {
+            TempData["ErrorMessage"] = "Name and Address are required.";
+            return RedirectToAction(nameof(Index));
+        }
 
-        var error = await profileService.UpdateProfileAsync(
-            model.Id,
-            model.Name,
-            model.Address,
-            model.RowVersion,
-            ct);
-
+        var error = await profileService.UpdateProfileAsync(name, address, rowVersion, ct);
         if (error != null)
         {
             TempData["ErrorMessage"] = error;
-            return RedirectToAction(nameof(Index), new { id = model.Id });
+        }
+        else
+        {
+            TempData["SuccessMessage"] = "Profile updated successfully.";
         }
 
-        TempData["SuccessMessage"] = "Organization profile updated successfully.";
-        return RedirectToAction(nameof(Index), new { id = model.Id });
+        return RedirectToAction(nameof(Index));
     }
 }

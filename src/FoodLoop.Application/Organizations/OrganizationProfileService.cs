@@ -15,17 +15,23 @@ public sealed class OrganizationProfileService(
     IUnitOfWork unitOfWork,
     ICurrentUserService currentUser)
 {
-    public async Task<Organization?> GetMyOrganizationAsync(Guid orgId, CancellationToken ct = default)
+    public async Task<Organization?> GetMyOrganizationAsync(CancellationToken ct = default)
     {
-        var userId = currentUser.UserId;
-        if (userId == null) return null;
+        var orgId = await currentUser.GetOrganizationIdAsync(ct);
+        if (orgId == null) return null;
 
-        var org = await orgRepository.GetByIdAsync(orgId, ct);
+        var org = await orgRepository.GetByIdAsync(orgId.Value, ct);
+        if (org == null) return null;
+
+        if (org.Status == OrganizationStatus.Pending || org.Status == OrganizationStatus.Rejected)
+        {
+            return null;
+        }
+
         return org;
     }
 
     public async Task<string?> UpdateProfileAsync(
-        Guid id,
         string newName,
         string newAddress,
         byte[] rowVersion,
@@ -34,31 +40,43 @@ public sealed class OrganizationProfileService(
         var userId = currentUser.UserId;
         if (userId == null) return "User is not authenticated.";
 
-        var org = await orgRepository.GetByIdAsync(id, ct);
-        if (org == null) return "Organization not found or access denied.";
+        var orgId = await currentUser.GetOrganizationIdAsync(ct);
+        if (orgId == null) return "Access denied: User is not associated with an organization.";
+
+        var org = await orgRepository.GetByIdAsync(orgId.Value, ct);
+        if (org == null) return "Organization not found.";
 
         if (org.Status != OrganizationStatus.Active)
-            return "Only Active organizations can update their profile.";
+            return "Only Active organizations are allowed to update their profile details.";
+
+        if (rowVersion != null && rowVersion.Length > 0)
+        {
+            org.RowVersion = rowVersion;
+        }
 
         org.Name = newName.Trim();
         org.Address = newAddress.Trim();
 
-        // Stage Audit Log matching your exact AuditLog Domain model
         auditRepository.Add(new AuditLog
         {
             Id = Guid.NewGuid(),
             Action = "OrganizationUpdated",
-            ActorUserId = userId,
-            Details = $"Updated organization '{org.Name}' name or address.",
+            ActorUserId = userId.Value,
+            EntityId = org.Id,
+            Details = $"Updated organization '{org.Name}' profile.",
             CreatedAtUtc = DateTimeOffset.UtcNow
         });
 
         try
         {
             await unitOfWork.SaveChangesAsync(ct);
-            return null; // Success
+            return null;
         }
         catch (PersistenceConflictException)
+        {
+            return "The profile was modified by another operation. Please reload and try again.";
+        }
+        catch (Exception)
         {
             return "The profile was modified by another operation. Please reload and try again.";
         }

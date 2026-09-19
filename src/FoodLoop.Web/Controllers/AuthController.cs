@@ -35,6 +35,7 @@ namespace FoodLoop.Web.Controllers
         }
 
         [HttpPost]
+        [ValidateAntiForgeryToken]
         public async Task<IActionResult> Register(string orgName, string licenseNumber, OrganizationType orgType, string email, string password)
         {
             if (!ModelState.IsValid || !Enum.IsDefined(typeof(OrganizationType), orgType))
@@ -91,14 +92,18 @@ namespace FoodLoop.Web.Controllers
         }
 
         [HttpGet]
-        public IActionResult Login()
+        public IActionResult Login(string? returnUrl = null)
         {
+            ViewData["ReturnUrl"] = returnUrl;
             return View();
         }
 
         [HttpPost]
-        public async Task<IActionResult> Login(string email, string password)
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> Login(string email, string password, string? returnUrl = null)
         {
+            ViewData["ReturnUrl"] = returnUrl;
+
             var user = await _context.Users
                 .Include(u => u.Organization)
                 .FirstOrDefaultAsync(u => u.Email == email);
@@ -119,6 +124,12 @@ namespace FoodLoop.Web.Controllers
             var result = await _signInManager.PasswordSignInAsync(user.UserName!, password, false, false);
             if (result.Succeeded)
             {
+                // Safe ReturnUrl Check: Only local URLs, strictly ignoring external / scheme-relative URLs
+                if (!string.IsNullOrEmpty(returnUrl) && Url.IsLocalUrl(returnUrl) && !returnUrl.StartsWith("//") && !returnUrl.StartsWith("/\\"))
+                {
+                    return Redirect(returnUrl);
+                }
+
                 return RedirectToAction("Index", "Home");
             }
 
@@ -127,6 +138,7 @@ namespace FoodLoop.Web.Controllers
         }
 
         [HttpPost]
+        [ValidateAntiForgeryToken]
         public async Task<IActionResult> Logout()
         {
             await _signInManager.SignOutAsync();
