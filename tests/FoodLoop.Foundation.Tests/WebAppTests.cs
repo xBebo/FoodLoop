@@ -183,7 +183,7 @@ public sealed class WebAppTests(WebApplicationFactory<Program> factory) : IClass
         var form = Assert.Single(Regex.Matches(html, "<form[^>]*>.*?</form>", RegexOptions.Singleline)).Value;
         Assert.Contains("method=\"post\"", form);
         Assert.Contains("action=\"/Claims/Cancel\"", form);
-        Assert.Contains("onsubmit=\"return confirm('Cancel this claim? This action cannot be undone.');\"", form);
+        Assert.Contains("confirm('Cancel this claim? This action cannot be undone.')", form);
         Assert.Matches($"<input [^>]*type=\"hidden\" name=\"claimId\" value=\"{cancellable.ClaimId}\"", form);
         Assert.Matches("<input name=\"__RequestVerificationToken\" type=\"hidden\" value=\"[^\"]+\"", form);
         Assert.Matches("<button [^>]*type=\"submit\"[^>]*>Cancel claim<span [^>]*class=\"visually-hidden\">: Soup</span></button>", form);
@@ -195,6 +195,23 @@ public sealed class WebAppTests(WebApplicationFactory<Program> factory) : IClass
         Assert.Equal(3, Regex.Matches(html, "<td [^>]*class=\"claims-actions\"").Count);
         Assert.Equal(2, Regex.Matches(html, "<td [^>]*class=\"claims-actions\"></td>").Count);
         Assert.DoesNotContain("disabled", html);
+    }
+    [Fact]
+    public async Task Mine_view_cancel_form_blocks_double_submit_only_after_confirmation()
+    {
+        var html = await RenderMineAsync(new MyClaimsViewModel([Summary(ClaimStatus.Booked, "Soup", canCancel: true)], 1, 20));
+        var form = Assert.Single(Regex.Matches(html, "<form[^>]*>.*?</form>", RegexOptions.Singleline)).Value;
+        var handler = Regex.Match(form, "onsubmit=\"([^\"]*)\"").Groups[1].Value;
+        // Order is the guard: an already-submitted form is dropped before confirm runs; a declined confirm returns before the flag
+        // is set (so the user can retry); only a confirmed submit sets the flag and lets the POST proceed.
+        Assert.Equal("if (this.dataset.submitted) return false; "
+            + "if (!confirm('Cancel this claim? This action cannot be undone.')) return false; "
+            + "this.dataset.submitted = 'true'; return true;", handler);
+        // A form-local flag, not a disabled button: the button name, keyboard submit and posted fields are unchanged.
+        Assert.DoesNotContain("disabled", form);
+        Assert.DoesNotContain("data-submitted", form);
+        Assert.Matches("<button [^>]*type=\"submit\"[^>]*>Cancel claim<span [^>]*class=\"visually-hidden\">: Soup</span></button>", form);
+        Assert.Equal(["claimId", "__RequestVerificationToken"], Regex.Matches(form, "name=\"([^\"]+)\"").Select(m => m.Groups[1].Value));
     }
     [Fact]
     public async Task Mine_view_without_cancellable_claims_is_read_only()

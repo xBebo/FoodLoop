@@ -124,7 +124,8 @@
                                 @* No whitespace inside the cell when the claim cannot be cancelled: the mobile layout hides it with :empty. *@
                                 <td class="claims-actions">@if (claim.CanCancel)
                                 {
-                                    <form method="post" asp-action="Cancel" class="claims-cancel" onsubmit="return confirm('Cancel this claim? This action cannot be undone.');">
+                                    @* UX guard only: a declined confirm leaves the form re-submittable; a confirmed one flags it so a second submit is dropped. Server-side status/RowVersion checks stay authoritative. *@
+                                    <form method="post" asp-action="Cancel" class="claims-cancel" onsubmit="if (this.dataset.submitted) return false; if (!confirm('Cancel this claim? This action cannot be undone.')) return false; this.dataset.submitted = 'true'; return true;">
                                         <input type="hidden" name="claimId" value="@claim.ClaimId" />
                                         <button type="submit" class="claims-button claims-button--danger">Cancel claim<span class="visually-hidden">: @claim.DonationTitle</span></button>
                                     </form>
