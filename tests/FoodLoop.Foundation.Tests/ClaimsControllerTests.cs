@@ -4,6 +4,7 @@ using FoodLoop.Application.Claims;
 using FoodLoop.Application.Exceptions;
 using FoodLoop.Application.Identity;
 using FoodLoop.Application.Interfaces.Persistence;
+using FoodLoop.Domain.Entities;
 using FoodLoop.Domain.Enums;
 using FoodLoop.Web.Controllers;
 using FoodLoop.Web.Models;
@@ -60,6 +61,9 @@ public sealed partial class ClaimServiceTests
         Assert.Equal(["Guid donationId"], Inputs(nameof(ClaimsController.Create)));
         Assert.Equal(["Guid claimId"], Inputs(nameof(ClaimsController.Cancel)));
         Assert.Equal(["Int32 page", "Int32 pageSize"], Inputs(nameof(ClaimsController.Mine)));
+        Assert.Equal(["Guid claimId"], Inputs(nameof(ClaimsController.Details)));
+        Assert.Equal([typeof(Guid), typeof(CancellationToken)],
+            typeof(ClaimsController).GetMethod(nameof(ClaimsController.Details))!.GetParameters().Select(x => x.ParameterType));
     }
     [Fact]
     public async Task Controller_create_challenges_unauthenticated_user()
@@ -324,7 +328,10 @@ public sealed partial class ClaimServiceTests
         Assert.Contains("Cancellable food", html);
         Assert.DoesNotContain("/Claims/Cancel", html);
         Assert.DoesNotContain("Cancel claim", html);
-        Assert.DoesNotContain(claimId.ToString(), html);
+        // The claim id may appear only in its read-only Details link, never in a Cancel form input.
+        Assert.DoesNotContain("<form", html);
+        Assert.DoesNotContain($"name=\"claimId\" value=\"{claimId}\"", html);
+        Assert.Contains($"href=\"/Claims/Details?claimId={claimId}\"", html);
 
         Assert.IsType<ForbidResult>((await PostCancelRejectedAsync(Principal(userId), claimId)).Result);
         await using var db = fixture.CreateContext();
@@ -341,8 +348,127 @@ public sealed partial class ClaimServiceTests
         var html = await WebAppTests.RenderMineAsync(web, AssertMineView(await GetMineAsync(Principal(userId))));
         Assert.Single(Regex.Matches(html, "action=\"/Claims/Cancel\""));
         Assert.Contains($"name=\"claimId\" value=\"{eligible}\"", html);
-        Assert.DoesNotContain(assigned.ToString(), html);
-        Assert.DoesNotContain(delivered.ToString(), html);
+        // Non-cancellable claims keep their Details link, but their id never reaches a Cancel form input.
+        foreach (var claimId in new[] { assigned, delivered })
+        {
+            Assert.DoesNotContain($"name=\"claimId\" value=\"{claimId}\"", html);
+            Assert.Single(Regex.Matches(html, claimId.ToString())); // the Details href only
+        }
+        foreach (var claimId in new[] { eligible, assigned, delivered }) Assert.Contains($"href=\"/Claims/Details?claimId={claimId}\"", html);
+    }
+
+    // ---- Controller: Claim Details
+    private async Task<IActionResult> GetDetailsAsync(ClaimsPrincipal principal, Guid claimId)
+        => (await InvokeAsync(principal, c => c.Details(claimId, CancellationToken.None))).Result;
+
+    [Fact]
+    public void Controller_details_is_a_get_only_action()
+    {
+        var method = typeof(ClaimsController).GetMethod(nameof(ClaimsController.Details))!;
+        Assert.Single(method.GetCustomAttributes(typeof(HttpGetAttribute), false));
+        Assert.Empty(method.GetCustomAttributes(typeof(HttpPostAttribute), false));
+    }
+    [Theory]
+    [InlineData(OrganizationStatus.Active)]
+    [InlineData(OrganizationStatus.Suspended)]
+    public async Task Controller_details_renders_default_view_for_own_claim_and_is_read_only(OrganizationStatus status)
+    {
+        var (userId, claimId, _) = await SeedOwnClaimAsync(status);
+        var view = Assert.IsType<ViewResult>(await GetDetailsAsync(Principal(userId), claimId));
+        Assert.Null(view.ViewName); // Default convention resolves Views/Claims/Details.cshtml.
+        var model = Assert.IsType<ClaimDetails>(view.Model);
+        Assert.Equal((claimId, ClaimStatus.Booked, ClaimedAt, status == OrganizationStatus.Active), (model.ClaimId, model.Status, model.ClaimedAtUtc, model.CanCancel));
+        Assert.Equal([Claimed(ClaimedAt)], model.Timeline);
+
+        var html = await WebAppTests.RenderDetailsAsync(web, model);
+        Assert.NotEmpty(WebAppTests.PageBody(html));
+        Assert.DoesNotContain("<form", WebAppTests.PageBody(html));
+        Assert.DoesNotContain("<button", WebAppTests.PageBody(html));
+        Assert.DoesNotContain("/Claims/Cancel", html);
+        Assert.DoesNotContain("Cancel claim", html);
+        Assert.Equal(status == OrganizationStatus.Active, html.Contains("can still be cancelled from"));
+        await using var db = fixture.CreateContext();
+        Assert.False(await db.AuditLogs.AnyAsync(x => x.ActorUserId == userId)); // reading writes nothing
+    }
+    [Fact]
+    public async Task Controller_details_challenges_unauthenticated_user()
+    {
+        var (_, claimId, _) = await SeedOwnClaimAsync();
+        Assert.IsType<ChallengeResult>(await GetDetailsAsync(new ClaimsPrincipal(new ClaimsIdentity()), claimId));
+    }
+    [Theory]
+    [InlineData(AppRoles.Donor)]
+    [InlineData(AppRoles.Courier)]
+    [InlineData(AppRoles.Admin)]
+    public async Task Controller_details_forbids_wrong_role(string role)
+    {
+        var (userId, claimId, _) = await SeedOwnClaimAsync();
+        Assert.IsType<ForbidResult>(await GetDetailsAsync(Principal(userId, role), claimId));
+    }
+    [Fact]
+    public async Task Controller_details_forbids_user_without_a_beneficiary_organization()
+    {
+        var (noOrganizationUser, _) = await SeedUserAsync(null); var (_, claimId, _) = await SeedOwnClaimAsync();
+        Assert.IsType<ForbidResult>(await GetDetailsAsync(Principal(noOrganizationUser), claimId));
+        var (donorLinkedUser, donorOrganizationId) = await SeedBeneficiaryAsync(type: OrganizationType.Donor);
+        var (donorClaimId, _) = await SeedClaimForCancelAsync(donorOrganizationId!.Value);
+        Assert.IsType<ForbidResult>(await GetDetailsAsync(Principal(donorLinkedUser), donorClaimId));
+    }
+    [Theory]
+    [InlineData(OrganizationStatus.Pending)]
+    [InlineData(OrganizationStatus.Rejected)]
+    public async Task Controller_details_forbids_pending_or_rejected_beneficiary(OrganizationStatus status)
+    {
+        var (userId, claimId, _) = await SeedOwnClaimAsync(status);
+        Assert.IsType<ForbidResult>(await GetDetailsAsync(Principal(userId), claimId));
+    }
+    [Theory]
+    [InlineData(OrganizationStatus.Active)]
+    [InlineData(OrganizationStatus.Suspended)]
+    public async Task Controller_details_of_foreign_or_missing_claim_is_the_same_not_found(OrganizationStatus callerStatus)
+    {
+        var (userId, _) = await SeedBeneficiaryAsync(callerStatus);
+        var (_, foreignClaimId, _) = await SeedOwnClaimAsync();
+        var foreign = Assert.IsType<NotFoundResult>(await GetDetailsAsync(Principal(userId), foreignClaimId));
+        var missing = Assert.IsType<NotFoundResult>(await GetDetailsAsync(Principal(userId), Guid.NewGuid()));
+        Assert.Equal(StatusCodes.Status404NotFound, foreign.StatusCode); Assert.Equal(missing.StatusCode, foreign.StatusCode);
+    }
+    [Fact]
+    public async Task Controller_details_rendered_html_exposes_no_identity_audit_qr_or_donor_data()
+    {
+        var courier = await SeedCourierAsync("Sam Courier");
+        var (userId, claimId, donationId) = await SeedOwnClaimAsync(status: ClaimStatus.Closed, donationStatus: DonationStatus.Closed, courierUserId: courier.UserId);
+        var secret = "SECRET-" + Guid.NewGuid().ToString("N");
+        var tokenHash = Convert.ToHexString(Guid.NewGuid().ToByteArray()) + Convert.ToHexString(Guid.NewGuid().ToByteArray());
+        Organization donor;
+        await using (var db = fixture.CreateContext())
+        {
+            donor = (await db.FoodDonations.Include(x => x.DonorOrganization).SingleAsync(x => x.Id == donationId)).DonorOrganization;
+            donor.Name = "Donor-" + Guid.NewGuid().ToString("N"); donor.Address = "Donor-address-" + Guid.NewGuid().ToString("N");
+            await db.SaveChangesAsync();
+        }
+        var evidenceIds = Enumerable.Range(0, 5).Select(_ => Guid.NewGuid()).ToArray(); // canaries: internal evidence row ids
+        var assigned = ClaimAudit(claimId, "CourierAssigned", Now.AddMinutes(-8), details: $"CourierId={courier.UserId}; DonationId={donationId}; {secret}");
+        var other = ClaimAudit(claimId, "SomethingElse", Now.AddMinutes(-7), details: secret);
+        var pickup = Handover(claimId, courier.UserId, HandoverType.Pickup, Now.AddMinutes(-5));
+        var delivery = Handover(claimId, courier.UserId, HandoverType.Delivery, Now.AddMinutes(-2));
+        (assigned.Id, other.Id, pickup.Id, delivery.Id) = (evidenceIds[0], evidenceIds[1], evidenceIds[2], evidenceIds[3]);
+        await SeedEvidenceAsync(assigned, other, pickup, delivery,
+            new QrVerificationToken { Id = evidenceIds[4], DonationClaimId = claimId, CourierUserId = courier.UserId, Purpose = QrPurpose.Delivery, TokenHash = tokenHash,
+                CreatedAtUtc = Now.AddMinutes(-3), ExpiresAtUtc = Now.AddMinutes(10), UsedAtUtc = Now.AddMinutes(-2) });
+
+        var model = Assert.IsType<ClaimDetails>(Assert.IsType<ViewResult>(await GetDetailsAsync(Principal(userId), claimId)).Model);
+        var html = await WebAppTests.RenderDetailsAsync(web, model);
+        Assert.Contains("Sam Courier", html);
+        foreach (var label in new[] { "Claimed", "Courier assigned", "Pickup verified", "Delivery verified", "Closed" }) Assert.Contains(label, html);
+        foreach (var value in new[] { courier.UserId.ToString(), courier.UserName, courier.Email, secret, "CourierId=", "DonationId=", tokenHash,
+                     donor.Id.ToString(), donor.Name, donor.Address, donor.LicenseNumber, donationId.ToString(), claimId.ToString() })
+            Assert.DoesNotContain(value, html, StringComparison.OrdinalIgnoreCase);
+        foreach (var evidenceId in evidenceIds) // audit, handover and QR row ids stay internal
+        {
+            Assert.DoesNotContain(evidenceId.ToString(), html, StringComparison.OrdinalIgnoreCase);
+            Assert.DoesNotContain(evidenceId.ToString("N"), html, StringComparison.OrdinalIgnoreCase);
+        }
     }
 
     private sealed class NullTempDataProvider : ITempDataProvider

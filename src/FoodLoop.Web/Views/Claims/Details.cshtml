@@ -1,0 +1,128 @@
+@using FoodLoop.Application.Claims
+@using static FoodLoop.Web.Models.ClaimDisplay
+@model ClaimDetails
+@functions {
+    // Presentation keys off the stable event Kind, never the human-readable Label.
+    private static string EventTone(string kind) => kind switch
+    {
+        "Claimed" => "claimed",
+        "CourierAssigned" or "CourierReassigned" => "courier",
+        "PickupVerified" => "pickup",
+        "DeliveryVerified" => "delivery",
+        "Closed" => "closed",
+        "Cancelled" => "cancelled",
+        _ => "neutral"
+    };
+}
+@{
+    ViewData["Title"] = "Claim Details";
+    var donation = Model.Donation;
+    var optionalFields = new[] { ("Storage instructions", donation.StorageInstructions), ("Description", donation.Description) };
+}
+<div class="claim-page">
+    <header class="claim-hero">
+        <a class="claim-back" asp-action="Mine"><span aria-hidden="true">&larr;</span> Back to My Claims</a>
+        <p class="claim-eyebrow">FoodLoop claims</p>
+        <h1 class="claim-title">Claim Details</h1>
+        <p class="claim-lead">The current status, donation and recorded history of this claim. All times are shown in UTC.</p>
+    </header>
+
+    <div class="claim-grid">
+        <section class="claim-card" aria-labelledby="claim-status-title">
+            <h2 id="claim-status-title" class="claim-section-title">Current status</h2>
+            <dl class="claim-fields">
+                <div class="claim-field">
+                    <dt>Claim status</dt>
+                    <dd>
+                        <span class="claim-badge claim-badge--@Tone(Model.Status)">
+                            <span class="claim-badge__dot" aria-hidden="true"></span>@Label(Model.Status)
+                        </span>
+                    </dd>
+                </div>
+                <div class="claim-field">
+                    <dt>Claimed</dt>
+                    <dd><time datetime="@IsoUtc(Model.ClaimedAtUtc)">@DisplayUtc(Model.ClaimedAtUtc)</time></dd>
+                </div>
+                <div class="claim-field">
+                    <dt>Assigned courier</dt>
+                    <dd>
+                        @if (string.IsNullOrWhiteSpace(Model.CourierDisplayName))
+                        {
+                            <span class="claim-muted">Not assigned yet</span>
+                        }
+                        else
+                        {
+                            @Model.CourierDisplayName
+                        }
+                    </dd>
+                </div>
+            </dl>
+            @* Read-only page: it renders no forms. CanCancel is display-only; ClaimService.CancelAsync re-checks every rule on the My Claims POST. *@
+            @if (Model.CanCancel)
+            {
+                <p class="claim-note">This claim can still be cancelled from <a asp-action="Mine">My Claims</a>.</p>
+            }
+        </section>
+
+        <section class="claim-card" aria-labelledby="claim-donation-title">
+            <h2 id="claim-donation-title" class="claim-section-title">Donation</h2>
+            <h3 class="claim-donation">@donation.Title</h3>
+            <dl class="claim-fields">
+                <div class="claim-field">
+                    <dt>Category</dt>
+                    <dd>@donation.CategoryName</dd>
+                </div>
+                <div class="claim-field">
+                    <dt>Quantity</dt>
+                    <dd>@Quantity(donation.Quantity, donation.Unit)</dd>
+                </div>
+                <div class="claim-field">
+                    <dt>Prepared</dt>
+                    <dd><time datetime="@IsoUtc(donation.PreparedAtUtc)">@DisplayUtc(donation.PreparedAtUtc)</time></dd>
+                </div>
+                <div class="claim-field">
+                    <dt>Expires</dt>
+                    <dd><time datetime="@IsoUtc(donation.ExpiresAtUtc)">@DisplayUtc(donation.ExpiresAtUtc)</time></dd>
+                </div>
+                <div class="claim-field">
+                    <dt>Donation status</dt>
+                    <dd>@Label(donation.Status)</dd>
+                </div>
+                <div class="claim-field claim-field--wide">
+                    <dt>Pickup address</dt>
+                    <dd class="claim-text">@donation.PickupAddress</dd>
+                </div>
+                @foreach (var (label, value) in optionalFields)
+                {
+                    <div class="claim-field claim-field--wide">
+                        <dt>@label</dt>
+                        @if (string.IsNullOrWhiteSpace(value))
+                        {
+                            <dd class="claim-muted">Not provided</dd>
+                        }
+                        else
+                        {
+                            <dd class="claim-text">@value</dd>
+                        }
+                    </div>
+                }
+            </dl>
+        </section>
+    </div>
+
+    <section class="claim-card claim-history" aria-labelledby="claim-timeline-title">
+        <h2 id="claim-timeline-title" class="claim-section-title">Timeline</h2>
+        <p class="claim-muted claim-history__lead">Recorded events for this claim, oldest first.</p>
+        @* Persisted history only: events come from Model.Timeline as supplied; no pending or future steps are rendered. *@
+        <ol class="claim-timeline">
+            @foreach (var item in Model.Timeline)
+            {
+                <li class="claim-event claim-event--@EventTone(item.Kind)">
+                    <span class="claim-event__marker" aria-hidden="true"></span>
+                    <span class="claim-event__label">@item.Label</span>
+                    <time class="claim-event__time" datetime="@IsoUtc(item.AtUtc)">@DisplayUtc(item.AtUtc)</time>
+                </li>
+            }
+        </ol>
+    </section>
+</div>
