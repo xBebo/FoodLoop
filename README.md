@@ -12,7 +12,7 @@ ASP.NET Core MVC graduation project with integrated registration/approval, donat
 | Haneen | Courier assignment, QR verification and handover |
 | Baraa | Audit, admin dashboard and integration |
 
-Start by reviewing [the implemented shared contracts](docs/SHARED-CONTRACTS.md) and [Tasks 2 of 3](docs/TASKS-02.md). The original first assignments remain in [TEAM-START.md](docs/TEAM-START.md) as history.
+Start by reviewing [the implemented shared contracts](docs/SHARED-CONTRACTS.md) and the current [Tasks 3 of 3 — Functional Completion, Hardening & Demo Readiness](docs/TASKS-03.md). [Tasks 2 of 3](docs/TASKS-02.md) and [TEAM-START.md](docs/TEAM-START.md) remain as Stage 2 and Stage 1 history.
 
 ## Prerequisites
 
@@ -102,7 +102,7 @@ dotnet test FoodLoop.slnx --verbosity minimal
 
 Tests need SQL Server, not EF InMemory or SQLite. By default they use LocalDB. For a different server, set `FOODLOOP_TEST_SQLSERVER` privately. The login must be able to create/drop a test database. Tests **replace any database name in that connection** with their own `FoodLoop_FoundationTests_<random>` name, apply migrations and remove only that generated database afterward. They never target FoodLoop_Development.
 
-Coverage includes migration/model consistency, SQL constraints, competing rowversion updates, one active claim, QR rowversion, unique handovers, transaction rollback, audit immutability through tracked saves, marketplace filtering, and repeatable Identity seeding. The integrated suite also covers feature authorization, real MVC forms, registration/login, concurrent publish/approval/pickup, token replay and the complete delivery lifecycle. Cancellation is a planned stage-two task, not an existing endpoint.
+Coverage includes migration/model consistency, SQL constraints, competing rowversion updates, one active claim, QR rowversion, unique handovers, transaction rollback, audit immutability through tracked saves, marketplace filtering, repeatable Identity seeding, claim cancellation, organization suspension/reactivation, and admin audit filtering. The integrated suite also covers feature authorization, real MVC forms, registration/login, concurrency, token replay and the complete delivery lifecycle.
 
 ## Working together
 

@@ -73,8 +73,24 @@ For the basic demo, verified pickup starts transport and verified delivery close
 - Audit ordering is stable: CreatedAtUtc descending, then Id descending. Previous/Next links preserve `actionName`, `actor`, `from`, and `to`.
 - The Admin dashboard links directly to organization management, pending organization review, courier assignment, and the Audit List.
 
-## Outside this integration
-No LLM, automatic expiry job, SignalR, advanced reports, cancellation after courier assignment or camera-based QR scanner. Existing historical enum values and database indexes are preserved.
+## Outside the Stage 2 integrated baseline
+No LLM, SignalR, advanced reports, cancellation after courier assignment or camera-based QR scanner. Existing historical enum values and database indexes are preserved.
+
+Automatic donation expiry was not part of Stage 2. It is an approved Stage 3 addition: Alaa owns the application-level expiry rule/use case, and Baraa owns scheduled execution/integration. Until that Stage 3 work is merged, Marketplace and operational checks continue to reject/hide expired donations by comparing ExpiresAtUtc with the current UTC time.
 
 ## Stage two status
-[Tasks 2 of 3](TASKS-02.md) contains the acceptance rules used for this stage. The Stage 2 slices for Jana, Alaa, Safa, Haneen and Baraa are integrated as documented above; remaining work belongs to final validation/polish rather than adding new Stage 2 behavior.
+[Tasks 2 of 3](TASKS-02.md) contains the acceptance rules used for Stage 2. The Stage 2 slices for Jana, Alaa, Safa, Haneen and Baraa are integrated as documented above.
+
+## Stage three functional-completion scope
+[Tasks 3 of 3](TASKS-03.md) is the current team plan. Stage 3 combines small functional-completion tasks with hardening, regression testing, documentation and demo readiness. A separate final visual redesign follows after the functional scope is frozen.
+
+- Approved additions are limited to Organization Profile, Donation Details/My Donations improvements, Claim Details/Timeline, Courier Task Details/progress, Automatic Donation Expiry, and a basic read-only Admin impact summary.
+- Automatic expiry contract for Stage 3: only Available donations with ExpiresAtUtc <= current UTC become Expired; Draft/Claimed/delivery-stage/Closed donations are untouched; each successful expiry produces one DonationExpired audit and repeat runs are idempotent.
+- Alaa owns expiry business rules/application use case; Baraa owns hosted scheduling only. The scheduler must not implement donation business rules directly.
+- No new lifecycle or enum is planned. Schema/migrations require explicit review and should not be needed for these tasks.
+- LLM, SignalR, full notifications, advanced analytics, cancellation after courier assignment and camera-based QR scanning remain deferred.
+- Every changed screen must be checked on Desktop and approximately 390×844 Mobile.
+- Server-side authorization/ownership/state checks remain authoritative even when UI actions are hidden.
+- New/changed time displays must state UTC clearly.
+- Do not perform a global visual redesign in feature PRs; shared theme/navbar/typography work happens after Stage 3.
+- Final documentation deliverables include the current ERD and physical database diagram and must describe implemented behavior, not the original proposal.
