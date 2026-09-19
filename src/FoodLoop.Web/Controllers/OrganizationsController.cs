@@ -4,7 +4,9 @@ using FoodLoop.Infrastructure.Persistence;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+
 namespace FoodLoop.Web.Controllers;
+
 [Authorize(Roles = "Admin")]
 public sealed class OrganizationsController(
     ApplicationDbContext db,
@@ -57,11 +59,13 @@ public sealed class OrganizationsController(
         var result = suspend
             ? await management.SuspendAsync(id, ct)
             : await management.ReactivateAsync(id, ct);
+
         if (result.Outcome == OrganizationStatusChangeOutcome.NotFound) return NotFound();
 
         TempData[result.Succeeded ? "SuccessMessage" : "ErrorMessage"] = result.Succeeded
             ? suspend ? "Organization suspended." : "Organization reactivated."
             : result.Error ?? "Organization status could not be changed.";
+
         return RedirectToAction(nameof(Manage), new { status, page });
     }
 }
