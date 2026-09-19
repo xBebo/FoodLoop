@@ -1,72 +1,97 @@
-@model IReadOnlyList<FoodLoop.Application.Donations.DonationListItem>
+@model FoodLoop.Web.Models.Donations.MyDonationsViewModel
 @using FoodLoop.Domain.Enums
 @functions {
     private static string IsoUtc(DateTimeOffset value) => value.ToUniversalTime().ToString("yyyy-MM-ddTHH:mm:ss'Z'");
     private static string DisplayUtc(DateTimeOffset value) => value.ToUniversalTime().ToString("dd MMM yyyy, HH:mm 'UTC'");
+    private static string StatusClass(DonationStatus status) => status switch
+    {
+        DonationStatus.Draft => "text-bg-secondary",
+        DonationStatus.Available => "text-bg-success",
+        DonationStatus.Claimed => "text-bg-primary",
+        DonationStatus.Closed => "text-bg-dark",
+        DonationStatus.Expired => "text-bg-warning",
+        _ => "text-bg-secondary"
+    };
 }
 @{
     ViewData["Title"] = "My Donations";
 }
 
-<div class="container py-4">
-    <div class="d-flex justify-content-between align-items-center mb-4">
+<div class="container py-4 donations-page">
+    <div class="donations-heading mb-4">
         <div>
             <h1 class="h3 mb-1">My Donations</h1>
-            <p class="text-muted mb-0">Your organization's donation drafts and published listings.</p>
+            <p class="text-muted mb-0">Your organization's donation history. All times are shown in UTC.</p>
         </div>
         <a asp-action="Create" class="btn btn-success">Create Donation</a>
     </div>
 
     @if (TempData["SuccessMessage"] is string success)
     {
-        <div class="alert alert-success">@success</div>
+        <div class="alert alert-success" role="status">@success</div>
     }
     @if (TempData["ErrorMessage"] is string error)
     {
-        <div class="alert alert-danger">@error</div>
+        <div class="alert alert-danger" role="alert">@error</div>
     }
 
-    @if (Model.Count == 0)
+    <form asp-action="Mine" method="get" class="card card-body shadow-sm mb-4 donations-filter">
+        <div>
+            <label for="status" class="form-label">Status</label>
+            <select id="status" name="status" class="form-select">
+                <option value="">All statuses</option>
+                @foreach (var status in Enum.GetValues<DonationStatus>())
+                {
+                    <option value="@status" selected="@(Model.Status == status)">@status</option>
+                }
+            </select>
+        </div>
+        <div class="donations-filter__actions">
+            <button type="submit" class="btn btn-primary">Filter</button>
+            <a asp-action="Mine" class="btn btn-outline-secondary">Clear</a>
+        </div>
+    </form>
+
+    @if (Model.Items.Count == 0)
     {
-        <div class="alert alert-light border">No donations yet.</div>
+        <div class="alert alert-light border">
+            @(Model.Status is null ? "No donations yet." : $"No {Model.Status} donations.")
+        </div>
     }
     else
     {
         <div class="table-responsive">
-            <table class="table table-bordered table-hover align-middle bg-white">
+            <table class="table table-bordered table-hover align-middle bg-white donations-table">
                 <thead class="table-light">
                     <tr>
-                        <th>Title</th>
-                        <th>Category</th>
-                        <th>Quantity</th>
-                        <th>Expires</th>
-                        <th>Status</th>
-                        <th style="width: 190px;">Actions</th>
+                        <th scope="col">Title</th>
+                        <th scope="col">Category</th>
+                        <th scope="col">Quantity</th>
+                        <th scope="col">Expires (UTC)</th>
+                        <th scope="col">Status</th>
+                        <th scope="col">Actions</th>
                     </tr>
                 </thead>
                 <tbody>
-                @foreach (var item in Model)
+                @foreach (var item in Model.Items)
                 {
                     <tr>
-                        <td>@item.Title</td>
-                        <td>@item.Category</td>
-                        <td>@item.Quantity @item.Unit</td>
-                        <td><time datetime="@IsoUtc(item.ExpiresAtUtc)">@DisplayUtc(item.ExpiresAtUtc)</time></td>
-                        <td><span class="badge text-bg-secondary">@item.Status</span></td>
-                        <td>
-                            @if (item.Status == DonationStatus.Draft)
-                            {
-                                <div class="d-flex gap-2">
+                        <td data-label="Title">@item.Title</td>
+                        <td data-label="Category">@item.Category</td>
+                        <td data-label="Quantity">@item.Quantity @item.Unit</td>
+                        <td data-label="Expires"><time datetime="@IsoUtc(item.ExpiresAtUtc)">@DisplayUtc(item.ExpiresAtUtc)</time></td>
+                        <td data-label="Status"><span class="badge @StatusClass(item.Status)">@item.Status</span></td>
+                        <td data-label="Actions">
+                            <div class="donation-actions">
+                                <a asp-action="Details" asp-route-id="@item.Id" class="btn btn-sm btn-outline-primary">Details</a>
+                                @if (item.Status == DonationStatus.Draft)
+                                {
                                     <a asp-action="Edit" asp-route-id="@item.Id" class="btn btn-sm btn-outline-secondary">Edit</a>
                                     <form asp-action="Publish" asp-route-id="@item.Id" method="post">
                                         <button type="submit" class="btn btn-sm btn-primary">Publish</button>
                                     </form>
-                                </div>
-                            }
-                            else
-                            {
-                                <span class="text-muted">—</span>
-                            }
+                                }
+                            </div>
                         </td>
                     </tr>
                 }
