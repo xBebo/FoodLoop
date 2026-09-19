@@ -8,8 +8,10 @@ using FoodLoop.Domain.Enums;
 namespace FoodLoop.Application.Claims;
 public sealed class ClaimService(
     ICurrentUserService currentUser, IFoodDonationRepository donations, IRepository<Organization> organizations,
-    IClaimRepository claims, IAuditService audit, IUnitOfWork unitOfWork, TimeProvider clock)
+    IClaimRepository claims, IClaimDetailsReadRepository claimDetails, IAuditService audit, IUnitOfWork unitOfWork, TimeProvider clock)
 {
+    private const string AssignedCourierFallback = "Courier assigned";
+
     public async Task<CreateClaimResult> CreateAsync(Guid donationId, CancellationToken ct)
     {
         if (!currentUser.IsAuthenticated) return new(CreateClaimOutcome.Unauthenticated);
@@ -97,11 +99,60 @@ public sealed class ClaimService(
         if (beneficiary.Status is not (OrganizationStatus.Active or OrganizationStatus.Suspended)) return new(GetMyClaimsOutcome.Forbidden, []);
 
         var items = await claims.GetForBeneficiaryOrganizationAsync(beneficiary.Id, page, pageSize, ct);
-        // Mirrors CancelAsync's eligibility so Suspended history stays read-only; it never authorizes anything.
-        var active = beneficiary.Status == OrganizationStatus.Active;
         return new(GetMyClaimsOutcome.Success, [.. items.Select(x => new ClaimSummary(
             x.Id, x.FoodDonationId, x.FoodDonation.Title, x.FoodDonation.Quantity, x.FoodDonation.Unit, x.FoodDonation.PickupAddress,
             x.FoodDonation.ExpiresAtUtc, x.Status, x.CreatedAtUtc,
-            active && x.Status == ClaimStatus.Booked && x.AssignedCourierUserId is null && x.FoodDonation.Status == DonationStatus.Claimed))]);
+            CanCancel(beneficiary.Status, x.Status, x.AssignedCourierUserId is not null, x.FoodDonation.Status)))]);
+    }
+
+    public async Task<GetClaimDetailsResult> GetDetailsAsync(Guid claimId, CancellationToken ct)
+    {
+        if (!currentUser.IsAuthenticated) return new(GetClaimDetailsOutcome.Unauthenticated);
+        if (!currentUser.IsInRole(AppRoles.Beneficiary)) return new(GetClaimDetailsOutcome.Forbidden);
+
+        var organizationId = await currentUser.GetOrganizationIdAsync(ct);
+        var beneficiary = organizationId is Guid id ? await organizations.GetByIdAsync(id, ct) : null;
+        if (beneficiary is not { Type: OrganizationType.Beneficiary }) return new(GetClaimDetailsOutcome.OrganizationNotBeneficiary);
+        // Same allowlist as GetMyClaimsAsync, resolved before any claim lookup: Active, plus Suspended read-only.
+        if (beneficiary.Status is not (OrganizationStatus.Active or OrganizationStatus.Suspended)) return new(GetClaimDetailsOutcome.OrganizationNotActive);
+
+        // Ownership is filtered in SQL: another organization's claim is indistinguishable from a missing one.
+        var claim = await claimDetails.GetForBeneficiaryOrganizationAsync(claimId, beneficiary.Id, ct);
+        if (claim is null) return new(GetClaimDetailsOutcome.NotFound);
+
+        var courier = !claim.HasAssignedCourier ? null
+            : string.IsNullOrWhiteSpace(claim.CourierDisplayName) ? AssignedCourierFallback : claim.CourierDisplayName.Trim();
+        return new(GetClaimDetailsOutcome.Success, new ClaimDetails(claim.ClaimId, claim.Status, claim.CreatedAtUtc,
+            CanCancel(beneficiary.Status, claim.Status, claim.HasAssignedCourier, claim.Donation.Status),
+            courier, claim.Donation, BuildTimeline(claim)));
+    }
+
+    // Mirrors CancelAsync's eligibility so Suspended history stays read-only; it never authorizes anything.
+    private static bool CanCancel(OrganizationStatus organizationStatus, ClaimStatus claimStatus, bool hasAssignedCourier, DonationStatus donationStatus)
+        => organizationStatus == OrganizationStatus.Active && claimStatus == ClaimStatus.Booked && !hasAssignedCourier
+            && donationStatus == DonationStatus.Claimed;
+
+    // Only persisted evidence becomes an event; current status alone never fabricates one.
+    // Order: time, then fixed rank (Delivery and Closed share a timestamp), then evidence id so equal timestamps stay stable.
+    private static IReadOnlyList<ClaimTimelineEvent> BuildTimeline(ClaimDetailsEvidence claim)
+    {
+        var events = new List<(ClaimTimelineEvent Event, int Rank, Guid EvidenceId)>
+        {
+            (new("Claimed", "Claimed", claim.CreatedAtUtc), 0, claim.ClaimId)
+        };
+        var assignments = claim.Audits.Where(x => x.Action == "CourierAssigned").OrderBy(x => x.CreatedAtUtc).ThenBy(x => x.Id).ToList();
+        for (var i = 0; i < assignments.Count; i++)
+            events.Add((i == 0 ? new("CourierAssigned", "Courier assigned", assignments[i].CreatedAtUtc)
+                : new("CourierReassigned", "Courier reassigned", assignments[i].CreatedAtUtc), 1, assignments[i].Id));
+        foreach (var cancelled in claim.Audits.Where(x => x.Action == "ClaimCancelled"))
+            events.Add((new("Cancelled", "Cancelled", cancelled.CreatedAtUtc), 2, cancelled.Id));
+        foreach (var handover in claim.Handovers)
+        {
+            if (handover.Type == HandoverType.Pickup) events.Add((new("PickupVerified", "Pickup verified", handover.CompletedAtUtc), 3, handover.Id));
+            if (handover.Type != HandoverType.Delivery) continue;
+            events.Add((new("DeliveryVerified", "Delivery verified", handover.CompletedAtUtc), 4, handover.Id));
+            if (claim.Status == ClaimStatus.Closed) events.Add((new("Closed", "Closed", handover.CompletedAtUtc), 5, handover.Id));
+        }
+        return [.. events.OrderBy(x => x.Event.AtUtc).ThenBy(x => x.Rank).ThenBy(x => x.EvidenceId).Select(x => x.Event)];
     }
 }
