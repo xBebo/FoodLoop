@@ -56,11 +56,37 @@ public sealed class FoodDonationRepository(ApplicationDbContext db, TimeProvider
         CancellationToken cancellationToken = default)
         => (await GetAvailableAsync(null, null, page, pageSize, cancellationToken)).Items;
 
-    public async Task<IReadOnlyList<FoodDonation>> GetForDonorAsync(Guid donorOrganizationId, CancellationToken cancellationToken = default)
-        => await Context.FoodDonations.AsNoTracking()
+    public async Task<IReadOnlyList<FoodDonation>> GetForDonorAsync(
+        Guid donorOrganizationId,
+        DonationStatus? status = null,
+        CancellationToken cancellationToken = default)
+    {
+        var query = Context.FoodDonations.AsNoTracking()
             .Include(x => x.FoodCategory)
-            .Where(x => x.DonorOrganizationId == donorOrganizationId)
+            .Where(x => x.DonorOrganizationId == donorOrganizationId);
+        if (status is DonationStatus selectedStatus)
+            query = query.Where(x => x.Status == selectedStatus);
+
+        return await query
             .OrderByDescending(x => x.CreatedAtUtc)
+            .ThenBy(x => x.Id)
+            .ToListAsync(cancellationToken);
+    }
+
+    public Task<FoodDonation?> GetForDonorByIdAsync(
+        Guid donationId,
+        Guid donorOrganizationId,
+        CancellationToken cancellationToken = default)
+        => Context.FoodDonations.AsNoTracking()
+            .Include(x => x.FoodCategory)
+            .SingleOrDefaultAsync(x => x.Id == donationId && x.DonorOrganizationId == donorOrganizationId, cancellationToken);
+
+    public async Task<IReadOnlyList<FoodDonation>> GetDueForExpiryAsync(
+        DateTimeOffset nowUtc,
+        CancellationToken cancellationToken = default)
+        => await Context.FoodDonations
+            .Where(x => x.Status == DonationStatus.Available && x.ExpiresAtUtc <= nowUtc)
+            .OrderBy(x => x.ExpiresAtUtc)
             .ThenBy(x => x.Id)
             .ToListAsync(cancellationToken);
 }

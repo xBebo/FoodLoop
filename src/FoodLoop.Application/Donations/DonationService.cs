@@ -183,14 +183,44 @@ public sealed class DonationService(
         return DonationOperationResult.Success(donation.Id);
     }
 
-    public async Task<IReadOnlyList<DonationListItem>> GetMineAsync(CancellationToken cancellationToken = default)
+    public async Task<IReadOnlyList<DonationListItem>> GetMineAsync(
+        DonationStatus? status = null,
+        CancellationToken cancellationToken = default)
     {
         if (!currentUser.IsAuthenticated || !currentUser.IsInRole(AppRoles.Donor)) return [];
         var organizationId = await currentUser.GetOrganizationIdAsync(cancellationToken);
         if (organizationId is null) return [];
 
-        var items = await donations.GetForDonorAsync(organizationId.Value, cancellationToken);
+        var organization = await organizations.GetByIdAsync(organizationId.Value, cancellationToken);
+        if (organization is not { Type: OrganizationType.Donor, Status: OrganizationStatus.Active }) return [];
+
+        var items = await donations.GetForDonorAsync(organizationId.Value, status, cancellationToken);
         return items.Select(x => Map(x)).ToList();
+    }
+
+    public async Task<DonationDetailsItem?> GetDetailsAsync(Guid donationId, CancellationToken cancellationToken = default)
+    {
+        if (!currentUser.IsAuthenticated || !currentUser.IsInRole(AppRoles.Donor)) return null;
+        var organizationId = await currentUser.GetOrganizationIdAsync(cancellationToken);
+        if (organizationId is null) return null;
+
+        var organization = await organizations.GetByIdAsync(organizationId.Value, cancellationToken);
+        if (organization is not { Type: OrganizationType.Donor, Status: OrganizationStatus.Active }) return null;
+
+        // The ownership predicate is applied in SQL so a foreign id reveals no donation data.
+        var donation = await donations.GetForDonorByIdAsync(donationId, organization.Id, cancellationToken);
+        return donation is null ? null : new DonationDetailsItem(
+            donation.Id,
+            donation.Title,
+            donation.Description,
+            donation.FoodCategory?.Name ?? "Unknown",
+            donation.Quantity,
+            donation.Unit,
+            donation.PreparedAtUtc,
+            donation.ExpiresAtUtc,
+            donation.PickupAddress,
+            donation.StorageInstructions,
+            donation.Status);
     }
 
     public async Task<AvailableDonationsPage> GetAvailableAsync(
