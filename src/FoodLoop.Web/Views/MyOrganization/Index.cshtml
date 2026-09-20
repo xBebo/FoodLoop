@@ -1,0 +1,80 @@
+﻿@model FoodLoop.Web.Models.Organizations.OrganizationProfileViewModel
+
+@{
+    ViewData["Title"] = "My Organization Profile";
+}
+
+<div class="container mt-4 mb-5" style="max-width: 650px;">
+    <h2>My Organization Profile</h2>
+    <hr />
+
+    @if (TempData["SuccessMessage"] != null)
+    {
+        <div class="alert alert-success">@TempData["SuccessMessage"]</div>
+    }
+    @if (TempData["ErrorMessage"] != null)
+    {
+        <div class="alert alert-danger">@TempData["ErrorMessage"]</div>
+    }
+
+    @if (Model.IsReadOnly)
+    {
+        <div class="alert alert-warning mb-4">
+            <strong>Read-Only Access:</strong> Your organization status is <strong>@Model.Status</strong>. Profile editing is disabled.
+        </div>
+    }
+
+    <form asp-action="Edit" method="post">
+        @Html.AntiForgeryToken()
+        <input type="hidden" asp-for="Id" />
+        <input type="hidden" asp-for="RowVersion" />
+        @if (ViewData["ReturnUrl"] is string returnUrl && !string.IsNullOrWhiteSpace(returnUrl))
+        {
+            <input type="hidden" name="returnUrl" value="@returnUrl" />
+        }
+
+        <div class="mb-3">
+            <label asp-for="Name" class="form-label">Organization Name</label>
+            <input asp-for="Name" class="form-control" readonly="@(Model.IsReadOnly ? "readonly" : null)" />
+            <span asp-validation-for="Name" class="text-danger"></span>
+        </div>
+
+        <div class="mb-3">
+            <label asp-for="Address" class="form-label">Address</label>
+            <textarea asp-for="Address" class="form-control" rows="3" readonly="@(Model.IsReadOnly ? "readonly" : null)"></textarea>
+            <span asp-validation-for="Address" class="text-danger"></span>
+        </div>
+
+        <div class="row">
+            <div class="col-md-6 mb-3">
+                <label class="form-label">License Number</label>
+                <input class="form-control" value="@Model.LicenseNumber" disabled />
+            </div>
+            <div class="col-md-6 mb-3">
+                <label class="form-label">Organization Type</label>
+                <input class="form-control" value="@Model.Type" disabled />
+            </div>
+        </div>
+
+        <div class="mb-3">
+            <label class="form-label">Status</label>
+            @{
+                var badgeClass = Model.Status switch
+                {
+                    FoodLoop.Domain.Enums.OrganizationStatus.Active => "bg-success",
+                    FoodLoop.Domain.Enums.OrganizationStatus.Suspended => "bg-danger",
+                    FoodLoop.Domain.Enums.OrganizationStatus.Pending => "bg-warning text-dark",
+                    _ => "bg-secondary"
+                };
+            }
+            <div>
+                <span class="badge @badgeClass fs-6">@Model.Status</span>
+            </div>
+        </div>
+
+        @if (!Model.IsReadOnly)
+        {
+            <button type="submit" class="btn btn-primary mt-2">Save Changes</button>
+        }
+    </form>
+</div>
