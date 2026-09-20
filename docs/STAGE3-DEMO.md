@@ -7,6 +7,10 @@ This script demonstrates the implemented Stage 3 functional flow on a fresh deve
 From the repository root:
 
 ```powershell
+# Use a new database name for each demo; do not reuse the normal development database.
+$demoDatabase = "FoodLoop_Demo_" + [Guid]::NewGuid().ToString("N")
+$env:ConnectionStrings__DefaultConnection = "Server=(localdb)\MSSQLLocalDB;Database=$demoDatabase;Trusted_Connection=True;TrustServerCertificate=True"
+$env:ASPNETCORE_ENVIRONMENT = "Development"
 dotnet restore FoodLoop.slnx
 dotnet tool restore
 dotnet ef database update --project src/FoodLoop.Infrastructure --startup-project src/FoodLoop.Web -- --environment Development
@@ -87,3 +91,15 @@ dotnet test FoodLoop.slnx -c Release --verbosity minimal
 ```
 
 The SQL-backed tests create disposable `FoodLoop_FoundationTests_<random>` databases and delete only those generated databases.
+
+## 8. Repeatable automated HTTP demo
+
+```powershell
+dotnet test FoodLoop.slnx -c Release --filter FullyQualifiedName~StageThreeReleaseJourneyTests
+```
+
+This test creates its own fresh database from the committed migration and runs the real MVC pipeline with Identity cookie login and antiforgery-protected forms. It exercises publish, claim/cancel/re-claim, admin assignment, QR pickup/delivery/closure, hosted automatic expiry, impact counts, suspended read-only access, foreign access rejection, replay rejection and audit/token checks. It deletes its generated database after disposing the application host.
+
+Setup creates test users, roles, active organizations and one category directly through Identity/EF. It advances one donation's expiry timestamp directly so the real scheduler can expire it promptly; suspension is also controlled database setup. Registration/approval and concurrent workflow races remain covered separately by the full suite. This is an HTTP integration demo, not a browser presentation or QR camera scan test.
+
+See [Stage 3 release validation](STAGE3-VALIDATION.md) for the checked baseline, commands and scope.
