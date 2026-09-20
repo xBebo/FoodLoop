@@ -16,7 +16,9 @@ public sealed class AdminReadRepository(ApplicationDbContext db) : IAdminReadRep
         var closed = await db.DonationClaims.CountAsync(x => x.Status == ClaimStatus.Closed
             && x.FoodDonation.Status == DonationStatus.Closed
             && db.HandoverRecords.Any(h => h.DonationClaimId == x.Id && h.Type == HandoverType.Delivery), ct);
-        return new DashboardSummary(pending, available, closed);
+        var cancelled = await db.DonationClaims.CountAsync(x => x.Status == ClaimStatus.Cancelled, ct);
+        var expired = await db.FoodDonations.CountAsync(x => x.Status == DonationStatus.Expired, ct);
+        return new DashboardSummary(pending, available, closed, cancelled, expired);
     }
     public async Task<AuditPage> GetAuditPageAsync(int page, int pageSize, AuditFilter? filter = null, CancellationToken ct = default)
     {
