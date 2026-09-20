@@ -4,72 +4,69 @@
     ViewData["Title"] = "طلبات الاعتماد المعلقة";
 }
 
-<div class="container mt-4">
-@if (TempData["ErrorMessage"] is string error) { <p class="alert alert-danger">@error</p> }
-    <h2 class="mb-4">طلبات تفعيل المؤسسات المعلقة</h2>
+<div class="page-shell" dir="rtl">
+    <header class="page-header">
+        <div>
+            <p class="page-eyebrow mb-1">إدارة FoodLoop</p>
+            <h1 class="page-header__title">طلبات تفعيل المؤسسات المعلقة</h1>
+            <p class="page-header__lead">راجع بيانات المؤسسة ثم وافق أو ارفض طلب التسجيل.</p>
+        </div>
+        <a class="btn btn-outline-success" asp-action="Manage">إدارة المؤسسات</a>
+    </header>
 
+    @if (TempData["ErrorMessage"] is string error)
+    {
+        <div class="alert alert-danger" role="alert">@error</div>
+    }
     @if (TempData["SuccessMessage"] != null)
     {
-        <div class="alert alert-success alert-dismissible fade show my-3" role="alert">
+        <div class="alert alert-success alert-dismissible fade show" role="status">
             @TempData["SuccessMessage"]
             <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
         </div>
     }
 
-    <div class="card shadow-sm">
-        <div class="card-body p-0">
-            <table class="table table-hover table-striped mb-0">
-                <thead class="table-dark">
+    <div class="table-responsive">
+        <table class="table table-hover table-striped align-middle">
+            <thead>
+                <tr>
+                    <th>اسم المؤسسة</th>
+                    <th>رقم الترخيص</th>
+                    <th>نوع المؤسسة</th>
+                    <th>الحالة الحاليّة</th>
+                    <th class="text-center">الإجراءات</th>
+                </tr>
+            </thead>
+            <tbody>
+                @if (!Model.Any())
+                {
                     <tr>
-                        <th>اسم المؤسسة</th>
-                        <th>رقم الترخيص</th>
-                        <th>نوع المؤسسة</th>
-                        <th>الحالة الحاليّة</th>
-                        <th class="text-center">الإجراءات</th>
+                        <td colspan="5" class="text-center py-5 text-muted">لا توجد طلبات معلقة حالياً.</td>
                     </tr>
-                </thead>
-                <tbody>
-                    @if (!Model.Any())
+                }
+                else
+                {
+                    @foreach (var org in Model)
                     {
                         <tr>
-                            <td colspan="5" class="text-center py-4 text-muted">لا توجد طلبات معلقة حالياً.</td>
+                            <td class="fw-semibold">@org.Name</td>
+                            <td>@org.LicenseNumber</td>
+                            <td><span class="status-chip">@org.Type</span></td>
+                            <td><span class="badge bg-warning text-dark">@org.Status</span></td>
+                            <td class="text-center">
+                                <div class="d-flex flex-wrap justify-content-center gap-2">
+                                    <form asp-controller="Organizations" asp-action="ApproveOrganization" asp-route-id="@org.Id" method="post">
+                                        <button type="submit" class="btn btn-success btn-sm px-3">قبول (Approve)</button>
+                                    </form>
+                                    <form asp-controller="Organizations" asp-action="RejectOrganization" asp-route-id="@org.Id" method="post">
+                                        <button type="submit" class="btn btn-outline-danger btn-sm px-3">رفض (Reject)</button>
+                                    </form>
+                                </div>
+                            </td>
                         </tr>
                     }
-                    else
-                    {
-                        @foreach (var org in Model)
-                        {
-                            <tr>
-                                <td class="align-middle fw-bold">@org.Name</td>
-                                <td class="align-middle">@org.LicenseNumber</td>
-                                <td class="align-middle">
-                                    <span class="badge bg-info text-dark">@org.Type</span>
-                                </td>
-                                <td class="align-middle">
-                                    <span class="badge bg-warning text-dark">@org.Status</span>
-                                </td>
-                                <td class="align-middle text-center">
-                                    <div class="d-flex justify-content-center gap-2">
-                                        <!-- قبول الطلب باستدعاء Guid id -->
-                                        <form asp-controller="Organizations" asp-action="ApproveOrganization" asp-route-id="@org.Id" method="post">
-                                            <button type="submit" class="btn btn-success btn-sm px-3">
-                                                <i class="bi bi-check-circle"></i> قبول (Approve)
-                                            </button>
-                                        </form>
-
-                                        <!-- رفض الطلب باستدعاء Guid id -->
-                                        <form asp-controller="Organizations" asp-action="RejectOrganization" asp-route-id="@org.Id" method="post">
-                                            <button type="submit" class="btn btn-danger btn-sm px-3">
-                                                <i class="bi bi-x-circle"></i> رفض (Reject)
-                                            </button>
-                                        </form>
-                                    </div>
-                                </td>
-                            </tr>
-                        }
-                    }
-                </tbody>
-            </table>
-        </div>
+                }
+            </tbody>
+        </table>
     </div>
 </div>
