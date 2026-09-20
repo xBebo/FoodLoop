@@ -1,10 +1,11 @@
+Set - Content - Path "src/FoodLoop.Application/DependencyInjection.cs" - Value @"
 using FoodLoop.Application.Courier;
 using FoodLoop.Application.Donations;
 using FoodLoop.Application.Organizations;
 using Microsoft.Extensions.DependencyInjection;
-
+ 
 namespace FoodLoop.Application;
-
+ 
 public static class DependencyInjection
 {
     public static IServiceCollection AddApplication(this IServiceCollection services)
@@ -17,7 +18,9 @@ public static class DependencyInjection
         services.AddScoped<DonationService>();
         services.AddScoped<TaskDetailsService>();
         services.AddScoped<IDonationExpiryService, DonationExpiryService>();
-
+ 
         return services;
     }
 }
+"@
+ 
