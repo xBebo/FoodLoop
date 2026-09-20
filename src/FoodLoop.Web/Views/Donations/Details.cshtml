@@ -4,52 +4,49 @@
     ViewData["Title"] = "Donation Details";
 }
 
-<div class="container py-4 donation-details-page">
+<div class="page-shell page-shell--narrow donation-details-page">
     <a asp-action="Mine" class="btn btn-link px-0 mb-3"><span aria-hidden="true">&larr;</span> Back to My Donations</a>
 
-    <div class="donation-details-heading mb-4">
+    <header class="page-header donation-details-heading">
         <div>
-            <h1 class="h3 mb-1">Donation Details</h1>
-            <p class="text-muted mb-0">All times are shown in UTC.</p>
+            <p class="page-eyebrow mb-1">Donation record</p>
+            <h1 class="page-header__title">Donation Details</h1>
+            <p class="page-header__lead">All times are shown in UTC.</p>
         </div>
         <span class="badge text-bg-secondary donation-details-status">@Model.Status</span>
-    </div>
+    </header>
 
-    <section class="card shadow-sm donation-card mobile-card-hook" aria-labelledby="donation-title">
-        <div class="card-body p-4">
-            <h2 id="donation-title" class="h4 mb-4">@Model.Title</h2>
-            <dl class="donation-details-grid mb-0">
-                <div>
-                    <dt>Category</dt>
-                    <dd>@Model.Category</dd>
-                </div>
-                <div>
-                    <dt>Quantity</dt>
-                    <dd>@Model.Quantity @Model.Unit</dd>
-                </div>
-                <div>
-                    <dt>Prepared</dt>
-                    <dd><time datetime="@Model.PreparedAtUtc.ToUniversalTime().ToString("yyyy-MM-ddTHH:mm:ss'Z'")">@Model.PreparedAtUtc.ToUniversalTime().ToString("dd MMM yyyy, HH:mm UTC")</time></dd>
-                </div>
-                <div>
-                    <dt>Expires</dt>
-                    <dd><time datetime="@Model.ExpiresAtUtc.ToUniversalTime().ToString("yyyy-MM-ddTHH:mm:ss'Z'")">@Model.ExpiresAtUtc.ToUniversalTime().ToString("dd MMM yyyy, HH:mm UTC")</time></dd>
-                </div>
-                <div class="donation-details-wide">
-                    <dt>Pickup address</dt>
-                    <dd>@Model.PickupAddress</dd>
-                </div>
-                <div class="donation-details-wide">
-                    <dt>Storage instructions</dt>
-                    <dd>@(string.IsNullOrWhiteSpace(Model.StorageInstructions) ? "Not provided" : Model.StorageInstructions)</dd>
-                </div>
-                <div class="donation-details-wide">
-                    <dt>Description</dt>
-                    <dd>@(string.IsNullOrWhiteSpace(Model.Description) ? "Not provided" : Model.Description)</dd>
-                </div>
-            </dl>
-        </div>
+    <section class="surface-panel p-3 p-md-4 donation-card mobile-card-hook" aria-labelledby="donation-title">
+        <h2 id="donation-title" class="h4 mb-4">@Model.Title</h2>
+        <dl class="detail-grid donation-details-grid mb-0">
+            <div>
+                <dt>Category</dt>
+                <dd>@Model.Category</dd>
+            </div>
+            <div>
+                <dt>Quantity</dt>
+                <dd>@Model.Quantity @Model.Unit</dd>
+            </div>
+            <div>
+                <dt>Prepared</dt>
+                <dd><time datetime="@Model.PreparedAtUtc.ToUniversalTime().ToString("yyyy-MM-ddTHH:mm:ss'Z'")">@Model.PreparedAtUtc.ToUniversalTime().ToString("dd MMM yyyy, HH:mm UTC")</time></dd>
+            </div>
+            <div>
+                <dt>Expires</dt>
+                <dd><time datetime="@Model.ExpiresAtUtc.ToUniversalTime().ToString("yyyy-MM-ddTHH:mm:ss'Z'")">@Model.ExpiresAtUtc.ToUniversalTime().ToString("dd MMM yyyy, HH:mm UTC")</time></dd>
+            </div>
+            <div class="detail-grid__wide donation-details-wide">
+                <dt>Pickup address</dt>
+                <dd>@Model.PickupAddress</dd>
+            </div>
+            <div class="detail-grid__wide donation-details-wide">
+                <dt>Storage instructions</dt>
+                <dd>@(string.IsNullOrWhiteSpace(Model.StorageInstructions) ? "Not provided" : Model.StorageInstructions)</dd>
+            </div>
+            <div class="detail-grid__wide donation-details-wide">
+                <dt>Description</dt>
+                <dd>@(string.IsNullOrWhiteSpace(Model.Description) ? "Not provided" : Model.Description)</dd>
+            </div>
+        </dl>
     </section>
 </div>
-
- 
