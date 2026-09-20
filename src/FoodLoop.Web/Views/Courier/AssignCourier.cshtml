@@ -1,21 +1,55 @@
 @using FoodLoop.Application.Courier
 @model IReadOnlyList<FoodLoop.Domain.Entities.DonationClaim>
-<h1>Assign courier</h1>
-@if (TempData["SuccessMessage"] is string success) { <p class="alert alert-success">@success</p> }
-@if (TempData["ErrorMessage"] is string error) { <p class="alert alert-danger">@error</p> }
-@if (!Model.Any()) { <p>No claims waiting for assignment.</p> }
-@foreach (var claim in Model)
-{
-    <form asp-action="AssignCourier" method="post" class="border rounded p-3 mb-3">
-        <strong>@claim.FoodDonation.Title</strong>
-        <p>@claim.Status — @claim.BeneficiaryOrganization.Name</p>
-        <input type="hidden" name="claimId" value="@claim.Id" />
-        <label>Courier
-        <select name="courierUserId" class="form-select" required>
-            <option value="">Choose a courier</option>
-            @foreach (var courier in (IReadOnlyList<CourierOption>)ViewBag.Couriers)
-            { <option value="@courier.Id">@courier.Name</option> }
-        </select></label>
-        <button class="btn btn-primary">Assign</button>
-    </form>
-}
+
+<div class="page-shell page-shell--narrow">
+    <header class="page-header">
+        <div>
+            <p class="page-eyebrow mb-1">Admin workflow</p>
+            <h1 class="page-header__title">Assign courier</h1>
+            <p class="page-header__lead">Connect eligible claims with a valid courier before pickup begins.</p>
+        </div>
+    </header>
+
+    @if (TempData["SuccessMessage"] is string success)
+    {
+        <div class="alert alert-success" role="status">@success</div>
+    }
+    @if (TempData["ErrorMessage"] is string error)
+    {
+        <div class="alert alert-danger" role="alert">@error</div>
+    }
+
+    @if (!Model.Any())
+    {
+        <div class="empty-state">No claims waiting for assignment.</div>
+    }
+
+    @foreach (var claim in Model)
+    {
+        <form asp-action="AssignCourier" method="post" class="workflow-card">
+            <div class="workflow-card__topline">
+                <div>
+                    <h2 class="workflow-card__title">@claim.FoodDonation.Title</h2>
+                    <p class="workflow-card__meta">@claim.BeneficiaryOrganization.Name</p>
+                </div>
+                <span class="status-chip">@claim.Status</span>
+            </div>
+
+            <input type="hidden" name="claimId" value="@claim.Id" />
+
+            <div class="workflow-card__actions">
+                <div class="flex-grow-1">
+                    <label for="courier-@claim.Id" class="form-label">Courier</label>
+                    <select id="courier-@claim.Id" name="courierUserId" class="form-select" required>
+                        <option value="">Choose a courier</option>
+                        @foreach (var courier in (IReadOnlyList<CourierOption>)ViewBag.Couriers)
+                        {
+                            <option value="@courier.Id">@courier.Name</option>
+                        }
+                    </select>
+                </div>
+                <button class="btn btn-primary" type="submit">Assign</button>
+            </div>
+        </form>
+    }
+</div>
