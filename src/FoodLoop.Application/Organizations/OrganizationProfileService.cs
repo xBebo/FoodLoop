@@ -1,6 +1,3 @@
-﻿using System;
-using System.Threading;
-using System.Threading.Tasks;
 using FoodLoop.Application.Exceptions;
 using FoodLoop.Application.Interfaces.Identity;
 using FoodLoop.Application.Interfaces.Persistence;
@@ -9,11 +6,18 @@ using FoodLoop.Domain.Enums;
 
 namespace FoodLoop.Application.Organizations;
 
+public interface IOrganizationProfileRepository
+{
+    Task<Organization?> GetByIdAsync(Guid id, CancellationToken ct = default);
+    void ApplyOriginalRowVersion(Organization organization, byte[] rowVersion);
+}
+
 public sealed class OrganizationProfileService(
-    IRepository<Organization> orgRepository,
+    IOrganizationProfileRepository orgRepository,
     IRepository<AuditLog> auditRepository,
     IUnitOfWork unitOfWork,
-    ICurrentUserService currentUser)
+    ICurrentUserService currentUser,
+    TimeProvider clock)
 {
     public async Task<Organization?> GetMyOrganizationAsync(CancellationToken ct = default)
     {
@@ -23,7 +27,7 @@ public sealed class OrganizationProfileService(
         var org = await orgRepository.GetByIdAsync(orgId.Value, ct);
         if (org == null) return null;
 
-        if (org.Status == OrganizationStatus.Pending || org.Status == OrganizationStatus.Rejected)
+        if (org.Status is OrganizationStatus.Pending or OrganizationStatus.Rejected)
         {
             return null;
         }
@@ -49,10 +53,10 @@ public sealed class OrganizationProfileService(
         if (org.Status != OrganizationStatus.Active)
             return "Only Active organizations are allowed to update their profile details.";
 
-        if (rowVersion != null && rowVersion.Length > 0)
-        {
-            org.RowVersion = rowVersion;
-        }
+        if (rowVersion is null || rowVersion.Length == 0)
+            return "The profile version is missing. Please reload and try again.";
+
+        orgRepository.ApplyOriginalRowVersion(org, rowVersion);
 
         org.Name = newName.Trim();
         org.Address = newAddress.Trim();
@@ -62,9 +66,10 @@ public sealed class OrganizationProfileService(
             Id = Guid.NewGuid(),
             Action = "OrganizationUpdated",
             ActorUserId = userId.Value,
+            EntityType = nameof(Organization),
             EntityId = org.Id,
             Details = $"Updated organization '{org.Name}' profile.",
-            CreatedAtUtc = DateTimeOffset.UtcNow
+            CreatedAtUtc = clock.GetUtcNow()
         });
 
         try
@@ -73,10 +78,6 @@ public sealed class OrganizationProfileService(
             return null;
         }
         catch (PersistenceConflictException)
-        {
-            return "The profile was modified by another operation. Please reload and try again.";
-        }
-        catch (Exception)
         {
             return "The profile was modified by another operation. Please reload and try again.";
         }
