@@ -36,10 +36,9 @@ public static class DependencyInjection
         services.AddScoped<IOrganizationAdminReadRepository, OrganizationAdminReadRepository>();
         services.AddScoped<IAuditService, AuditService>();
         services.AddScoped<ICourierRepository, CourierRepository>();
+        services.AddScoped<ICourierTaskDetailsReadRepository, CourierTaskDetailsReadRepository>();
         services.AddScoped<ICourierDirectory, CourierDirectory>();
         services.AddScoped<DevelopmentDataSeeder>();
-        services.AddScoped<TaskDetailsService>();
-
         return services;
     }
 }
