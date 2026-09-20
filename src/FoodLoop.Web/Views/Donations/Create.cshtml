@@ -3,11 +3,16 @@
     ViewData["Title"] = "Create Donation";
 }
 
-<div class="container py-4" style="max-width: 760px;">
-    <h1 class="h3 mb-1">Create Donation</h1>
-    <p class="text-muted mb-4">Create a simple draft now. You can publish it from My Donations after validation.</p>
+<div class="page-shell page-shell--narrow">
+    <header class="page-header">
+        <div>
+            <p class="page-eyebrow mb-1">Donor workspace</p>
+            <h1 class="page-header__title">Create a donation</h1>
+            <p class="page-header__lead">Save a draft with the food, timing and pickup information your beneficiary will need.</p>
+        </div>
+    </header>
 
-    <form asp-action="Create" method="post" class="card card-body shadow-sm">
+    <form asp-action="Create" method="post" class="surface-panel p-3 p-md-4">
         <div asp-validation-summary="ModelOnly" class="text-danger mb-3"></div>
 
         <div class="mb-3">
@@ -55,7 +60,7 @@
                 <span asp-validation-for="ExpiresAt" class="text-danger"></span>
             </div>
         </div>
-        <p class="form-text mt-n2">Times are entered in local time and stored as UTC.</p>
+        <p class="form-text">Times are entered in local time and stored as UTC.</p>
 
         <div class="mb-3">
             <label asp-for="StorageInstructions" class="form-label"></label>
@@ -63,14 +68,14 @@
             <span asp-validation-for="StorageInstructions" class="text-danger"></span>
         </div>
 
-        <div class="mb-3">
+        <div class="mb-4">
             <label asp-for="PickupAddress" class="form-label"></label>
             <input asp-for="PickupAddress" class="form-control" />
             <span asp-validation-for="PickupAddress" class="text-danger"></span>
         </div>
 
-        <div class="d-flex gap-2">
-            <button type="submit" class="btn btn-success">Create draft</button>
+        <div class="d-flex flex-wrap gap-2">
+            <button type="submit" class="btn btn-primary">Create draft</button>
             <a asp-action="Mine" class="btn btn-outline-secondary">My Donations</a>
         </div>
     </form>
