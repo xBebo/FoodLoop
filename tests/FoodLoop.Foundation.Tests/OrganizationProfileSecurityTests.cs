@@ -10,6 +10,7 @@ using FoodLoop.Web.Models.Organizations;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Abstractions;
+using Microsoft.AspNetCore.Mvc.Controllers;
 using Microsoft.AspNetCore.Mvc.Routing;
 using Microsoft.AspNetCore.Routing;
 using Microsoft.EntityFrameworkCore;
@@ -132,7 +133,7 @@ public sealed class OrganizationProfileSecurityTests(DatabaseFixture fixture) : 
         var actionContext = new ActionContext(
             new DefaultHttpContext(),
             new RouteData(),
-            new ActionDescriptor());
+            new ControllerActionDescriptor());
         controller.ControllerContext = new ControllerContext(actionContext);
         controller.Url = new UrlHelper(actionContext);
 
