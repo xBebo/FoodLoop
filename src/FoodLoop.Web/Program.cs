@@ -1,6 +1,7 @@
 using FoodLoop.Application;
 using FoodLoop.Infrastructure;
 using FoodLoop.Infrastructure.Persistence;
+using FoodLoop.Web.Services;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 
@@ -15,6 +16,9 @@ if (string.IsNullOrWhiteSpace(connectionString))
 }
 builder.Services.AddApplication();
 builder.Services.AddInfrastructure(connectionString);
+builder.Services.Configure<DonationExpirySchedulerOptions>(
+    builder.Configuration.GetSection(DonationExpirySchedulerOptions.SectionName));
+builder.Services.AddHostedService<DonationExpiryBackgroundService>();
 var app = builder.Build();
 
 // Explicit development command. Normal startup never creates or migrates a database.

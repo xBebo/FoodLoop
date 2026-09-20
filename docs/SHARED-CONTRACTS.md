@@ -1,6 +1,6 @@
 # FoodLoop shared contracts — integration revision
 
-This document describes the implemented integration branch. Failure recovery and scheduled expiry remain future work; do not infer that an enum value has a working endpoint.
+This document describes the implemented integration branch through Stage 3 functional completion. Do not infer that a historical enum value has a working endpoint unless the lifecycle below explicitly uses it.
 
 ## Common conventions
 - Keep the four projects: Domain, Application, Infrastructure, Web.
@@ -67,16 +67,22 @@ For the basic demo, verified pickup starts transport and verified delivery close
 
 ## Admin
 - Admin dashboard, organization management, assignment and Audit List enforce Admin on the server.
-- Counts: Pending organizations; Available unexpired donations from Active Donors; Closed claims whose donation is Closed and which have Delivery evidence.
+- Counts: Pending organizations; Current Available unexpired donations from Active Donors; Closed claims whose donation is Closed and which have Delivery evidence; Cancelled claims; persisted Expired donations. The dashboard does not combine quantities across different units.
 - Audit is read-only and paginated (page size 20). Never store raw codes, passwords or secrets in Details.
 - Audit supports optional server-side filters applied before Count/Skip/Take: exact Action match, substring Actor match on the displayed actor name (including System and Unknown user), and a UTC `[FromUtc, ToUtc)` range (from inclusive, to exclusive). FromUtc must be earlier than ToUtc; invalid ranges render a validation message rather than an HTTP 500.
 - Audit ordering is stable: CreatedAtUtc descending, then Id descending. Previous/Next links preserve `actionName`, `actor`, `from`, and `to`.
 - The Admin dashboard links directly to organization management, pending organization review, courier assignment, and the Audit List.
 
-## Outside the Stage 2 integrated baseline
-No LLM, SignalR, advanced reports, cancellation after courier assignment or camera-based QR scanner. Existing historical enum values and database indexes are preserved.
+## Automatic donation expiry
+- The application use case selects only `Available` donations with `ExpiresAtUtc <= TimeProvider.GetUtcNow()`, changes them to `Expired`, and stages exactly one `DonationExpired` audit for each actual transition.
+- Draft, Claimed, PickupPending, InTransit, Closed and already-Expired donations are not changed by the expiry use case.
+- A RowVersion conflict ends the current attempt; stale tracked entities are never retried in the same scope.
+- The Web `DonationExpiryBackgroundService` is orchestration only. It waits for a configurable interval, creates a fresh DI scope for each run, resolves `IDonationExpiryService`, awaits the run serially (no overlap), respects shutdown cancellation, and logs a failed run without terminating the web application.
+- The committed default is enabled with a 60-second interval. Normal ASP.NET Core configuration can override `DonationExpiryScheduler:Enabled` and `DonationExpiryScheduler:IntervalSeconds`.
+- Request-time Marketplace/Claim expiry checks remain in place because background persistence can lag by one scheduler interval.
 
-Automatic donation expiry was not part of Stage 2. It is an approved Stage 3 addition: Alaa owns the application-level expiry rule/use case, and Baraa owns scheduled execution/integration. Until that Stage 3 work is merged, Marketplace and operational checks continue to reject/hide expired donations by comparing ExpiresAtUtc with the current UTC time.
+## Outside the implemented functional scope
+No LLM, SignalR, advanced reports, cancellation after courier assignment, live GPS or camera-based QR scanner. Existing historical enum values and database indexes are preserved.
 
 ## Stage two status
 [Tasks 2 of 3](TASKS-02.md) contains the acceptance rules used for Stage 2. The Stage 2 slices for Jana, Alaa, Safa, Haneen and Baraa are integrated as documented above.
@@ -86,7 +92,7 @@ Automatic donation expiry was not part of Stage 2. It is an approved Stage 3 add
 
 - Approved additions are limited to Organization Profile, Donation Details/My Donations improvements, Claim Details/Timeline, Courier Task Details/progress, Automatic Donation Expiry, and a basic read-only Admin impact summary.
 - Automatic expiry contract for Stage 3: only Available donations with ExpiresAtUtc <= current UTC become Expired; Draft/Claimed/delivery-stage/Closed donations are untouched; each successful expiry produces one DonationExpired audit and repeat runs are idempotent.
-- Alaa owns expiry business rules/application use case; Baraa owns hosted scheduling only. The scheduler must not implement donation business rules directly.
+- Alaa owns expiry business rules/application use case; Baraa owns hosted scheduling only. The implemented scheduler does not duplicate donation business rules and resolves the scoped application service per run.
 - No new lifecycle or enum is planned. Schema/migrations require explicit review and should not be needed for these tasks.
 - LLM, SignalR, full notifications, advanced analytics, cancellation after courier assignment and camera-based QR scanning remain deferred.
 - Every changed screen must be checked on Desktop and approximately 390×844 Mobile.
@@ -94,3 +100,10 @@ Automatic donation expiry was not part of Stage 2. It is an approved Stage 3 add
 - New/changed time displays must state UTC clearly.
 - Do not perform a global visual redesign in feature PRs; shared theme/navbar/typography work happens after Stage 3.
 - Final documentation deliverables include the current ERD and physical database diagram and must describe implemented behavior, not the original proposal.
+
+
+## Stage 3 release documentation
+- Final demo journey: [STAGE3-DEMO.md](STAGE3-DEMO.md).
+- Troubleshooting: [TROUBLESHOOTING.md](TROUBLESHOOTING.md).
+- Current conceptual and physical database diagrams: [ERD.md](ERD.md).
+- Stage 3 requires no new schema, migration or enum.

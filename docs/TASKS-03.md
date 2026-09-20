@@ -245,6 +245,18 @@
 
 ---
 
+## Stage 3 implementation status
+
+- Jana: Organization Profile/Auth hardening merged into `develop`.
+- Alaa: Donation Details/My Donations/expiry application use case merged into `develop`.
+- Safa: Claim Details/Timeline/cancellation hardening merged into `develop`.
+- Haneen: Courier Task Details/evidence hardening merged into `develop`.
+- Baraa release branch: scheduler orchestration, Admin impact summary, final regression/docs and release verification.
+
+No Stage 3 schema, migration or enum change is required.
+
+---
+
 ## Baraa — Expiry Scheduler + Basic Impact + Final Integration
 
 **Branch:** `feature/baraa-stage3-release`
@@ -305,6 +317,14 @@
    - Release build + full SQL-backed tests + GitHub Actions.
    - fresh database applies existing migrations then seed.
    - repo hygiene/security scan يدوي للـsecrets/generated DB/build artifacts.
+
+### تنفيذ Baraa الحالي
+
+- `DonationExpiryBackgroundService` يعمل serially ويستخدم fresh scope لكل run ويستدعي `IDonationExpiryService` فقط.
+- interval configurable؛ default = 60 seconds، مع cancellation وsafe exception logging.
+- Admin impact يعرض Current Available / Closed operations / Cancelled claims / Expired donations إضافة إلى Pending organizations.
+- Demo / troubleshooting / ERD deliverables موثقة في `STAGE3-DEMO.md` و`TROUBLESHOOTING.md` و`ERD.md`.
+- لا schema/migration/enum changes.
 
 ### قبول التسليم
 
