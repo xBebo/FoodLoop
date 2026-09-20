@@ -35,24 +35,7 @@ public sealed class DonationExpiryBackgroundService(
 
             try
             {
-                await using var scope = scopeFactory.CreateAsyncScope();
-                var expiry = scope.ServiceProvider.GetRequiredService<IDonationExpiryService>();
-                var result = await expiry.ExpireDueAsync(stoppingToken);
-
-                if (result.Succeeded)
-                {
-                    if (result.ExpiredCount > 0)
-                    {
-                        logger.LogInformation(
-                            "Donation expiry run completed. Expired {ExpiredCount} donation(s).",
-                            result.ExpiredCount);
-                    }
-                }
-                else
-                {
-                    logger.LogWarning(
-                        "Donation expiry run ended because persisted donation state changed concurrently. A later run will re-evaluate current state.");
-                }
+                await RunOnceAsync(stoppingToken);
             }
             catch (OperationCanceledException) when (stoppingToken.IsCancellationRequested)
             {
@@ -67,5 +50,27 @@ public sealed class DonationExpiryBackgroundService(
                     ex.GetType().Name);
             }
         }
+    }
+
+    public async Task RunOnceAsync(CancellationToken cancellationToken = default)
+    {
+        await using var scope = scopeFactory.CreateAsyncScope();
+        var expiry = scope.ServiceProvider.GetRequiredService<IDonationExpiryService>();
+        var result = await expiry.ExpireDueAsync(cancellationToken);
+
+        if (result.Succeeded)
+        {
+            if (result.ExpiredCount > 0)
+            {
+                logger.LogInformation(
+                    "Donation expiry run completed. Expired {ExpiredCount} donation(s).",
+                    result.ExpiredCount);
+            }
+
+            return;
+        }
+
+        logger.LogWarning(
+            "Donation expiry run ended because persisted donation state changed concurrently. A later run will re-evaluate current state.");
     }
 }
