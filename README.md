@@ -1,6 +1,6 @@
 # FoodLoop
 
-ASP.NET Core MVC graduation project with integrated registration/approval, donations, claims, courier handover, Admin dashboard and audit workflows.
+ASP.NET Core MVC graduation project with integrated registration/approval, donations, automatic expiry, claims, courier handover, Admin impact dashboard and audit workflows.
 
 ## Team ownership
 
@@ -95,10 +95,14 @@ dotnet ef database update --project src/FoodLoop.Infrastructure --startup-projec
 
 ## Verification
 
+Release verification:
+
 ```powershell
-dotnet build FoodLoop.slnx
-dotnet test FoodLoop.slnx --verbosity minimal
+dotnet build FoodLoop.slnx -c Release
+dotnet test FoodLoop.slnx -c Release --verbosity minimal
 ```
+
+For a faster local edit/build loop, omitting `-c Release` uses the normal Debug configuration.
 
 Tests need SQL Server, not EF InMemory or SQLite. By default they use LocalDB. For a different server, set `FOODLOOP_TEST_SQLSERVER` privately. The login must be able to create/drop a test database. Tests **replace any database name in that connection** with their own `FoodLoop_FoundationTests_<random>` name, apply migrations and remove only that generated database afterward. They never target FoodLoop_Development.
 
@@ -114,9 +118,9 @@ Coverage includes migration/model consistency, SQL constraints, competing rowver
 
 The existing release branch is named `master`; do not assume `main` exists. Confirm GitHub branch protection in the repository UI; it is not configured by these source files.
 
-## Admin dashboard and audit list
+## Admin dashboard, impact and audit list
 
-- `/Admin`: Admin-only operational counts.
+- `/Admin`: Admin-only read-only impact counts for Pending organizations, Current Available donations, Closed operations, Cancelled claims and Expired donations.
 - `/Admin/Audit`: Admin-only audit records, 20 per page, newest first (UTC timestamps).
 - `/Admin/AccessDenied`: public explanatory page returning HTTP 403; contains no admin data.
 
@@ -124,6 +128,23 @@ The existing release branch is named `master`; do not assume `main` exists. Conf
 
 Read [the admin feature guide](docs/ADMIN-FEATURE.md) for the count definitions, count semantics and manual checks. No migration is required for these read-only screens.
 
-## Integrated team demo
+## Automatic donation expiry
 
-For the integrated baseline, follow [INTEGRATION-HANDOFF.md](docs/INTEGRATION-HANDOFF.md) for the complete registration, approval, donation, claim and handover demo. The implemented lifecycle and code-expiry defaults are in [SHARED-CONTRACTS.md](docs/SHARED-CONTRACTS.md). Application services are registered through AddApplication(); no integration migration is required.
+The Web project runs a small `BackgroundService` that creates a fresh DI scope for each expiry run and calls Alaa's `IDonationExpiryService`. The worker contains no donation state-transition rules.
+
+Committed defaults:
+
+```json
+"DonationExpiryScheduler": {
+  "Enabled": true,
+  "IntervalSeconds": 60
+}
+```
+
+Override these values through normal ASP.NET Core configuration, for example `DonationExpiryScheduler__IntervalSeconds` in the process environment. Request-time Marketplace/Claim checks remain authoritative between scheduler runs.
+
+## Integrated team demo and release docs
+
+Follow [STAGE3-DEMO.md](docs/STAGE3-DEMO.md) for the final Stage 3 journey. [TROUBLESHOOTING.md](docs/TROUBLESHOOTING.md) covers common local/demo failures, and [ERD.md](docs/ERD.md) contains the current conceptual and physical database diagrams.
+
+[INTEGRATION-HANDOFF.md](docs/INTEGRATION-HANDOFF.md) remains the earlier integrated baseline. The implemented lifecycle and security contracts are in [SHARED-CONTRACTS.md](docs/SHARED-CONTRACTS.md). No Stage 3 schema migration is required.
