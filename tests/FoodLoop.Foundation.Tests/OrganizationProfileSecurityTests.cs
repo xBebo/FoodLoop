@@ -12,6 +12,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Abstractions;
 using Microsoft.AspNetCore.Mvc.Controllers;
 using Microsoft.AspNetCore.Mvc.Routing;
+using Microsoft.AspNetCore.Mvc.ViewFeatures;
 using Microsoft.AspNetCore.Routing;
 using Microsoft.EntityFrameworkCore;
 
@@ -136,6 +137,7 @@ public sealed class OrganizationProfileSecurityTests(DatabaseFixture fixture) : 
             new ControllerActionDescriptor());
         controller.ControllerContext = new ControllerContext(actionContext);
         controller.Url = new UrlHelper(actionContext);
+        controller.TempData = new TempDataDictionary(actionContext.HttpContext, new TestTempDataProvider());
 
         var model = new OrganizationProfileViewModel
         {
@@ -170,6 +172,12 @@ public sealed class OrganizationProfileSecurityTests(DatabaseFixture fixture) : 
         Status = OrganizationStatus.Active,
         Address = "Original address"
     };
+
+    private sealed class TestTempDataProvider : ITempDataProvider
+    {
+        public IDictionary<string, object> LoadTempData(HttpContext context) => new Dictionary<string, object>();
+        public void SaveTempData(HttpContext context, IDictionary<string, object> values) { }
+    }
 
     private sealed class TestCurrentUser(Guid userId, Guid organizationId) : ICurrentUserService
     {
