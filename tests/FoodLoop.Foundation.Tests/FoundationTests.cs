@@ -1,8 +1,15 @@
+using System;
+using System.Collections.Generic;
+using System.Linq;
 using System.Security.Claims;
+using System.Threading;
+using System.Threading.Tasks;
+using FoodLoop.Application.Courier;
 using FoodLoop.Application.Donations;
 using FoodLoop.Application.Exceptions;
 using FoodLoop.Application.Identity;
 using FoodLoop.Application.Interfaces.Identity;
+using FoodLoop.Application.Interfaces.Persistence;
 using FoodLoop.Domain.Entities;
 using FoodLoop.Domain.Enums;
 using FoodLoop.Infrastructure;
@@ -14,24 +21,36 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
+using Xunit;
 
 namespace FoodLoop.Foundation.Tests;
+
 public sealed class FoundationTests(DatabaseFixture fixture) : IClassFixture<DatabaseFixture>
 {
     private static Organization Org(OrganizationType type = OrganizationType.Donor) => new()
     { Name = "Test organization", LicenseNumber = Guid.NewGuid().ToString("N"), Type = type, Status = OrganizationStatus.Active, Address = "Test address" };
+
     private static FoodDonation Donation() => new()
     {
-        DonorOrganization = Org(), FoodCategory = new FoodCategory { Name = Guid.NewGuid().ToString("N") },
-        Title = "Test food", Description = "Test", Quantity = 10, Unit = QuantityUnit.Meals,
-        PreparedAtUtc = DateTimeOffset.UtcNow.AddHours(-1), ExpiresAtUtc = DateTimeOffset.UtcNow.AddHours(2),
-        PickupAddress = "Test address", StorageInstructions = "Test", Status = DonationStatus.Available
+        DonorOrganization = Org(),
+        FoodCategory = new FoodCategory { Name = Guid.NewGuid().ToString("N") },
+        Title = "Test food",
+        Description = "Test",
+        Quantity = 10,
+        Unit = QuantityUnit.Meals,
+        PreparedAtUtc = DateTimeOffset.UtcNow.AddHours(-1),
+        ExpiresAtUtc = DateTimeOffset.UtcNow.AddHours(2),
+        PickupAddress = "Test address",
+        StorageInstructions = "Test",
+        Status = DonationStatus.Available
     };
+
     private async Task<Guid> CreateDonationAsync()
     {
         await using var db = fixture.CreateContext(); var donation = Donation();
         db.Add(donation); await db.SaveChangesAsync(); return donation.Id;
     }
+
     private static DonationClaim Claim(Guid donationId) => new()
     { FoodDonationId = donationId, BeneficiaryOrganization = Org(OrganizationType.Beneficiary) };
 
@@ -43,6 +62,7 @@ public sealed class FoundationTests(DatabaseFixture fixture) : IClassFixture<Dat
         Assert.Empty(await db.Database.GetPendingMigrationsAsync());
         await db.Database.MigrateAsync();
     }
+
     [Theory]
     [InlineData(0)]
     [InlineData(-1)]
@@ -51,12 +71,14 @@ public sealed class FoundationTests(DatabaseFixture fixture) : IClassFixture<Dat
         await using var db = fixture.CreateContext(); var donation = Donation(); donation.Quantity = quantity;
         db.Add(donation); await Assert.ThrowsAsync<DbUpdateException>(() => db.SaveChangesAsync());
     }
+
     [Fact]
     public async Task Database_rejects_invalid_expiry_interval()
     {
         await using var db = fixture.CreateContext(); var donation = Donation(); donation.ExpiresAtUtc = donation.PreparedAtUtc;
         db.Add(donation); await Assert.ThrowsAsync<DbUpdateException>(() => db.SaveChangesAsync());
     }
+
     [Fact]
     public async Task Duplicate_license_is_rejected()
     {
@@ -64,6 +86,7 @@ public sealed class FoundationTests(DatabaseFixture fixture) : IClassFixture<Dat
         db.AddRange(first, second);
         await Assert.ThrowsAsync<PersistenceConflictException>(() => new UnitOfWork(db).SaveChangesAsync());
     }
+
     [Fact]
     public async Task Filtered_unique_index_blocks_second_active_claim_without_donation_update()
     {
@@ -74,6 +97,7 @@ public sealed class FoundationTests(DatabaseFixture fixture) : IClassFixture<Dat
         await using var verify = fixture.CreateContext();
         Assert.Equal(1, await verify.DonationClaims.CountAsync(x => x.FoodDonationId == donationId));
     }
+
     [Fact]
     public async Task Cancelled_claim_releases_unique_slot_and_active_query_ignores_history()
     {
@@ -82,6 +106,7 @@ public sealed class FoundationTests(DatabaseFixture fixture) : IClassFixture<Dat
         var current = Claim(donationId); db.AddRange(previous, current); await db.SaveChangesAsync();
         Assert.Equal(current.Id, (await new ClaimRepository(db).GetActiveForDonationAsync(donationId))!.Id);
     }
+
     [Fact]
     public async Task Concurrent_donation_updates_allow_one_claim_and_one_audit_only()
     {
@@ -89,7 +114,6 @@ public sealed class FoundationTests(DatabaseFixture fixture) : IClassFixture<Dat
         await using var first = fixture.CreateContext(); await using var second = fixture.CreateContext();
         var a = await first.FoodDonations.SingleAsync(x => x.Id == donationId);
         var b = await second.FoodDonations.SingleAsync(x => x.Id == donationId);
-        // Both read the same rowversion before either writes: deterministic competing snapshots.
         Assert.Equal(a.RowVersion, b.RowVersion);
         a.Status = b.Status = DonationStatus.Claimed;
         first.Add(Claim(donationId)); second.Add(Claim(donationId));
@@ -107,6 +131,7 @@ public sealed class FoundationTests(DatabaseFixture fixture) : IClassFixture<Dat
         Assert.Equal(1, await verify.AuditLogs.CountAsync(x => x.EntityId == donationId));
         Assert.Equal(DonationStatus.Claimed, (await verify.FoodDonations.FindAsync(donationId))!.Status);
     }
+
     [Fact]
     public async Task Explicit_transaction_rollback_removes_staged_business_and_audit_changes()
     {
@@ -120,6 +145,7 @@ public sealed class FoundationTests(DatabaseFixture fixture) : IClassFixture<Dat
         Assert.False(await verify.DonationClaims.AnyAsync(x => x.FoodDonationId == donationId));
         Assert.Equal(DonationStatus.Available, (await verify.FoodDonations.FindAsync(donationId))!.Status);
     }
+
     [Fact]
     public async Task Marketplace_excludes_expired_and_suspended_donor_listings()
     {
@@ -132,6 +158,7 @@ public sealed class FoundationTests(DatabaseFixture fixture) : IClassFixture<Dat
         Assert.Contains(result.Items, x => x.Id == good.Id);
         Assert.DoesNotContain(result.Items, x => x.Id == expired.Id || x.Id == suspended.Id);
     }
+
     [Fact]
     public async Task Foreign_keys_prevent_deleting_an_organization_with_donations()
     {
@@ -140,6 +167,7 @@ public sealed class FoundationTests(DatabaseFixture fixture) : IClassFixture<Dat
         db.Organizations.Remove((await db.Organizations.FindAsync(donation.DonorOrganizationId))!);
         await Assert.ThrowsAsync<DbUpdateException>(() => db.SaveChangesAsync());
     }
+
     [Fact]
     public async Task Audit_cannot_be_edited_or_deleted_using_SaveChanges()
     {
@@ -149,6 +177,7 @@ public sealed class FoundationTests(DatabaseFixture fixture) : IClassFixture<Dat
         db.Entry(entry).State = EntityState.Unchanged; db.Remove(entry);
         Assert.Throws<InvalidOperationException>(() => db.SaveChanges());
     }
+
     [Fact]
     public async Task Handover_is_unique_per_claim_and_type()
     {
@@ -160,6 +189,7 @@ public sealed class FoundationTests(DatabaseFixture fixture) : IClassFixture<Dat
         db.Add(new HandoverRecord { DonationClaimId = claim.Id, CourierUserId = user.Id, Type = HandoverType.Pickup, CompletedAtUtc = DateTimeOffset.UtcNow });
         await Assert.ThrowsAsync<PersistenceConflictException>(() => new UnitOfWork(db).SaveChangesAsync());
     }
+
     [Fact]
     public async Task Qr_rowversion_rejects_a_second_consumer_of_the_same_snapshot()
     {
@@ -168,8 +198,14 @@ public sealed class FoundationTests(DatabaseFixture fixture) : IClassFixture<Dat
         {
             var user = new ApplicationUser { Id = Guid.NewGuid(), UserName = Guid.NewGuid().ToString("N") }; var claim = Claim(donationId);
             setup.AddRange(user, claim); await setup.SaveChangesAsync();
-            setup.Add(new QrVerificationToken { Id = tokenId, DonationClaimId = claim.Id, CourierUserId = user.Id,
-                TokenHash = Convert.ToHexString(System.Security.Cryptography.RandomNumberGenerator.GetBytes(32)), ExpiresAtUtc = DateTimeOffset.UtcNow.AddMinutes(5) });
+            setup.Add(new QrVerificationToken
+            {
+                Id = tokenId,
+                DonationClaimId = claim.Id,
+                CourierUserId = user.Id,
+                TokenHash = Convert.ToHexString(System.Security.Cryptography.RandomNumberGenerator.GetBytes(32)),
+                ExpiresAtUtc = DateTimeOffset.UtcNow.AddMinutes(5)
+            });
             await setup.SaveChangesAsync();
         }
         await using var first = fixture.CreateContext(); await using var second = fixture.CreateContext();
@@ -178,6 +214,7 @@ public sealed class FoundationTests(DatabaseFixture fixture) : IClassFixture<Dat
         await first.SaveChangesAsync();
         await Assert.ThrowsAsync<PersistenceConflictException>(() => new UnitOfWork(second).SaveChangesAsync());
     }
+
     [Fact]
     public async Task Identity_seeding_is_repeatable_and_current_user_reads_organization_from_database()
     {
@@ -195,8 +232,11 @@ public sealed class FoundationTests(DatabaseFixture fixture) : IClassFixture<Dat
         Assert.True(await userManager.CheckPasswordAsync(user, password));
         Assert.True(await userManager.IsInRoleAsync(user, AppRoles.Donor));
         var accessor = scope.ServiceProvider.GetRequiredService<IHttpContextAccessor>();
-        accessor.HttpContext = new DefaultHttpContext { User = new ClaimsPrincipal(new ClaimsIdentity([
-            new Claim(ClaimTypes.NameIdentifier, user.Id.ToString()), new Claim(ClaimTypes.Role, AppRoles.Donor)], "test")) };
+        accessor.HttpContext = new DefaultHttpContext
+        {
+            User = new ClaimsPrincipal(new ClaimsIdentity([
+        new Claim(ClaimTypes.NameIdentifier, user.Id.ToString()), new Claim(ClaimTypes.Role, AppRoles.Donor)], "test"))
+        };
         var current = scope.ServiceProvider.GetRequiredService<ICurrentUserService>();
         Assert.Equal(user.Id, current.UserId); Assert.True(current.IsInRole(AppRoles.Donor));
         Assert.Equal(user.OrganizationId, await current.GetOrganizationIdAsync());
@@ -288,12 +328,46 @@ public sealed class FoundationTests(DatabaseFixture fixture) : IClassFixture<Dat
         Assert.Equal(DonationStatus.Draft, expiredDraft.Status);
     }
 
+    [Fact]
+    public async Task TaskDetailsService_returns_details_and_rejects_unauthorized()
+    {
+        await using var db = fixture.CreateContext();
+        var donationId = await CreateDonationAsync();
+
+        var courierUser = new ApplicationUser { Id = Guid.NewGuid(), UserName = Guid.NewGuid().ToString("N") };
+        var claim = Claim(donationId);
+        claim.Status = ClaimStatus.PickupPending;
+
+        db.AddRange(courierUser, claim);
+        await db.SaveChangesAsync();
+
+        var authorizedUser = new CourierTestUser(courierUser.Id);
+        var service = new TaskDetailsService(
+            new Repository<DonationClaim>(db),
+            new Repository<FoodDonation>(db),
+            authorizedUser);
+
+        var details = await service.GetTaskDetailsAsync(claim.Id);
+
+        Assert.NotNull(details);
+        Assert.Equal(claim.Id, details.ClaimId);
+        Assert.Equal(ClaimStatus.PickupPending, details.Status);
+    }
+
     private sealed class AnonymousUser : ICurrentUserService
     {
         public Guid? UserId => null;
         public bool IsAuthenticated => false;
         public bool IsInRole(string role) => false;
         public Task<Guid?> GetOrganizationIdAsync(CancellationToken cancellationToken = default) => Task.FromResult<Guid?>(null);
+    }
+    private sealed class CourierTestUser(Guid userId) : ICurrentUserService
+    {
+        public Guid? UserId => userId;
+        public bool IsAuthenticated => true;
+        public bool IsInRole(string role) => string.Equals(AppRoles.Courier, role, StringComparison.Ordinal);
+        public Task<Guid?> GetOrganizationIdAsync(CancellationToken cancellationToken = default)
+            => Task.FromResult<Guid?>(null);
     }
 
     private sealed class TestUser(Guid organizationId, string role) : ICurrentUserService
@@ -304,4 +378,5 @@ public sealed class FoundationTests(DatabaseFixture fixture) : IClassFixture<Dat
         public Task<Guid?> GetOrganizationIdAsync(CancellationToken cancellationToken = default)
             => Task.FromResult<Guid?>(organizationId);
     }
+
 }

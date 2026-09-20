@@ -1,0 +1,41 @@
+﻿@model FoodLoop.Application.Courier.CourierTaskDetailsDto
+ 
+@{
+    ViewData["Title"] = "Task Details";
+}
+ 
+<div class="container my-4">
+    <h2>Task Details</h2>
+ 
+    <div class="card my-3">
+        <div class="card-body">
+            <h5 class="card-title">@Model.DonationTitle</h5>
+            <p><strong>Status:</strong> <span class="badge bg-info">@Model.Status</span></p>
+            <p><strong>Donor Organization:</strong> @Model.DonorOrganizationName</p>
+            <p><strong>Beneficiary Organization:</strong> @Model.BeneficiaryOrganizationName</p>
+            <p><strong>Pickup Address:</strong> @Model.PickupAddress</p>
+            <p><strong>Expiry Date:</strong> @Model.ExpiryDate.ToString("dd MMM yyyy, HH:mm UTC") (@Model.ExpiryDate.ToString("u"))</p>
+            <p><strong>Next Step:</strong> @Model.NextStep</p>
+        </div>
+    </div>
+ 
+    @if (Model.PickupHandoverEvidence != null || Model.DeliveryHandoverEvidence != null)
+    {
+        <div class="card my-3">
+            <div class="card-header">Handover Evidence (Read-Only)</div>
+            <div class="card-body">
+                @if (Model.PickupHandoverEvidence != null)
+                {
+                    <p><strong>Pickup Evidence Verified:</strong> @Model.PickupHandoverEvidence.CompletedAtUtc.ToString("dd MMM yyyy, HH:mm UTC") (@Model.PickupHandoverEvidence.CompletedAtUtc.ToString("u"))</p>
+                }
+                @if (Model.DeliveryHandoverEvidence != null)
+                {
+                    <p><strong>Delivery Evidence Verified:</strong> @Model.DeliveryHandoverEvidence.CompletedAtUtc.ToString("dd MMM yyyy, HH:mm UTC") (@Model.DeliveryHandoverEvidence.CompletedAtUtc.ToString("u"))</p>
+                }
+            </div>
+        </div>
+    }
+ 
+    <a asp-action="MyTasks" class="btn btn-secondary">Back to My Tasks</a>
+</div>
+ 

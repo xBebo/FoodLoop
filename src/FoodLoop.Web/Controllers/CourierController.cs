@@ -5,21 +5,25 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Filters;
 using QRCoder;
+
 namespace FoodLoop.Web.Controllers;
+
 [Authorize]
-public sealed class CourierController(CourierService service) : Controller
+public sealed class CourierController(CourierService service, TaskDetailsService taskDetailsService) : Controller
 {
     public override async Task OnActionExecutionAsync(ActionExecutingContext context, ActionExecutionDelegate next)
     {
         var result = await next();
         if (result.Exception is UnauthorizedAccessException) { result.Result = Forbid(); result.ExceptionHandled = true; }
     }
+
     [Authorize(Roles = "Admin"), HttpGet]
     public async Task<IActionResult> AssignCourier(CancellationToken ct)
     {
         ViewBag.Couriers = await service.CouriersAsync();
         return View(await service.AssignableAsync(ct));
     }
+
     [Authorize(Roles = "Admin"), HttpPost]
     public async Task<IActionResult> AssignCourier(Guid claimId, Guid courierUserId, CancellationToken ct)
     {
@@ -27,14 +31,17 @@ public sealed class CourierController(CourierService service) : Controller
         TempData[result.Succeeded ? "SuccessMessage" : "ErrorMessage"] = result.Error ?? "Courier assigned.";
         return RedirectToAction(nameof(AssignCourier));
     }
+
     [Authorize(Roles = "Courier"), HttpGet]
     public async Task<IActionResult> MyTasks(CancellationToken ct) => View(await service.MyTasksAsync(ct));
+
     [Authorize(Roles = "Courier"), HttpGet]
     public async Task<IActionResult> VerifyHandover(Guid claimId, CancellationToken ct)
     {
         var claim = await service.MyTaskAsync(claimId, ct);
         return claim == null ? NotFound() : View(claim);
     }
+
     [Authorize(Roles = "Courier"), HttpPost]
     public async Task<IActionResult> VerifyHandover(Guid claimId, string? handoverToken, HandoverType handoverType, CancellationToken ct)
     {
@@ -45,8 +52,10 @@ public sealed class CourierController(CourierService service) : Controller
         var claim = await service.MyTaskAsync(claimId, ct);
         return claim == null ? NotFound() : View(claim);
     }
+
     [Authorize(Roles = "Donor,Beneficiary"), HttpGet]
     public async Task<IActionResult> Codes(CancellationToken ct) => View(await service.OrganizationTasksAsync(ct));
+
     [Authorize(Roles = "Donor,Beneficiary"), HttpPost]
     [ResponseCache(NoStore = true, Location = ResponseCacheLocation.None)]
     public async Task<IActionResult> IssueCode(Guid claimId, HandoverType handoverType, CancellationToken ct)
@@ -55,8 +64,21 @@ public sealed class CourierController(CourierService service) : Controller
         var result = await service.IssueAsync(claimId, handoverType, ct);
         if (!result.Succeeded) { TempData["ErrorMessage"] = result.Error; return RedirectToAction(nameof(Codes)); }
         if (result.Token is null || result.ExpiresAtUtc is null) throw new InvalidOperationException("Issued handover code was missing display data.");
+
         using var qrData = QRCodeGenerator.GenerateQrCode(result.Token, QRCodeGenerator.ECCLevel.M);
         using var qr = new SvgQRCode(qrData);
         return View("Code", new HandoverCodeViewModel(result.Token, handoverType, result.ExpiresAtUtc.Value, qr.GetGraphic()));
+    }
+
+    [Authorize(Roles = "Courier"), HttpGet]
+    public async Task<IActionResult> Details(Guid id, CancellationToken ct)
+    {
+        var details = await taskDetailsService.GetTaskDetailsAsync(id, ct);
+        if (details == null)
+        {
+            return NotFound();
+        }
+
+        return View(details);
     }
 }

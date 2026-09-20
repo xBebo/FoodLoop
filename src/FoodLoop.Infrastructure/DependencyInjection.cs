@@ -38,6 +38,8 @@ public static class DependencyInjection
         services.AddScoped<ICourierRepository, CourierRepository>();
         services.AddScoped<ICourierDirectory, CourierDirectory>();
         services.AddScoped<DevelopmentDataSeeder>();
+        services.AddScoped<TaskDetailsService>();
+
         return services;
     }
 }
