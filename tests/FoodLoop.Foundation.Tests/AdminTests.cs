@@ -31,6 +31,7 @@ public sealed class AdminTests(DatabaseFixture fixture) : IClassFixture<Database
         {
             builder.UseEnvironment("Development");
             builder.UseSetting("ConnectionStrings:DefaultConnection", connection);
+            builder.UseSetting("DonationExpiryScheduler:Enabled", "false");
             builder.ConfigureTestServices(services => {
                 services.RemoveAll<TimeProvider>(); services.AddSingleton<TimeProvider>(new FrozenClock());
                 // Only this test host accepts the test-role header. Production keeps Identity cookies.
@@ -296,9 +297,11 @@ public sealed class AdminTests(DatabaseFixture fixture) : IClassFixture<Database
             Title = "Test", Quantity = 2, Unit = QuantityUnit.Meals, PreparedAtUtc = Now.AddDays(-1), ExpiresAtUtc = Now.AddHours(1),
             PickupAddress = "Test", Status = DonationStatus.Available };
         var good = Donation(); var atExpiry = Donation(); atExpiry.ExpiresAtUtc = Now;
-        var expired = Donation(); expired.ExpiresAtUtc = Now.AddMinutes(-1);
+        var dueButNotPersistedExpired = Donation(); dueButNotPersistedExpired.ExpiresAtUtc = Now.AddMinutes(-1);
+        var persistedExpired = Donation(); persistedExpired.Status = DonationStatus.Expired;
         var suspended = Donation(OrganizationStatus.Suspended); var pendingDonor = Donation(OrganizationStatus.Pending);
         var rejected = Donation(OrganizationStatus.Rejected); var draft = Donation(); draft.Status = DonationStatus.Draft;
+        var cancelledDonation = Donation(); cancelledDonation.Status = DonationStatus.Claimed;
         var closed = Donation(); closed.Status = DonationStatus.Closed;
         var noEvidence = Donation(); noEvidence.Status = DonationStatus.Closed;
         var notClosed = Donation(); notClosed.Status = DonationStatus.Delivered;
@@ -306,15 +309,20 @@ public sealed class AdminTests(DatabaseFixture fixture) : IClassFixture<Database
         DonationClaim ClaimFor(FoodDonation donation, ClaimStatus status) => new()
         { FoodDonation = donation, BeneficiaryOrganization = Org(OrganizationStatus.Active, OrganizationType.Beneficiary), Status = status };
         var success = ClaimFor(closed, ClaimStatus.Closed); var unfinished = ClaimFor(notClosed, ClaimStatus.Delivered);
-        db.AddRange(good, atExpiry, expired, suspended, pendingDonor, rejected, draft, courier, success, unfinished, ClaimFor(noEvidence, ClaimStatus.Closed));
+        var cancelled = ClaimFor(cancelledDonation, ClaimStatus.Cancelled);
+        db.AddRange(good, atExpiry, dueButNotPersistedExpired, persistedExpired, suspended, pendingDonor, rejected, draft,
+            courier, success, unfinished, cancelled, ClaimFor(noEvidence, ClaimStatus.Closed));
         db.AddRange(new HandoverRecord { DonationClaim = success, CourierUserId = courier.Id, Type = HandoverType.Delivery, CompletedAtUtc = Now },
             new HandoverRecord { DonationClaim = success, CourierUserId = courier.Id, Type = HandoverType.Pickup, CompletedAtUtc = Now.AddMinutes(-5) },
             new HandoverRecord { DonationClaim = unfinished, CourierUserId = courier.Id, Type = HandoverType.Delivery, CompletedAtUtc = Now });
         await db.SaveChangesAsync();
         var result = await new AdminReadRepository(db).GetDashboardAsync(Now);
-        Assert.Equal(new DashboardSummary(1, 1, 1), result);
+        Assert.Equal(new DashboardSummary(1, 1, 1, 1, 1), result);
         using var host = new WebHost(fixture.ConnectionString); using var client = Client(host, "Admin");
         var html = await client.GetStringAsync("/Admin");
         Assert.Contains("data-testid=\"available\">1", html);
+        Assert.Contains("data-testid=\"closed\">1", html);
+        Assert.Contains("data-testid=\"cancelled\">1", html);
+        Assert.Contains("data-testid=\"expired\">1", html);
     }
 }
