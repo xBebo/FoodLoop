@@ -1,19 +1,48 @@
 @model FoodLoop.Application.Admin.DashboardSummary
 @{ ViewData["Title"] = "Admin dashboard"; }
-<div class="d-flex flex-wrap justify-content-between align-items-center gap-3 mb-4">
-    <div><p class="text-success fw-semibold mb-1">FOODLOOP ADMIN</p><h1>Operations overview</h1><p class="text-muted mb-0">Current organization, donation and claim impact.</p></div>
-    <div class="d-flex flex-wrap gap-2">
-        <a class="btn btn-outline-success" asp-controller="Organizations" asp-action="Manage">Manage organizations</a>
-        <a class="btn btn-outline-success" asp-controller="Organizations" asp-action="PendingRequests">Review pending</a>
-        <a class="btn btn-outline-success" asp-controller="Courier" asp-action="AssignCourier">Assign courier</a>
-        <a class="btn btn-outline-success" asp-action="Audit">View audit log</a>
-    </div>
+
+<div class="page-shell">
+    <header class="page-header">
+        <div>
+            <p class="page-eyebrow mb-1">FoodLoop admin</p>
+            <h1 class="page-header__title">Operations overview</h1>
+            <p class="page-header__lead">A read-only snapshot of organization, donation and claim activity.</p>
+        </div>
+        <div class="d-flex flex-wrap gap-2">
+            <a class="btn btn-outline-success" asp-controller="Organizations" asp-action="Manage">Manage organizations</a>
+            <a class="btn btn-outline-success" asp-controller="Organizations" asp-action="PendingRequests">Review pending</a>
+            <a class="btn btn-outline-success" asp-controller="Courier" asp-action="AssignCourier">Assign courier</a>
+            <a class="btn btn-outline-success" asp-action="Audit">View audit log</a>
+        </div>
+    </header>
+
+    <section class="metric-grid" aria-label="Operational impact summary">
+        <article class="metric-card">
+            <p class="metric-card__label">Pending organizations</p>
+            <p class="metric-card__value" data-testid="pending">@Model.PendingOrganizations</p>
+            <p class="metric-card__help">Organizations waiting for approval.</p>
+        </article>
+        <article class="metric-card">
+            <p class="metric-card__label">Current available</p>
+            <p class="metric-card__value" data-testid="available">@Model.AvailableDonations</p>
+            <p class="metric-card__help">Unexpired listings from active donors.</p>
+        </article>
+        <article class="metric-card">
+            <p class="metric-card__label">Closed operations</p>
+            <p class="metric-card__value" data-testid="closed">@Model.ClosedDeliveries</p>
+            <p class="metric-card__help">Closed claims with delivery evidence.</p>
+        </article>
+        <article class="metric-card">
+            <p class="metric-card__label">Cancelled claims</p>
+            <p class="metric-card__value" data-testid="cancelled">@Model.CancelledClaims</p>
+            <p class="metric-card__help">Claims cancelled before courier assignment.</p>
+        </article>
+        <article class="metric-card">
+            <p class="metric-card__label">Expired donations</p>
+            <p class="metric-card__value" data-testid="expired">@Model.ExpiredDonations</p>
+            <p class="metric-card__help">Donations persisted in the Expired state.</p>
+        </article>
+    </section>
+
+    <p class="text-muted mt-4 mb-0">Counts refresh when this page reloads. Food quantities are never combined across different units.</p>
 </div>
-<div class="row g-4">
-    <div class="col-md-6 col-xl"><section class="card h-100"><div class="card-body"><h2 class="h5">Pending organizations</h2><p class="display-4 fw-semibold" data-testid="pending">@Model.PendingOrganizations</p><p class="text-muted mb-0">Organizations waiting for approval.</p></div></section></div>
-    <div class="col-md-6 col-xl"><section class="card h-100"><div class="card-body"><h2 class="h5">Current available</h2><p class="display-4 fw-semibold" data-testid="available">@Model.AvailableDonations</p><p class="text-muted mb-0">Unexpired Available listings from active donors.</p></div></section></div>
-    <div class="col-md-6 col-xl"><section class="card h-100"><div class="card-body"><h2 class="h5">Closed operations</h2><p class="display-4 fw-semibold" data-testid="closed">@Model.ClosedDeliveries</p><p class="text-muted mb-0">Closed claims with Closed donations and delivery evidence.</p></div></section></div>
-    <div class="col-md-6 col-xl"><section class="card h-100"><div class="card-body"><h2 class="h5">Cancelled claims</h2><p class="display-4 fw-semibold" data-testid="cancelled">@Model.CancelledClaims</p><p class="text-muted mb-0">Claims cancelled before courier assignment.</p></div></section></div>
-    <div class="col-md-6 col-xl"><section class="card h-100"><div class="card-body"><h2 class="h5">Expired donations</h2><p class="display-4 fw-semibold" data-testid="expired">@Model.ExpiredDonations</p><p class="text-muted mb-0">Donations persisted in the Expired state.</p></div></section></div>
-</div>
-<p class="text-muted mt-4">Counts are read-only and refresh when this page reloads. Food quantities are not combined across different units.</p>
