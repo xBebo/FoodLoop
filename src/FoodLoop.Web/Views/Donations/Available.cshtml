@@ -7,11 +7,16 @@
     ViewData["Title"] = "Available Donations";
 }
 
-<div class="container py-4">
-    <h1 class="h3 mb-1">Available Donations</h1>
-    <p class="text-muted mb-4">Active, unexpired donations from active donor organizations. Times are shown in UTC.</p>
+<div class="page-shell">
+    <header class="page-header">
+        <div>
+            <p class="page-eyebrow mb-1">Beneficiary marketplace</p>
+            <h1 class="page-header__title">Available donations</h1>
+            <p class="page-header__lead">Browse active, unexpired donations from approved donors. All times are shown in UTC.</p>
+        </div>
+    </header>
 
-    <form asp-action="Available" method="get" class="card card-body shadow-sm mb-4">
+    <form asp-action="Available" method="get" class="filter-panel surface-panel mb-4">
         <div class="row g-3 align-items-end">
             <div class="col-md-6">
                 <label for="search" class="form-label">Search title</label>
@@ -32,15 +37,15 @@
 
     @if (Model.Items.Count == 0)
     {
-        <div class="alert alert-light border">
+        <div class="empty-state">
             @(Model.Page == 1 ? "No donations match these filters." : "No donations are available on this page.")
         </div>
     }
     else
     {
         <div class="table-responsive">
-            <table class="table table-bordered table-hover align-middle bg-white">
-                <thead class="table-light">
+            <table class="table table-hover align-middle data-table">
+                <thead>
                     <tr>
                         <th>Donation</th>
                         <th>Donor</th>
@@ -55,7 +60,7 @@
                 @foreach (var item in Model.Items)
                 {
                     <tr>
-                        <td>@item.Title</td>
+                        <td class="fw-semibold">@item.Title</td>
                         <td>@item.DonorName</td>
                         <td>@item.Category</td>
                         <td>@item.Quantity @item.Unit</td>
@@ -76,13 +81,13 @@
 
     @if (Model.HasPrevious || Model.HasNext)
     {
-        <nav class="d-flex align-items-center gap-3" aria-label="Marketplace pages">
+        <nav class="d-flex align-items-center gap-3 mt-3" aria-label="Marketplace pages">
             @if (Model.HasPrevious)
             {
                 <a asp-action="Available" asp-route-page="@(Model.Page - 1)" asp-route-search="@Model.Search"
                    asp-route-categoryId="@Model.CategoryId" class="btn btn-outline-secondary">Previous</a>
             }
-            <span>Page @Model.Page</span>
+            <span class="text-muted fw-semibold">Page @Model.Page</span>
             @if (Model.HasNext)
             {
                 <a asp-action="Available" asp-route-page="@(Model.Page + 1)" asp-route-search="@Model.Search"
