@@ -1,20 +1,45 @@
 @model IReadOnlyList<FoodLoop.Domain.Entities.DonationClaim>
 @using FoodLoop.Domain.Enums
-<h1>Handover codes</h1>
-<p>Generate a code at handover and share it with your assigned courier. Generating another code invalidates the previous one.</p>
-@if (TempData["ErrorMessage"] is string error) { <p class="alert alert-danger">@error</p> }
-@foreach (var claim in Model)
-{
-    <div class="border rounded p-3 mb-3">
-    <strong>@claim.FoodDonation.Title</strong> <span>@claim.Status</span>
-    @if ((User.IsInRole("Donor") && claim.Status == ClaimStatus.PickupPending) ||
-         (User.IsInRole("Beneficiary") && claim.Status == ClaimStatus.InTransit))
+
+<div class="page-shell page-shell--narrow">
+    <header class="page-header">
+        <div>
+            <p class="page-eyebrow mb-1">Verified handover</p>
+            <h1 class="page-header__title">Handover codes</h1>
+            <p class="page-header__lead">Generate a one-time code only at handover. Generating another code invalidates the previous one.</p>
+        </div>
+    </header>
+
+    @if (TempData["ErrorMessage"] is string error)
     {
-        <form asp-action="IssueCode" method="post">
-            <input type="hidden" name="claimId" value="@claim.Id" />
-            <input type="hidden" name="handoverType" value="@(User.IsInRole("Donor") ? HandoverType.Pickup : HandoverType.Delivery)" />
-            <button class="btn btn-primary">Generate handover code</button>
-        </form>
+        <div class="alert alert-danger" role="alert">@error</div>
     }
-    </div>
-}
+
+    @if (Model.Count == 0)
+    {
+        <div class="empty-state">No handover-ready claims are available.</div>
+    }
+
+    @foreach (var claim in Model)
+    {
+        <section class="workflow-card">
+            <div class="workflow-card__topline">
+                <div>
+                    <h2 class="workflow-card__title">@claim.FoodDonation.Title</h2>
+                    <p class="workflow-card__meta">Use the code only with the assigned courier at the current handover step.</p>
+                </div>
+                <span class="status-chip">@claim.Status</span>
+            </div>
+
+            @if ((User.IsInRole("Donor") && claim.Status == ClaimStatus.PickupPending) ||
+                 (User.IsInRole("Beneficiary") && claim.Status == ClaimStatus.InTransit))
+            {
+                <form asp-action="IssueCode" method="post" class="mt-3">
+                    <input type="hidden" name="claimId" value="@claim.Id" />
+                    <input type="hidden" name="handoverType" value="@(User.IsInRole("Donor") ? HandoverType.Pickup : HandoverType.Delivery)" />
+                    <button class="btn btn-primary" type="submit">Generate handover code</button>
+                </form>
+            }
+        </section>
+    }
+</div>
