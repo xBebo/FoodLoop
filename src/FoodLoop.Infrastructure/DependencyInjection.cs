@@ -1,5 +1,6 @@
 using FoodLoop.Application.Interfaces.Auditing;
 using FoodLoop.Application.Courier;
+using FoodLoop.Application.Organizations;
 using FoodLoop.Application.Interfaces.Identity;
 using FoodLoop.Application.Interfaces.Persistence;
 using FoodLoop.Infrastructure.Auditing;
