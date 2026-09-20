@@ -60,7 +60,11 @@ public sealed class DonationExpiryBackgroundService(
             }
             catch (Exception ex)
             {
-                logger.LogError(ex, "Donation expiry run failed. The scheduler will continue on the next interval.");
+                // Do not log exception messages/data here: database-provider exceptions can contain
+                // environment details. The exception type is enough for operational triage.
+                logger.LogError(
+                    "Donation expiry run failed with {ExceptionType}. The scheduler will continue on the next interval.",
+                    ex.GetType().Name);
             }
         }
     }
