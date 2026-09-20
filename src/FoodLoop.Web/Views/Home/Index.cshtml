@@ -1,11 +1,62 @@
-@{ ViewData["Title"] = "Good food. Greater impact."; }
-<section class="py-5">
-    <p class="text-success fw-semibold text-uppercase">FoodLoop</p>
-    <h1 class="display-4 fw-bold">Good food.<br />Greater impact.</h1>
-    <p class="lead mt-4 col-lg-8">Connecting food donors with approved organizations to give surplus food a useful destination.</p>
-    <div class="row g-4 mt-4">
-        <div class="col-md-4"><h2 class="h4">Share surplus</h2><p>Make food available for an organization that needs it.</p></div>
-        <div class="col-md-4"><h2 class="h4">Coordinate collection</h2><p>Connect each reservation with an assigned courier.</p></div>
-        <div class="col-md-4"><h2 class="h4">Document delivery</h2><p>Keep a clear record of collection and handover.</p></div>
+@{
+    ViewData["Title"] = "Good food. Greater impact.";
+}
+
+<section class="foodloop-hero" aria-labelledby="foodloop-hero-title">
+    <div class="foodloop-hero__content">
+        <p class="hero-eyebrow mb-0">Food rescue, coordinated</p>
+        <h1 id="foodloop-hero-title">Good food. Greater impact.</h1>
+        <p class="foodloop-hero__lead">
+            FoodLoop connects approved donors, beneficiary organizations and couriers so surplus food can move safely from availability to verified delivery.
+        </p>
+        <div class="foodloop-hero__actions">
+            @if (User.Identity?.IsAuthenticated != true)
+            {
+                <a class="btn btn-brand btn-lg" asp-controller="Auth" asp-action="Register">Register an organization</a>
+                <a class="btn btn-outline-light btn-lg" asp-controller="Auth" asp-action="Login">Log in</a>
+            }
+            else if (User.IsInRole("Beneficiary"))
+            {
+                <a class="btn btn-brand btn-lg" asp-controller="Donations" asp-action="Available">Browse marketplace</a>
+                <a class="btn btn-outline-light btn-lg" asp-controller="Claims" asp-action="Mine">View my claims</a>
+            }
+            else if (User.IsInRole("Donor"))
+            {
+                <a class="btn btn-brand btn-lg" asp-controller="Donations" asp-action="Create">Create a donation</a>
+                <a class="btn btn-outline-light btn-lg" asp-controller="Donations" asp-action="Mine">View my donations</a>
+            }
+            else if (User.IsInRole("Courier"))
+            {
+                <a class="btn btn-brand btn-lg" asp-controller="Courier" asp-action="MyTasks">Open delivery tasks</a>
+            }
+            else if (User.IsInRole("Admin"))
+            {
+                <a class="btn btn-brand btn-lg" asp-controller="Admin" asp-action="Index">Open admin dashboard</a>
+            }
+        </div>
+    </div>
+</section>
+
+<section class="row g-3 g-lg-4 feature-grid" aria-label="How FoodLoop works">
+    <div class="col-md-4">
+        <article class="feature-card">
+            <span class="feature-card__number" aria-hidden="true">01</span>
+            <h2>Share useful surplus</h2>
+            <p>Donors publish validated food donations with clear quantity, storage, pickup and expiry information.</p>
+        </article>
+    </div>
+    <div class="col-md-4">
+        <article class="feature-card">
+            <span class="feature-card__number" aria-hidden="true">02</span>
+            <h2>Coordinate the handoff</h2>
+            <p>Beneficiaries claim available food and admins connect the reservation to an assigned courier.</p>
+        </article>
+    </div>
+    <div class="col-md-4">
+        <article class="feature-card">
+            <span class="feature-card__number" aria-hidden="true">03</span>
+            <h2>Verify the journey</h2>
+            <p>Purpose-bound handover codes and persisted evidence document pickup and delivery through closure.</p>
+        </article>
     </div>
 </section>
