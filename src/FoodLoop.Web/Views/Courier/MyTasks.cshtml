@@ -6,9 +6,14 @@
     ViewData["Title"] = "My delivery tasks";
 }
 
-<div class="container mt-4">
-    <h1 class="h3 mb-1">My delivery tasks</h1>
-    <p class="text-muted mb-4">Your assigned claims and the next handover step.</p>
+<div class="page-shell">
+    <header class="page-header">
+        <div>
+            <p class="page-eyebrow mb-1">Courier workspace</p>
+            <h1 class="page-header__title">My delivery tasks</h1>
+            <p class="page-header__lead">Your assigned claims, current lifecycle state and next verified handover step.</p>
+        </div>
+    </header>
 
     @if (TempData["SuccessMessage"] != null)
     {
@@ -19,8 +24,8 @@
     }
 
     <div class="table-responsive">
-        <table class="table table-bordered table-hover align-middle">
-            <thead class="table-dark">
+        <table class="table table-hover align-middle">
+            <thead>
                 <tr>
                     <th>Donation</th>
                     <th>Status</th>
@@ -31,7 +36,7 @@
             <tbody>
             @if (Model == null || !Model.Any())
             {
-                <tr><td colspan="4" class="text-center py-4 text-muted">No delivery tasks are assigned to you right now.</td></tr>
+                <tr><td colspan="4" class="text-center py-5 text-muted">No delivery tasks are assigned to you right now.</td></tr>
             }
             else
             {
