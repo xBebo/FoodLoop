@@ -28,6 +28,10 @@
         @Html.AntiForgeryToken()
         <input type="hidden" asp-for="Id" />
         <input type="hidden" asp-for="RowVersion" />
+        @if (ViewData["ReturnUrl"] is string returnUrl && !string.IsNullOrWhiteSpace(returnUrl))
+        {
+            <input type="hidden" name="returnUrl" value="@returnUrl" />
+        }
 
         <div class="mb-3">
             <label asp-for="Name" class="form-label">Organization Name</label>
