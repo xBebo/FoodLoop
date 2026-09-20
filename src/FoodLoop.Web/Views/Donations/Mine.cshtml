@@ -17,14 +17,15 @@
     ViewData["Title"] = "My Donations";
 }
 
-<div class="container py-4 donations-page">
-    <div class="donations-heading mb-4">
+<div class="page-shell donations-page">
+    <header class="page-header donations-heading">
         <div>
-            <h1 class="h3 mb-1">My Donations</h1>
-            <p class="text-muted mb-0">Your organization's donation history. All times are shown in UTC.</p>
+            <p class="page-eyebrow mb-1">Donor workspace</p>
+            <h1 class="page-header__title">My Donations</h1>
+            <p class="page-header__lead">Your organization's donation history. All times are shown in UTC.</p>
         </div>
-        <a asp-action="Create" class="btn btn-success">Create Donation</a>
-    </div>
+        <a asp-action="Create" class="btn btn-primary">Create Donation</a>
+    </header>
 
     @if (TempData["SuccessMessage"] is string success)
     {
@@ -35,7 +36,7 @@
         <div class="alert alert-danger" role="alert">@error</div>
     }
 
-    <form asp-action="Mine" method="get" class="card card-body shadow-sm mb-4 donations-filter">
+    <form asp-action="Mine" method="get" class="surface-panel filter-panel mb-4 donations-filter">
         <div>
             <label for="status" class="form-label">Status</label>
             <select id="status" name="status" class="form-select">
@@ -54,14 +55,14 @@
 
     @if (Model.Items.Count == 0)
     {
-        <div class="alert alert-light border">
+        <div class="empty-state">
             @(Model.Status is null ? "No donations yet." : $"No {Model.Status} donations.")
         </div>
     }
     else
     {
         <div class="table-responsive">
-            <table class="table table-bordered table-hover align-middle bg-white donations-table">
+            <table class="table table-hover align-middle donations-table">
                 <thead class="table-light">
                     <tr>
                         <th scope="col">Title</th>
