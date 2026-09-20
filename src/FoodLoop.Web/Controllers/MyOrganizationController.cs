@@ -12,13 +12,15 @@ namespace FoodLoop.Web.Controllers;
 public sealed class MyOrganizationController(OrganizationProfileService profileService) : Controller
 {
     [HttpGet]
-    public async Task<IActionResult> Index(CancellationToken ct)
+    public async Task<IActionResult> Index(string? returnUrl = null, CancellationToken ct = default)
     {
         var org = await profileService.GetMyOrganizationAsync(ct);
         if (org == null)
         {
             return Forbid();
         }
+
+        ViewData["ReturnUrl"] = returnUrl;
 
         var model = new OrganizationProfileViewModel
         {
@@ -37,8 +39,10 @@ public sealed class MyOrganizationController(OrganizationProfileService profileS
 
     [HttpPost]
     [ValidateAntiForgeryToken]
-    public async Task<IActionResult> Edit(OrganizationProfileViewModel model, CancellationToken ct)
+    public async Task<IActionResult> Edit(OrganizationProfileViewModel model, string? returnUrl = null, CancellationToken ct = default)
     {
+        ViewData["ReturnUrl"] = returnUrl;
+
         if (!ModelState.IsValid)
         {
             return View("Index", model);
@@ -48,10 +52,17 @@ public sealed class MyOrganizationController(OrganizationProfileService profileS
         if (error != null)
         {
             TempData["ErrorMessage"] = error;
-            return RedirectToAction(nameof(Index));
+            return RedirectToAction(nameof(Index), new { returnUrl });
         }
 
         TempData["SuccessMessage"] = "Profile updated successfully.";
+
+        // التحقق الأمني لمنع Open Redirect
+        if (!string.IsNullOrEmpty(returnUrl) && Url.IsLocalUrl(returnUrl))
+        {
+            return Redirect(returnUrl);
+        }
+
         return RedirectToAction(nameof(Index));
     }
 }
