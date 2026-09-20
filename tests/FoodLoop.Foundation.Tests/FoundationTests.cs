@@ -329,29 +329,64 @@ public sealed class FoundationTests(DatabaseFixture fixture) : IClassFixture<Dat
     }
 
     [Fact]
-    public async Task TaskDetailsService_returns_details_and_rejects_unauthorized()
+    public async Task TaskDetailsService_returns_only_assigned_task_with_persisted_evidence()
     {
         await using var db = fixture.CreateContext();
         var donationId = await CreateDonationAsync();
 
-        var courierUser = new ApplicationUser { Id = Guid.NewGuid(), UserName = Guid.NewGuid().ToString("N") };
+        var assignedCourier = new ApplicationUser { Id = Guid.NewGuid(), UserName = Guid.NewGuid().ToString("N") };
+        var foreignCourier = new ApplicationUser { Id = Guid.NewGuid(), UserName = Guid.NewGuid().ToString("N") };
         var claim = Claim(donationId);
-        claim.Status = ClaimStatus.PickupPending;
+        claim.Status = ClaimStatus.InTransit;
+        claim.AssignedCourierUserId = assignedCourier.Id;
 
-        db.AddRange(courierUser, claim);
+        db.AddRange(assignedCourier, foreignCourier, claim);
         await db.SaveChangesAsync();
 
-        var authorizedUser = new CourierTestUser(courierUser.Id);
-        var service = new TaskDetailsService(
-            new Repository<DonationClaim>(db),
-            new Repository<FoodDonation>(db),
-            authorizedUser);
+        var pickupAt = DateTimeOffset.UtcNow.AddMinutes(-5);
+        db.Add(new HandoverRecord
+        {
+            DonationClaimId = claim.Id,
+            CourierUserId = assignedCourier.Id,
+            Type = HandoverType.Pickup,
+            CompletedAtUtc = pickupAt,
+            CreatedAtUtc = pickupAt
+        });
+        await db.SaveChangesAsync();
 
-        var details = await service.GetTaskDetailsAsync(claim.Id);
+        var repository = new CourierTaskDetailsReadRepository(db);
+        var assignedService = new TaskDetailsService(repository, new CourierTestUser(assignedCourier.Id));
+        var foreignService = new TaskDetailsService(repository, new CourierTestUser(foreignCourier.Id));
+
+        var details = await assignedService.GetTaskDetailsAsync(claim.Id);
+        var foreign = await foreignService.GetTaskDetailsAsync(claim.Id);
 
         Assert.NotNull(details);
         Assert.Equal(claim.Id, details.ClaimId);
-        Assert.Equal(ClaimStatus.PickupPending, details.Status);
+        Assert.Equal(ClaimStatus.InTransit, details.Status);
+        Assert.Equal((await db.FoodDonations.FindAsync(donationId))!.ExpiresAtUtc, details.ExpiryDate);
+        Assert.NotNull(details.PickupHandoverEvidence);
+        Assert.Equal(pickupAt, details.PickupHandoverEvidence!.CompletedAtUtc);
+        Assert.Null(details.DeliveryHandoverEvidence);
+        Assert.Null(foreign);
+    }
+
+    [Fact]
+    public async Task TaskDetailsService_rejects_non_courier_even_when_user_id_matches_assignment()
+    {
+        await using var db = fixture.CreateContext();
+        var donationId = await CreateDonationAsync();
+        var user = new ApplicationUser { Id = Guid.NewGuid(), UserName = Guid.NewGuid().ToString("N") };
+        var claim = Claim(donationId);
+        claim.AssignedCourierUserId = user.Id;
+        db.AddRange(user, claim);
+        await db.SaveChangesAsync();
+
+        var service = new TaskDetailsService(
+            new CourierTaskDetailsReadRepository(db),
+            new RoleTestUser(user.Id, AppRoles.Donor));
+
+        Assert.Null(await service.GetTaskDetailsAsync(claim.Id));
     }
 
     private sealed class AnonymousUser : ICurrentUserService
@@ -366,6 +401,15 @@ public sealed class FoundationTests(DatabaseFixture fixture) : IClassFixture<Dat
         public Guid? UserId => userId;
         public bool IsAuthenticated => true;
         public bool IsInRole(string role) => string.Equals(AppRoles.Courier, role, StringComparison.Ordinal);
+        public Task<Guid?> GetOrganizationIdAsync(CancellationToken cancellationToken = default)
+            => Task.FromResult<Guid?>(null);
+    }
+
+    private sealed class RoleTestUser(Guid userId, string role) : ICurrentUserService
+    {
+        public Guid? UserId => userId;
+        public bool IsAuthenticated => true;
+        public bool IsInRole(string requestedRole) => string.Equals(role, requestedRole, StringComparison.Ordinal);
         public Task<Guid?> GetOrganizationIdAsync(CancellationToken cancellationToken = default)
             => Task.FromResult<Guid?>(null);
     }
