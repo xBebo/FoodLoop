@@ -1,62 +1,41 @@
+using System;
+using System.Threading;
+using System.Threading.Tasks;
 using FoodLoop.Application.Courier;
 using FoodLoop.Domain.Enums;
-using FoodLoop.Web.Models.Courier;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.AspNetCore.Mvc.Filters;
-using QRCoder;
+
 namespace FoodLoop.Web.Controllers;
+
 [Authorize]
-public sealed class CourierController(CourierService service) : Controller
+public sealed class CourierController(TaskDetailsService taskDetailsService) : Controller
 {
-    public override async Task OnActionExecutionAsync(ActionExecutingContext context, ActionExecutionDelegate next)
+    [HttpGet]
+    public async Task<IActionResult> Details(Guid id, CancellationToken ct)
     {
-        var result = await next();
-        if (result.Exception is UnauthorizedAccessException) { result.Result = Forbid(); result.ExceptionHandled = true; }
+        var task = await taskDetailsService.GetTaskDetailsAsync(id, ct);
+        if (task == null)
+        {
+            TempData["ErrorMessage"] = "Task not found or access denied.";
+            return RedirectToAction("Index", "Home");
+        }
+
+        return View(task);
     }
-    [Authorize(Roles = "Admin"), HttpGet]
-    public async Task<IActionResult> AssignCourier(CancellationToken ct)
+
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> AdvanceStatus(Guid id, HandoverType actionType, CancellationToken ct)
     {
-        ViewBag.Couriers = await service.CouriersAsync();
-        return View(await service.AssignableAsync(ct));
-    }
-    [Authorize(Roles = "Admin"), HttpPost]
-    public async Task<IActionResult> AssignCourier(Guid claimId, Guid courierUserId, CancellationToken ct)
-    {
-        var result = await service.AssignAsync(claimId, courierUserId, ct);
-        TempData[result.Succeeded ? "SuccessMessage" : "ErrorMessage"] = result.Error ?? "Courier assigned.";
-        return RedirectToAction(nameof(AssignCourier));
-    }
-    [Authorize(Roles = "Courier"), HttpGet]
-    public async Task<IActionResult> MyTasks(CancellationToken ct) => View(await service.MyTasksAsync(ct));
-    [Authorize(Roles = "Courier"), HttpGet]
-    public async Task<IActionResult> VerifyHandover(Guid claimId, CancellationToken ct)
-    {
-        var claim = await service.MyTaskAsync(claimId, ct);
-        return claim == null ? NotFound() : View(claim);
-    }
-    [Authorize(Roles = "Courier"), HttpPost]
-    public async Task<IActionResult> VerifyHandover(Guid claimId, string? handoverToken, HandoverType handoverType, CancellationToken ct)
-    {
-        if (!ModelState.IsValid) return BadRequest("Invalid handover input.");
-        var result = await service.VerifyAsync(claimId, handoverToken, handoverType, ct);
-        if (result.Succeeded) { TempData["SuccessMessage"] = "Handover verified."; return RedirectToAction(nameof(MyTasks)); }
-        ModelState.AddModelError("", result.Error!);
-        var claim = await service.MyTaskAsync(claimId, ct);
-        return claim == null ? NotFound() : View(claim);
-    }
-    [Authorize(Roles = "Donor,Beneficiary"), HttpGet]
-    public async Task<IActionResult> Codes(CancellationToken ct) => View(await service.OrganizationTasksAsync(ct));
-    [Authorize(Roles = "Donor,Beneficiary"), HttpPost]
-    [ResponseCache(NoStore = true, Location = ResponseCacheLocation.None)]
-    public async Task<IActionResult> IssueCode(Guid claimId, HandoverType handoverType, CancellationToken ct)
-    {
-        if (!ModelState.IsValid) return BadRequest("Invalid handover input.");
-        var result = await service.IssueAsync(claimId, handoverType, ct);
-        if (!result.Succeeded) { TempData["ErrorMessage"] = result.Error; return RedirectToAction(nameof(Codes)); }
-        if (result.Token is null || result.ExpiresAtUtc is null) throw new InvalidOperationException("Issued handover code was missing display data.");
-        using var qrData = QRCodeGenerator.GenerateQrCode(result.Token, QRCodeGenerator.ECCLevel.M);
-        using var qr = new SvgQRCode(qrData);
-        return View("Code", new HandoverCodeViewModel(result.Token, handoverType, result.ExpiresAtUtc.Value, qr.GetGraphic()));
+        var error = await taskDetailsService.AdvanceTaskStatusAsync(id, actionType, ct);
+        if (error != null)
+        {
+            TempData["ErrorMessage"] = error;
+            return RedirectToAction(nameof(Details), new { id });
+        }
+
+        TempData["SuccessMessage"] = "Task status updated successfully.";
+        return RedirectToAction(nameof(Details), new { id });
     }
 }

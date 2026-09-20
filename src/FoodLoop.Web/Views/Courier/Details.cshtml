@@ -1,0 +1,38 @@
+﻿@model FoodLoop.Domain.Entities.HandoverRecord
+
+@{
+    ViewData["Title"] = "Courier Task Details";
+}
+
+<div class="container my-4" style="max-width: 600px;">
+    <h2 class="mb-3">Task Handover Details</h2>
+
+    @if (TempData["SuccessMessage"] != null)
+    {
+        <div class="alert alert-success">@TempData["SuccessMessage"]</div>
+    }
+    @if (TempData["ErrorMessage"] != null)
+    {
+        <div class="alert alert-danger">@TempData["ErrorMessage"]</div>
+    }
+
+    <div class="card p-3 shadow-sm mb-3">
+        <p><strong>Task ID:</strong> @Model.Id</p>
+        <p><strong>Current Status / Type:</strong> <span class="badge bg-info">@Model.Type</span></p>
+        <p><strong>Created At (UTC):</strong> @Model.CreatedAtUtc.ToString("yyyy-MM-dd HH:mm UTC")</p>
+    </div>
+
+    <div class="card p-3 shadow-sm">
+        <h5>Advance Task Progress</h5>
+        <form asp-action="AdvanceStatus" method="post" class="d-flex flex-column gap-2 mt-2">
+            <input type="hidden" name="id" value="@Model.Id" />
+            
+            <button type="submit" name="actionType" value="Pickup" class="btn btn-primary w-100">
+                Mark Pickup Completed
+            </button>
+            <button type="submit" name="actionType" value="Delivery" class="btn btn-success w-100">
+                Mark Delivery Completed
+            </button>
+        </form>
+    </div>
+</div>

@@ -17,8 +17,12 @@ public static class DependencyInjection
         services.AddScoped<OrganizationApprovalService>();
         services.AddScoped<OrganizationManagementService>();
         services.AddScoped<DonationService>();
+<<<<<<< HEAD
         services.AddScoped<IDonationExpiryService, DonationExpiryService>();
 
+=======
+        services.AddScoped<TaskDetailsService>();
+>>>>>>> 644ab77b0285a989af9f1f3e073c2750db253a4c
         return services;
     }
 }
