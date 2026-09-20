@@ -1,8 +1,5 @@
 @model FoodLoop.Application.Donations.DonationDetailsItem
-@functions {
-    private static string IsoUtc(DateTimeOffset value) => value.ToUniversalTime().ToString("yyyy-MM-ddTHH:mm:ss'Z'");
-    private static string DisplayUtc(DateTimeOffset value) => value.ToUniversalTime().ToString("dd MMM yyyy, HH:mm 'UTC'");
-}
+
 @{
     ViewData["Title"] = "Donation Details";
 }
@@ -18,7 +15,7 @@
         <span class="badge text-bg-secondary donation-details-status">@Model.Status</span>
     </div>
 
-    <section class="card shadow-sm" aria-labelledby="donation-title">
+    <section class="card shadow-sm donation-card mobile-card-hook" aria-labelledby="donation-title">
         <div class="card-body p-4">
             <h2 id="donation-title" class="h4 mb-4">@Model.Title</h2>
             <dl class="donation-details-grid mb-0">
@@ -32,11 +29,11 @@
                 </div>
                 <div>
                     <dt>Prepared</dt>
-                    <dd><time datetime="@IsoUtc(Model.PreparedAtUtc)">@DisplayUtc(Model.PreparedAtUtc)</time></dd>
+                    <dd><time datetime="@Model.PreparedAtUtc.ToUniversalTime().ToString("yyyy-MM-ddTHH:mm:ss'Z'")">@Model.PreparedAtUtc.ToUniversalTime().ToString("dd MMM yyyy, HH:mm UTC")</time></dd>
                 </div>
                 <div>
                     <dt>Expires</dt>
-                    <dd><time datetime="@IsoUtc(Model.ExpiresAtUtc)">@DisplayUtc(Model.ExpiresAtUtc)</time></dd>
+                    <dd><time datetime="@Model.ExpiresAtUtc.ToUniversalTime().ToString("yyyy-MM-ddTHH:mm:ss'Z'")">@Model.ExpiresAtUtc.ToUniversalTime().ToString("dd MMM yyyy, HH:mm UTC")</time></dd>
                 </div>
                 <div class="donation-details-wide">
                     <dt>Pickup address</dt>
@@ -54,3 +51,5 @@
         </div>
     </section>
 </div>
+
+ 
