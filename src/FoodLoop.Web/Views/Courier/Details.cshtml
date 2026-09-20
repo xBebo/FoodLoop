@@ -1,41 +1,72 @@
 ﻿@model FoodLoop.Application.Courier.CourierTaskDetailsDto
- 
+
 @{
     ViewData["Title"] = "Task Details";
 }
- 
-<div class="container my-4">
-    <h2>Task Details</h2>
- 
-    <div class="card my-3">
-        <div class="card-body">
-            <h5 class="card-title">@Model.DonationTitle</h5>
-            <p><strong>Status:</strong> <span class="badge bg-info">@Model.Status</span></p>
-            <p><strong>Donor Organization:</strong> @Model.DonorOrganizationName</p>
-            <p><strong>Beneficiary Organization:</strong> @Model.BeneficiaryOrganizationName</p>
-            <p><strong>Pickup Address:</strong> @Model.PickupAddress</p>
-            <p><strong>Expiry Date:</strong> @Model.ExpiryDate.ToString("dd MMM yyyy, HH:mm UTC") (@Model.ExpiryDate.ToString("u"))</p>
-            <p><strong>Next Step:</strong> @Model.NextStep</p>
+
+<div class="page-shell page-shell--narrow">
+    <a asp-action="MyTasks" class="btn btn-link px-0 mb-3"><span aria-hidden="true">&larr;</span> Back to My Tasks</a>
+
+    <header class="page-header">
+        <div>
+            <p class="page-eyebrow mb-1">Courier task</p>
+            <h1 class="page-header__title">@Model.DonationTitle</h1>
+            <p class="page-header__lead">Assigned task context and persisted handover evidence.</p>
         </div>
-    </div>
- 
-    @if (Model.PickupHandoverEvidence != null || Model.DeliveryHandoverEvidence != null)
-    {
-        <div class="card my-3">
-            <div class="card-header">Handover Evidence (Read-Only)</div>
-            <div class="card-body">
+        <span class="status-chip">@Model.Status</span>
+    </header>
+
+    <section class="surface-panel p-3 p-md-4 mb-3" aria-label="Task details">
+        <dl class="detail-grid mb-0">
+            <div>
+                <dt>Donor organization</dt>
+                <dd>@Model.DonorOrganizationName</dd>
+            </div>
+            <div>
+                <dt>Beneficiary organization</dt>
+                <dd>@Model.BeneficiaryOrganizationName</dd>
+            </div>
+            <div class="detail-grid__wide">
+                <dt>Pickup address</dt>
+                <dd>@Model.PickupAddress</dd>
+            </div>
+            <div>
+                <dt>Expiry date</dt>
+                <dd>@Model.ExpiryDate.ToString("dd MMM yyyy, HH:mm UTC") (@Model.ExpiryDate.ToString("u"))</dd>
+            </div>
+            <div>
+                <dt>Next step</dt>
+                <dd>@Model.NextStep</dd>
+            </div>
+        </dl>
+    </section>
+
+    <section class="surface-panel p-3 p-md-4" aria-labelledby="handover-evidence-title">
+        <p class="page-eyebrow mb-1">Read-only evidence</p>
+        <h2 id="handover-evidence-title" class="h4 mb-3">Handover evidence</h2>
+
+        @if (Model.PickupHandoverEvidence == null && Model.DeliveryHandoverEvidence == null)
+        {
+            <p class="text-muted mb-0">No verified handover evidence has been recorded yet.</p>
+        }
+        else
+        {
+            <dl class="detail-grid mb-0">
                 @if (Model.PickupHandoverEvidence != null)
                 {
-                    <p><strong>Pickup Evidence Verified:</strong> @Model.PickupHandoverEvidence.CompletedAtUtc.ToString("dd MMM yyyy, HH:mm UTC") (@Model.PickupHandoverEvidence.CompletedAtUtc.ToString("u"))</p>
+                    <div>
+                        <dt>Pickup verified</dt>
+                        <dd>@Model.PickupHandoverEvidence.CompletedAtUtc.ToString("dd MMM yyyy, HH:mm UTC") (@Model.PickupHandoverEvidence.CompletedAtUtc.ToString("u"))</dd>
+                    </div>
                 }
                 @if (Model.DeliveryHandoverEvidence != null)
                 {
-                    <p><strong>Delivery Evidence Verified:</strong> @Model.DeliveryHandoverEvidence.CompletedAtUtc.ToString("dd MMM yyyy, HH:mm UTC") (@Model.DeliveryHandoverEvidence.CompletedAtUtc.ToString("u"))</p>
+                    <div>
+                        <dt>Delivery verified</dt>
+                        <dd>@Model.DeliveryHandoverEvidence.CompletedAtUtc.ToString("dd MMM yyyy, HH:mm UTC") (@Model.DeliveryHandoverEvidence.CompletedAtUtc.ToString("u"))</dd>
+                    </div>
                 }
-            </div>
-        </div>
-    }
- 
-    <a asp-action="MyTasks" class="btn btn-secondary">Back to My Tasks</a>
+            </dl>
+        }
+    </section>
 </div>
- 
