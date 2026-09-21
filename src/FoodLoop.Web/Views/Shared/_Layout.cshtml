@@ -8,8 +8,9 @@
 <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <meta name="theme-color" content="#174c36" />
+    <meta name="theme-color" content="#0B2B26" />
     <title>@ViewData["Title"] - FoodLoop</title>
+    <link rel="icon" type="image/svg+xml" href="~/favicon.svg" />
     <script type="importmap"></script>
     <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.min.css" />
     <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
@@ -21,13 +22,13 @@
         <nav aria-label="Main navigation" class="navbar navbar-expand-lg foodloop-navbar">
             <div class="container-xxl">
                 <a class="navbar-brand foodloop-brand" asp-area="" asp-controller="Home" asp-action="Index" aria-label="FoodLoop home">
-                    <span class="foodloop-brand__mark" aria-hidden="true"><svg viewBox="0 0 32 32" fill="none"><path d="M25 7C13 5 6 11 9 20c9 3 17-3 16-13Z" stroke="currentColor" stroke-width="2"/><path d="m7 26 13-13M8 8l-3 5m0-5v5h5M24 24l3-5m0 5v-5h-5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
-                    <span>FoodLoop</span>
+                    <span class="foodloop-brand__mark" aria-hidden="true"><svg viewBox="0 0 32 32" fill="none"><path d="M26 16a10 10 0 1 1-2.93-7.07" stroke="currentColor" stroke-width="2.25" stroke-linecap="round"/><path class="foodloop-mark__leaf" d="M23.07 8.93C23.07 4.9 25.4 2.6 29.5 2.5c-.1 4.1-2.4 6.43-6.43 6.43Z" fill="currentColor"/><path d="M11.5 19.5c2.2-3.4 5-5.3 8.5-6" stroke="currentColor" stroke-width="2" stroke-linecap="round" opacity=".7"/></svg></span>
+                    <span class="foodloop-brand__word">FoodLoop</span>
                 </a>
 
                 <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#foodloopNav"
                         aria-controls="foodloopNav" aria-expanded="false" aria-label="Toggle navigation">
-                    <span class="navbar-toggler-icon"></span>
+                    <span class="navbar-toggler-icon" aria-hidden="true"></span>
                 </button>
 
                 <div id="foodloopNav" class="collapse navbar-collapse">
@@ -90,15 +91,20 @@
 
     <footer class="app-footer">
         <div class="container-xxl app-footer__inner">
-            <div>
-                <strong>FoodLoop</strong>
+            <div class="app-footer__brand">
+                <span class="app-footer__wordmark">
+                    <span class="foodloop-brand__mark" aria-hidden="true"><svg viewBox="0 0 32 32" fill="none"><path d="M26 16a10 10 0 1 1-2.93-7.07" stroke="currentColor" stroke-width="2.25" stroke-linecap="round"/><path class="foodloop-mark__leaf" d="M23.07 8.93C23.07 4.9 25.4 2.6 29.5 2.5c-.1 4.1-2.4 6.43-6.43 6.43Z" fill="currentColor"/><path d="M11.5 19.5c2.2-3.4 5-5.3 8.5-6" stroke="currentColor" stroke-width="2" stroke-linecap="round" opacity=".7"/></svg></span>
+                    <strong>FoodLoop</strong>
+                </span>
                 <span class="app-footer__muted">Surplus food, coordinated responsibly.</span>
+                <p class="app-footer__note">Connecting donors, community organisations and couriers so good food reaches people, not landfill.</p>
             </div>
             <div class="app-footer__links">
-                <span>&copy; 2026</span>
+                <span>&copy; 2026 FoodLoop</span>
                 <a asp-area="" asp-controller="Home" asp-action="Privacy">Privacy</a>
             </div>
         </div>
+        <svg class="app-footer__botanical" viewBox="0 0 240 160" fill="none" aria-hidden="true" focusable="false"><path d="M20 150C70 120 120 70 150 10" stroke="currentColor" stroke-width="1.75" stroke-linecap="round"/><path d="M62 124c-18-6-28-20-28-40 20 2 32 14 28 40ZM96 92c-6-20 0-38 18-50 8 20 2 38-18 50ZM128 54c-2-16 6-30 22-36 2 16-6 30-22 36ZM80 110c20-10 40-8 58 6-18 12-38 10-58-6ZM112 74c16-8 32-6 46 4-14 10-30 10-46-4Z" stroke="currentColor" stroke-width="1.75" stroke-linejoin="round"/></svg>
     </footer>
 
     <script src="~/lib/jquery/dist/jquery.min.js"></script>
