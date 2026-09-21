@@ -4,69 +4,80 @@
     ViewData["Title"] = "Task Details";
 }
 
-<div class="page-shell page-shell--narrow">
-    <a asp-action="MyTasks" class="btn btn-link px-0 mb-3"><span aria-hidden="true">&larr;</span> Back to My Tasks</a>
+<div class="page-shell page-shell--narrow courier-page">
+    <a asp-action="MyTasks" class="courier-back"><span aria-hidden="true">&larr;</span> Back to My Tasks</a>
 
-    <header class="page-header">
+    <header class="page-header courier-header">
         <div>
             <p class="page-eyebrow mb-1">Courier task</p>
             <h1 class="page-header__title">@Model.DonationTitle</h1>
             <p class="page-header__lead">Pickup information and a record of your verified handovers.</p>
         </div>
-        <span class="status-chip">@Model.Status</span>
+        <span class="status-chip" data-status="@Model.Status">@FoodLoop.Web.Models.ClaimDisplay.Label(Model.Status)</span>
     </header>
 
-    <section class="surface-panel p-3 p-md-4 mb-3" aria-label="Task details">
-        <dl class="detail-grid mb-0">
-            <div>
-                <dt>Donor organization</dt>
-                <dd>@Model.DonorOrganizationName</dd>
-            </div>
-            <div>
-                <dt>Beneficiary organization</dt>
-                <dd>@Model.BeneficiaryOrganizationName</dd>
-            </div>
-            <div class="detail-grid__wide">
-                <dt>Pickup address</dt>
-                <dd>@Model.PickupAddress</dd>
-            </div>
+    <p class="courier-next">
+        <svg class="fl-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M5 12h14M13 6l6 6-6 6" /></svg>
+        <span><span class="courier-next__label">Next step</span> <strong>@Model.NextStep</strong></span>
+    </p>
+
+    <section class="surface-panel courier-panel" aria-labelledby="courier-route-title">
+        <h2 id="courier-route-title" class="courier-panel__title">Route</h2>
+        <ol class="courier-route">
+            <li class="courier-route__stop">
+                <span class="courier-route__label">Donor organization</span>
+                <span class="courier-route__value">@Model.DonorOrganizationName</span>
+            </li>
+            <li class="courier-route__stop courier-route__stop--handover">
+                <span class="courier-route__label">Pickup address</span>
+                <span class="courier-route__value">@Model.PickupAddress</span>
+            </li>
+            <li class="courier-route__stop courier-route__stop--end">
+                <span class="courier-route__label">Beneficiary organization</span>
+                <span class="courier-route__value">@Model.BeneficiaryOrganizationName</span>
+            </li>
+        </ol>
+        <dl class="courier-facts courier-facts--single">
             <div>
                 <dt>Expiry date</dt>
-                <dd>@Model.ExpiryDate.ToString("dd MMM yyyy, HH:mm UTC") (@Model.ExpiryDate.ToString("u"))</dd>
-            </div>
-            <div>
-                <dt>Next step</dt>
-                <dd>@Model.NextStep</dd>
+                <dd>@Model.ExpiryDate.ToUniversalTime().ToString("dd MMM yyyy, HH:mm 'UTC'") <span class="courier-date-alt">(@Model.ExpiryDate.ToString("u"))</span></dd>
             </div>
         </dl>
     </section>
 
-    <section class="surface-panel p-3 p-md-4" aria-labelledby="handover-evidence-title">
+    <section class="surface-panel courier-panel" aria-labelledby="handover-evidence-title">
         <p class="page-eyebrow mb-1">Delivery record</p>
-        <h2 id="handover-evidence-title" class="h4 mb-3">Handover evidence</h2>
+        <h2 id="handover-evidence-title" class="courier-panel__title">Handover evidence</h2>
 
-        @if (Model.PickupHandoverEvidence == null && Model.DeliveryHandoverEvidence == null)
-        {
-            <p class="text-muted mb-0">No verified handover evidence has been recorded yet.</p>
-        }
-        else
-        {
-            <dl class="detail-grid mb-0">
-                @if (Model.PickupHandoverEvidence != null)
-                {
-                    <div>
-                        <dt>Pickup Evidence Verified</dt>
-                        <dd>@Model.PickupHandoverEvidence.CompletedAtUtc.ToString("dd MMM yyyy, HH:mm UTC") (@Model.PickupHandoverEvidence.CompletedAtUtc.ToString("u"))</dd>
-                    </div>
-                }
-                @if (Model.DeliveryHandoverEvidence != null)
-                {
-                    <div>
-                        <dt>Delivery Evidence Verified</dt>
-                        <dd>@Model.DeliveryHandoverEvidence.CompletedAtUtc.ToString("dd MMM yyyy, HH:mm UTC") (@Model.DeliveryHandoverEvidence.CompletedAtUtc.ToString("u"))</dd>
-                    </div>
-                }
-            </dl>
-        }
+        <ol class="courier-evidence">
+            @if (Model.PickupHandoverEvidence != null)
+            {
+                <li class="courier-evidence__step is-done">
+                    <span class="courier-evidence__title">Pickup Evidence Verified</span>
+                    <span class="courier-evidence__time">@Model.PickupHandoverEvidence.CompletedAtUtc.ToUniversalTime().ToString("dd MMM yyyy, HH:mm 'UTC'") <span class="courier-date-alt">(@Model.PickupHandoverEvidence.CompletedAtUtc.ToString("u"))</span></span>
+                </li>
+            }
+            else
+            {
+                <li class="courier-evidence__step">
+                    <span class="courier-evidence__title">Pickup</span>
+                    <span class="courier-evidence__time">Not yet recorded</span>
+                </li>
+            }
+            @if (Model.DeliveryHandoverEvidence != null)
+            {
+                <li class="courier-evidence__step is-done">
+                    <span class="courier-evidence__title">Delivery Evidence Verified</span>
+                    <span class="courier-evidence__time">@Model.DeliveryHandoverEvidence.CompletedAtUtc.ToUniversalTime().ToString("dd MMM yyyy, HH:mm 'UTC'") <span class="courier-date-alt">(@Model.DeliveryHandoverEvidence.CompletedAtUtc.ToString("u"))</span></span>
+                </li>
+            }
+            else
+            {
+                <li class="courier-evidence__step">
+                    <span class="courier-evidence__title">Delivery</span>
+                    <span class="courier-evidence__time">Not yet recorded</span>
+                </li>
+            }
+        </ol>
     </section>
 </div>

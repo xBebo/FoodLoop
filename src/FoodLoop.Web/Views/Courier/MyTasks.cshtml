@@ -6,12 +6,12 @@
     ViewData["Title"] = "My delivery tasks";
 }
 
-<div class="page-shell">
+<div class="page-shell courier-page">
     <header class="page-header">
         <div>
             <p class="page-eyebrow mb-1">Courier workspace</p>
-            <h1 class="page-header__title">My delivery tasks</h1>
-            <p class="page-header__lead">See where to go next and verify each pickup and delivery.</p>
+            <h1 class="page-header__title">My tasks</h1>
+            <p class="page-header__lead">Your assigned deliveries. Collect from the donor, deliver to the beneficiary, and verify each handover with its one-time code.</p>
         </div>
     </header>
 
@@ -23,57 +23,73 @@
         </div>
     }
 
-    <div class="table-responsive responsive-records">
-        <table class="table table-hover align-middle">
-            <thead>
-                <tr>
-                    <th scope="col">Donation</th>
-                    <th scope="col">Status</th>
-                    <th scope="col">Next step</th>
-                    <th scope="col" class="text-center">Action</th>
-                </tr>
-            </thead>
-            <tbody>
-            @if (Model == null || !Model.Any())
+    @if (Model == null || !Model.Any())
+    {
+        <section class="empty-state courier-empty" aria-labelledby="courier-empty-title">
+            <h2 id="courier-empty-title" class="empty-state__title">No tasks right now</h2>
+            <p>No delivery tasks are assigned to you right now.</p>
+        </section>
+    }
+    else
+    {
+        <ul class="courier-list" aria-label="Assigned delivery tasks">
+            @foreach (var task in Model)
             {
-                <tr><td colspan="4" class="text-center py-5 text-muted">No delivery tasks are assigned to you right now.</td></tr>
-            }
-            else
-            {
-                @foreach (var task in Model)
-                {
-                    var closed = task.Status == ClaimStatus.Closed;
-                    var pickupPending = task.Status == ClaimStatus.PickupPending;
-                    var inTransit = task.Status == ClaimStatus.InTransit;
-                    <tr>
-                        <td data-label="Donation" class="fw-semibold">@task.FoodDonation?.Title
-                            <a class="record-link" asp-action="Details" asp-route-id="@task.Id">Task details<span class="visually-hidden">: @task.FoodDonation?.Title</span></a></td>
-                        <td data-label="Status">
-                            @if (closed) { <span class="badge bg-secondary">Closed</span> }
-                            else if (inTransit) { <span class="badge bg-warning text-dark">In Transit</span> }
-                            else if (pickupPending) { <span class="badge bg-info text-dark">Pickup Pending</span> }
-                            else { <span class="badge bg-primary">@task.Status</span> }
-                        </td>
-                        <td data-label="Next step">
+                var closed = task.Status == ClaimStatus.Closed;
+                var pickupPending = task.Status == ClaimStatus.PickupPending;
+                var inTransit = task.Status == ClaimStatus.InTransit;
+                var expires = task.FoodDonation?.ExpiresAtUtc;
+                <li class="courier-card">
+                    <div class="courier-card__head">
+                        <h2 class="courier-card__title">@task.FoodDonation?.Title</h2>
+                        <span class="status-chip" data-status="@task.Status">@FoodLoop.Web.Models.ClaimDisplay.Label(task.Status)</span>
+                    </div>
+
+                    <dl class="courier-facts">
+                        <div>
+                            <dt>From donor</dt>
+                            <dd>@task.FoodDonation?.DonorOrganization?.Name</dd>
+                        </div>
+                        <div>
+                            <dt>To beneficiary</dt>
+                            <dd>@task.BeneficiaryOrganization?.Name</dd>
+                        </div>
+                        <div class="courier-facts__wide">
+                            <dt>Pickup address</dt>
+                            <dd>@task.FoodDonation?.PickupAddress</dd>
+                        </div>
+                        @if (expires is DateTimeOffset expiry)
+                        {
+                            <div class="courier-facts__wide">
+                                <dt>Expires</dt>
+                                <dd><time class="courier-expiry" datetime="@FoodLoop.Web.Models.ClaimDisplay.IsoUtc(expiry)">@FoodLoop.Web.Models.ClaimDisplay.DisplayUtc(expiry)</time></dd>
+                            </div>
+                        }
+                    </dl>
+
+                    <p class="courier-next courier-next--compact@(closed ? " is-done" : pickupPending || inTransit ? null : " is-idle")">
+                        <svg class="fl-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M5 12h14M13 6l6 6-6 6" /></svg>
+                        <span><span class="courier-next__label">Next step</span>
                             @if (pickupPending) { <span>Awaiting pickup verification</span> }
                             else if (inTransit) { <span>Awaiting delivery verification</span> }
                             else if (closed) { <span>Delivery completed</span> }
-                            else { <span class="text-muted">No handover action available</span> }
-                        </td>
-                        <td data-label="Action" class="text-center">
-                            @if (closed)
-                            {
-                                <button class="btn btn-outline-secondary btn-sm" type="button" disabled>Completed</button>
-                            }
-                            else
-                            {
-                                <a asp-action="VerifyHandover" asp-route-claimId="@task.Id" class="btn btn-primary btn-sm">Verify handover</a>
-                            }
-                        </td>
-                    </tr>
-                }
+                            else { <span>No handover action available</span> }
+                        </span>
+                    </p>
+
+                    <div class="courier-card__actions">
+                        @if (closed)
+                        {
+                            <button class="btn btn-outline-secondary" type="button" disabled>Completed</button>
+                        }
+                        else
+                        {
+                            <a asp-action="VerifyHandover" asp-route-claimId="@task.Id" class="btn btn-primary">Verify handover<span class="visually-hidden">: @task.FoodDonation?.Title</span></a>
+                        }
+                        <a class="btn btn-outline-secondary" asp-action="Details" asp-route-id="@task.Id">Task details<span class="visually-hidden">: @task.FoodDonation?.Title</span></a>
+                    </div>
+                </li>
             }
-            </tbody>
-        </table>
-    </div>
+        </ul>
+    }
 </div>

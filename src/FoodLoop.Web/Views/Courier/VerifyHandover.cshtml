@@ -4,15 +4,16 @@
     ViewData["Title"] = "Verify handover";
 }
 
-<div class="page-shell page-shell--narrow">
-    <a asp-action="MyTasks" class="btn btn-link px-0 mb-3"><span aria-hidden="true">&larr;</span> Back to my tasks</a>
+<div class="page-shell page-shell--narrow courier-page courier-page--focus">
+    <a asp-action="MyTasks" class="courier-back"><span aria-hidden="true">&larr;</span> Back to my tasks</a>
 
-    <header class="page-header">
+    <header class="page-header courier-header">
         <div>
             <p class="page-eyebrow mb-1">Courier verification</p>
             <h1 class="page-header__title">Verify handover</h1>
-            <p class="page-header__lead">@Model.FoodDonation.Title — @Model.Status</p>
+            <p class="page-header__lead courier-header__task">@Model.FoodDonation.Title</p>
         </div>
+        <span class="status-chip" data-status="@Model.Status">@FoodLoop.Web.Models.ClaimDisplay.Label(Model.Status)</span>
     </header>
 
     <div asp-validation-summary="All" class="text-danger mb-3"></div>
@@ -21,23 +22,31 @@
     {
         var type = Model.Status == ClaimStatus.PickupPending ? HandoverType.Pickup : HandoverType.Delivery;
 
-        <form asp-action="VerifyHandover" method="post" class="surface-panel p-3 p-md-4">
+        <ol class="courier-steps" aria-label="Handover steps">
+            <li class="courier-steps__step@(type == HandoverType.Pickup ? " is-current" : null)" aria-current="@(type == HandoverType.Pickup ? "step" : null)"><span class="courier-steps__num" aria-hidden="true">1</span>Pickup</li>
+            <li class="courier-steps__step@(type == HandoverType.Delivery ? " is-current" : null)" aria-current="@(type == HandoverType.Delivery ? "step" : null)"><span class="courier-steps__num" aria-hidden="true">2</span>Delivery</li>
+        </ol>
+
+        <form asp-action="VerifyHandover" method="post" class="surface-panel courier-panel courier-verify">
             <input type="hidden" name="claimId" value="@Model.Id" />
             <input type="hidden" name="handoverType" value="@type" />
 
             <p class="status-chip mb-3">@type verification</p>
 
-            <div class="mb-3">
-                <label for="handoverToken" class="form-label">@type code supplied by the organization</label>
-                <input id="handoverToken" name="handoverToken" class="form-control font-monospace" required maxlength="64" autocomplete="off" />
-                <div class="form-text">Enter the 64-character one-time code exactly as issued.</div>
+            <div class="mb-4">
+                <div class="courier-token-label">
+                    <label for="handoverToken" class="form-label">@type code supplied by the organization</label>
+                    <span class="courier-token-count" data-token-count-for="handoverToken" aria-hidden="true"></span>
+                </div>
+                <input id="handoverToken" name="handoverToken" class="form-control font-monospace courier-token" required maxlength="64" autocomplete="off" spellcheck="false" aria-describedby="handoverTokenHelp" />
+                <div id="handoverTokenHelp" class="form-text">Enter the 64-character one-time code exactly as issued.</div>
             </div>
 
-            <button class="btn btn-primary" type="submit">Verify @type</button>
+            <button class="btn btn-primary btn-lg courier-submit" type="submit">Verify @type</button>
         </form>
     }
     else
     {
-        <div class="empty-state">This task is not awaiting handover.</div>
+        <div class="empty-state courier-empty">This task is not awaiting handover.</div>
     }
 </div>

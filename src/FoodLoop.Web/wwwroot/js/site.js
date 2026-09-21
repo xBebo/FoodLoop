@@ -55,3 +55,19 @@
         if (body.classList.contains('fl-nav-open') && !header.contains(e.target)) hide();
     });
 })();
+
+// Courier token counter: display only. It never blocks submit or changes validation; without JS the counter stays empty.
+(function () {
+    'use strict';
+
+    document.querySelectorAll('[data-token-count-for]').forEach(function (counter) {
+        var input = document.getElementById(counter.getAttribute('data-token-count-for'));
+        if (!input) return;
+        var update = function () {
+            counter.textContent = input.value.length + ' / ' + input.maxLength;
+            counter.classList.toggle('is-complete', input.value.length === input.maxLength);
+        };
+        input.addEventListener('input', update);
+        update();
+    });
+})();
