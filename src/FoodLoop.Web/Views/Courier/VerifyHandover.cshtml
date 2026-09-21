@@ -1,18 +1,43 @@
 @model FoodLoop.Domain.Entities.DonationClaim
 @using FoodLoop.Domain.Enums
-<h1>Verify handover</h1>
-<p>@Model.FoodDonation.Title — @Model.Status</p>
-<div asp-validation-summary="All" class="text-danger"></div>
-@if (Model.Status is ClaimStatus.PickupPending or ClaimStatus.InTransit)
-{
-    var type = Model.Status == ClaimStatus.PickupPending ? HandoverType.Pickup : HandoverType.Delivery;
-    <form asp-action="VerifyHandover" method="post">
-        <input type="hidden" name="claimId" value="@Model.Id" />
-        <input type="hidden" name="handoverType" value="@type" />
-        <label for="handoverToken">@type code supplied by the organization</label>
-        <input id="handoverToken" name="handoverToken" class="form-control" required maxlength="64" autocomplete="off" />
-        <button class="btn btn-primary mt-3">Verify @type</button>
-    </form>
+@{
+    ViewData["Title"] = "Verify handover";
 }
-else { <p>This task is not awaiting handover.</p> }
-<a asp-action="MyTasks">Back to my tasks</a>
+
+<div class="page-shell page-shell--narrow">
+    <a asp-action="MyTasks" class="btn btn-link px-0 mb-3"><span aria-hidden="true">&larr;</span> Back to my tasks</a>
+
+    <header class="page-header">
+        <div>
+            <p class="page-eyebrow mb-1">Courier verification</p>
+            <h1 class="page-header__title">Verify handover</h1>
+            <p class="page-header__lead">@Model.FoodDonation.Title — @Model.Status</p>
+        </div>
+    </header>
+
+    <div asp-validation-summary="All" class="text-danger mb-3"></div>
+
+    @if (Model.Status is ClaimStatus.PickupPending or ClaimStatus.InTransit)
+    {
+        var type = Model.Status == ClaimStatus.PickupPending ? HandoverType.Pickup : HandoverType.Delivery;
+
+        <form asp-action="VerifyHandover" method="post" class="surface-panel p-3 p-md-4">
+            <input type="hidden" name="claimId" value="@Model.Id" />
+            <input type="hidden" name="handoverType" value="@type" />
+
+            <p class="status-chip mb-3">@type verification</p>
+
+            <div class="mb-3">
+                <label for="handoverToken" class="form-label">@type code supplied by the organization</label>
+                <input id="handoverToken" name="handoverToken" class="form-control font-monospace" required maxlength="64" autocomplete="off" />
+                <div class="form-text">Enter the 64-character one-time code exactly as issued.</div>
+            </div>
+
+            <button class="btn btn-primary" type="submit">Verify @type</button>
+        </form>
+    }
+    else
+    {
+        <div class="empty-state">This task is not awaiting handover.</div>
+    }
+</div>

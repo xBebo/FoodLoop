@@ -1,14 +1,14 @@
 /* Scoped to Views/Claims/Details.cshtml through Razor CSS isolation; tokens and badge tones match Mine.cshtml.css. */
 
 .claim-page {
-  --claim-green: #198754;
-  --claim-green-strong: #0f5132;
-  --claim-green-soft: #e9f5ee;
+  --claim-green: var(--fl-forest-700);
+  --claim-green-strong: var(--fl-forest-900);
+  --claim-green-soft: var(--fl-leaf-100);
   --claim-warm: #9a4a06;
   --claim-warm-soft: #fff4e5;
-  --claim-ink: #1d2a24;
-  --claim-muted: #56655d;
-  --claim-line: #e2e8e4;
+  --claim-ink: var(--fl-ink);
+  --claim-muted: var(--fl-muted);
+  --claim-line: var(--fl-border);
   --claim-surface: #ffffff;
   --claim-radius: 1rem;
   --claim-shadow: 0 1px 2px rgba(16, 40, 28, .04), 0 10px 30px rgba(16, 40, 28, .06);
@@ -22,7 +22,7 @@
   margin-bottom: 1.5rem;
   border: 1px solid var(--claim-line);
   border-radius: calc(var(--claim-radius) * 1.25);
-  background: linear-gradient(120deg, var(--claim-green-soft) 0%, #f6faf7 55%, var(--claim-warm-soft) 100%);
+  background: var(--fl-leaf-100);
 }
 
 .claim-back {

@@ -2,38 +2,36 @@
 @{
     ViewData["Title"] = "Handover code";
 }
-<div class="container py-4">
-    <div class="row justify-content-center">
-        <div class="col-lg-7">
-            <div class="card shadow-sm">
-                <div class="card-body text-center p-4">
-                    <p class="text-success fw-semibold mb-1">@Model.HandoverType HANDOVER</p>
-                    <h1 class="h3">Your one-time handover code</h1>
-                    <p class="text-muted">Show the QR code or copy the same code to the assigned courier. This page displays the raw code only for this issuance.</p>
 
-                    <div class="mx-auto my-4" style="max-width: 260px" role="img" aria-label="QR code containing the handover token">
-                        @Html.Raw(Model.QrSvg)
-                    </div>
+<div class="page-shell">
+    <section class="surface-panel handover-code-card p-3 p-md-4 text-center">
+        <p class="page-eyebrow mb-1">@Model.HandoverType handover</p>
+        <h1 class="page-header__title">Your one-time handover code</h1>
+        <p class="page-header__lead mx-auto">Show the QR code or copy the same code to the assigned courier. Keep this page open until the courier has the code.</p>
 
-                    <label for="handoverCode" class="form-label fw-semibold">Handover code</label>
-                    <div class="input-group mx-auto" style="max-width: 620px">
-                        <input id="handoverCode" class="form-control font-monospace" type="text" readonly value="@Model.RawToken" />
-                        <button id="copyCode" class="btn btn-primary" type="button">Copy code</button>
-                    </div>
-                    <pre class="visually-hidden" aria-hidden="true">@Model.RawToken</pre>
-                    <p id="copyStatus" class="small mt-2 mb-3" aria-live="polite"></p>
-
-                    <p class="mb-1"><strong>Type:</strong> @Model.HandoverType</p>
-                    <p class="mb-4"><strong>Expires:</strong> <time datetime="@Model.ExpiresAtUtc.ToUniversalTime().ToString("O")">@Model.ExpiresAtUtc.ToUniversalTime().ToString("yyyy-MM-dd HH:mm:ss 'UTC'")</time></p>
-
-                    <div class="alert alert-warning text-start mb-4" role="note">
-                        Regenerating a code invalidates the previous one. The server, not this page, decides whether a code is still valid.
-                    </div>
-                    <a asp-action="Codes" class="btn btn-outline-secondary">Back to handovers</a>
-                </div>
-            </div>
+        <div class="handover-qr" role="img" aria-label="QR code containing the handover token">
+            @Html.Raw(Model.QrSvg)
         </div>
-    </div>
+
+        <label for="handoverCode" class="form-label">Handover code</label>
+        <div class="input-group mx-auto handover-copy">
+            <input id="handoverCode" class="form-control font-monospace" type="text" readonly value="@Model.RawToken" />
+            <button id="copyCode" class="btn btn-primary" type="button">Copy code</button>
+        </div>
+        <pre class="visually-hidden" aria-hidden="true">@Model.RawToken</pre>
+        <p id="copyStatus" class="small mt-2 mb-3" aria-live="polite"></p>
+
+        <div class="d-flex flex-wrap justify-content-center gap-3 mb-4 text-start">
+            <span class="status-chip"><strong>Type:</strong>&nbsp;@Model.HandoverType</span>
+            <span class="status-chip"><strong>Expires:</strong>&nbsp;<time datetime="@Model.ExpiresAtUtc.ToUniversalTime().ToString("O")">@Model.ExpiresAtUtc.ToUniversalTime().ToString("yyyy-MM-dd HH:mm:ss 'UTC'")</time></span>
+        </div>
+
+        <div class="alert alert-warning text-start mb-4" role="note">
+            Regenerating a code invalidates the previous one. Each code can be used once and must be verified before it expires.
+        </div>
+
+        <a asp-action="Codes" class="btn btn-outline-secondary">Back to handovers</a>
+    </section>
 </div>
 
 <script>

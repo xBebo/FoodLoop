@@ -7,13 +7,18 @@
     ViewData["Title"] = "Available Donations";
 }
 
-<div class="container py-4">
-    <h1 class="h3 mb-1">Available Donations</h1>
-    <p class="text-muted mb-4">Active, unexpired donations from active donor organizations. Times are shown in UTC.</p>
+<div class="page-shell">
+    <header class="page-header">
+        <div>
+            <p class="page-eyebrow mb-1">Beneficiary marketplace</p>
+            <h1 class="page-header__title">Available donations</h1>
+            <p class="page-header__lead">Browse active, unexpired donations from approved donors. All times are shown in UTC.</p>
+        </div>
+    </header>
 
-    <form asp-action="Available" method="get" class="card card-body shadow-sm mb-4">
+    <form asp-action="Available" method="get" class="filter-panel surface-panel mb-4">
         <div class="row g-3 align-items-end">
-            <div class="col-md-6">
+            <div class="col-md-5">
                 <label for="search" class="form-label">Search title</label>
                 <input id="search" name="search" value="@Model.Search" maxlength="200" class="form-control" placeholder="e.g. Rice" />
             </div>
@@ -23,7 +28,7 @@
                     <option value="">All categories</option>
                 </select>
             </div>
-            <div class="col-md-2 d-flex gap-2">
+            <div class="col-md-3 d-flex gap-2">
                 <button type="submit" class="btn btn-primary">Filter</button>
                 <a asp-action="Available" class="btn btn-outline-secondary">Clear</a>
             </div>
@@ -32,36 +37,36 @@
 
     @if (Model.Items.Count == 0)
     {
-        <div class="alert alert-light border">
-            @(Model.Page == 1 ? "No donations match these filters." : "No donations are available on this page.")
+        <div class="empty-state"><h2 class="h5">Nothing available in this view</h2>
+            @(Model.Page == 1 ? "Try another category or clear your search. New donations will appear here when donors publish them." : "No donations are available on this page. Return to the previous page to keep browsing.")
         </div>
     }
     else
     {
-        <div class="table-responsive">
-            <table class="table table-bordered table-hover align-middle bg-white">
-                <thead class="table-light">
+        <div class="table-responsive responsive-records">
+            <table class="table table-hover align-middle data-table">
+                <thead>
                     <tr>
-                        <th>Donation</th>
-                        <th>Donor</th>
-                        <th>Category</th>
-                        <th>Quantity</th>
-                        <th>Pickup</th>
-                        <th>Expires (UTC)</th>
-                        <th>Claim</th>
+                        <th scope="col">Donation</th>
+                        <th scope="col">Donor</th>
+                        <th scope="col">Category</th>
+                        <th scope="col">Quantity</th>
+                        <th scope="col">Pickup</th>
+                        <th scope="col">Expires (UTC)</th>
+                        <th scope="col">Claim</th>
                     </tr>
                 </thead>
                 <tbody>
                 @foreach (var item in Model.Items)
                 {
                     <tr>
-                        <td>@item.Title</td>
-                        <td>@item.DonorName</td>
-                        <td>@item.Category</td>
-                        <td>@item.Quantity @item.Unit</td>
-                        <td>@item.PickupAddress</td>
-                        <td><time datetime="@IsoUtc(item.ExpiresAtUtc)">@DisplayUtc(item.ExpiresAtUtc)</time></td>
-                        <td>
+                        <td data-label="Donation" class="fw-semibold">@item.Title</td>
+                        <td data-label="Donor">@item.DonorName</td>
+                        <td data-label="Category">@item.Category</td>
+                        <td data-label="Quantity">@item.Quantity @item.Unit</td>
+                        <td data-label="Pickup">@item.PickupAddress</td>
+                        <td data-label="Expires (UTC)"><time datetime="@IsoUtc(item.ExpiresAtUtc)">@DisplayUtc(item.ExpiresAtUtc)</time></td>
+                        <td data-label="Claim">
                             <form asp-controller="Claims" asp-action="Create" method="post">
                                 <input type="hidden" name="donationId" value="@item.Id" />
                                 <button class="btn btn-primary btn-sm">Claim donation</button>
@@ -76,13 +81,13 @@
 
     @if (Model.HasPrevious || Model.HasNext)
     {
-        <nav class="d-flex align-items-center gap-3" aria-label="Marketplace pages">
+        <nav class="d-flex align-items-center gap-3 mt-3" aria-label="Marketplace pages">
             @if (Model.HasPrevious)
             {
                 <a asp-action="Available" asp-route-page="@(Model.Page - 1)" asp-route-search="@Model.Search"
                    asp-route-categoryId="@Model.CategoryId" class="btn btn-outline-secondary">Previous</a>
             }
-            <span>Page @Model.Page</span>
+            <span class="text-muted fw-semibold">Page @Model.Page</span>
             @if (Model.HasNext)
             {
                 <a asp-action="Available" asp-route-page="@(Model.Page + 1)" asp-route-search="@Model.Search"
