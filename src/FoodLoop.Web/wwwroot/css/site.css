@@ -954,7 +954,7 @@ textarea.form-control { min-height: auto; padding-block: .7rem; }
 .operations-priority h2 { max-width: 32ch; font-size: 1.5rem; }
 .operations-priority p:last-child { max-width: 60ch; margin: 0; color: var(--fl-text-secondary); }
 
-/* Filter toolbar */ */
+/* Filter toolbar */
 .fl-toolbar {
   display: flex;
   flex-wrap: wrap;
@@ -978,7 +978,7 @@ textarea.form-control { min-height: auto; padding-block: .7rem; }
 .fl-search .fl-icon { position: absolute; top: 50%; left: .85rem; width: 1.1rem; height: 1.1rem; color: var(--fl-text-muted); transform: translateY(-50%); pointer-events: none; }
 .fl-search .form-control { padding-left: 2.6rem; }
 
-/* Detail panel, form panel, notices */ */
+/* Detail panel, form panel, notices */
 .fl-detail-panel { padding: clamp(1.25rem, 3.5vw, 2.25rem); animation: fl-rise var(--fl-dur-slow) var(--fl-ease); }
 .fl-detail-panel__title { margin: 0; font-size: 1.5rem; font-weight: 650; overflow-wrap: anywhere; }
 
