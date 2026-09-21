@@ -1,5 +1,31 @@
 @{ ViewData["Title"] = "Privacy & responsible use"; }
-<section class="page-shell page-shell--narrow">
-    <header class="page-header"><div><p class="page-eyebrow">FoodLoop</p><h1 class="page-header__title">Privacy &amp; responsible use</h1><p class="page-header__lead">Share only what is needed to coordinate a food rescue.</p></div></header>
-    <div class="surface-panel p-4"><h2 class="h4">Organization information</h2><p>FoodLoop uses organization and account information to manage registrations, donations, claims and courier handovers.</p><h2 class="h4">Handover codes</h2><p>Share a handover code only with the assigned courier. Codes are temporary and can be used once. Avoid including them in screenshots or public messages.</p><h2 class="h4">Activity records</h2><p class="mb-0">Operational actions are recorded for administrator review. Contact your FoodLoop administrator with questions about your account or organization information.</p></div>
-</section>
+<article class="page-shell page-shell--narrow prose-page" aria-labelledby="privacy-title">
+    <header class="prose-page__header">
+        <p class="page-eyebrow">FoodLoop</p>
+        <h1 id="privacy-title" class="page-header__title">Privacy &amp; responsible use</h1>
+        <p class="prose-page__lead">Share only what is needed to coordinate a food rescue.</p>
+    </header>
+    <div class="surface-panel prose-panel">
+        <section class="prose-section" aria-labelledby="privacy-org">
+            <span class="prose-section__icon" aria-hidden="true"><svg class="fl-icon" viewBox="0 0 24 24"><path d="M4 20V8.5L12 4l8 4.5V20"/><path d="M3 20h18M9 20v-5h6v5M9 10.5h.01M15 10.5h.01"/></svg></span>
+            <div>
+                <h2 id="privacy-org" class="prose-section__title">Organization information</h2>
+                <p>FoodLoop uses organization and account information to manage registrations, donations, claims and courier handovers.</p>
+            </div>
+        </section>
+        <section class="prose-section" aria-labelledby="privacy-codes">
+            <span class="prose-section__icon" aria-hidden="true"><svg class="fl-icon" viewBox="0 0 24 24"><circle cx="8" cy="15" r="4"/><path d="m11 12 8.5-8.5M16 7l2.5 2.5M14 9l2 2"/></svg></span>
+            <div>
+                <h2 id="privacy-codes" class="prose-section__title">Handover codes</h2>
+                <p>Share a handover code only with the assigned courier. Codes are temporary and can be used once. Avoid including them in screenshots or public messages.</p>
+            </div>
+        </section>
+        <section class="prose-section" aria-labelledby="privacy-records">
+            <span class="prose-section__icon" aria-hidden="true"><svg class="fl-icon" viewBox="0 0 24 24"><path d="M9 6.5h11M9 12h11M9 17.5h11"/><circle cx="4.75" cy="6.5" r=".75"/><circle cx="4.75" cy="12" r=".75"/><circle cx="4.75" cy="17.5" r=".75"/></svg></span>
+            <div>
+                <h2 id="privacy-records" class="prose-section__title">Activity records</h2>
+                <p>Operational actions are recorded for administrator review. Contact your FoodLoop administrator with questions about your account or organization information.</p>
+            </div>
+        </section>
+    </div>
+</article>

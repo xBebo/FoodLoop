@@ -1,4 +1,11 @@
 @{ ViewData["Title"] = "Access denied"; }
-<section class="empty-state page-shell--narrow"><p class="page-eyebrow">Account access</p><h1>Access denied</h1>
-<p>You do not have permission to view this page.</p>
-<a class="btn btn-outline-success" asp-controller="Home" asp-action="Index">Return home</a></section>
+<section class="state-panel state-panel--tint" aria-labelledby="state-title">
+    <span class="state-panel__icon" aria-hidden="true"><svg class="fl-icon" viewBox="0 0 24 24"><rect x="5" y="10.5" width="14" height="10" rx="2"/><path d="M8 10.5V8a4 4 0 0 1 8 0v2.5M12 14.5v2"/></svg></span>
+    <p class="page-eyebrow">Account access</p>
+    <h1 id="state-title" class="state-panel__title">Access denied</h1>
+    <p class="state-panel__lead">You do not have permission to view this page.</p>
+    <p class="state-panel__hint">If you think this is a mistake, contact your FoodLoop administrator.</p>
+    <div class="state-panel__actions">
+        <a class="btn btn-primary" asp-controller="Home" asp-action="Index">Return home</a>
+    </div>
+</section>

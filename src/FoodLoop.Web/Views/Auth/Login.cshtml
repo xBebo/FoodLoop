@@ -2,21 +2,21 @@
     ViewData["Title"] = "Welcome back";
 }
 
-<div class="auth-shell">
-    <section class="card auth-card">
-        <div class="auth-card__header">
-            <p class="auth-brandline mb-0">FoodLoop</p>
-            <h1 class="auth-title">Welcome back</h1>
-            <p class="auth-subtitle">Pick up where you left off. Good food is on the move.</p>
-        </div>
+<div class="auth-split">
+    <partial name="_AuthBrand" />
 
-        <div class="auth-card__body">
+    <section class="auth-panel" aria-labelledby="auth-title">
+        <div class="auth-panel__inner">
+            <p class="auth-brandline mb-0">Organization account</p>
+            <h1 id="auth-title" class="auth-title">Welcome back</h1>
+            <p class="auth-subtitle">Pick up where you left off. Good food is on the move.</p>
+
             @if (TempData["SuccessMessage"] != null)
             {
                 <div class="alert alert-success" role="status">@TempData["SuccessMessage"]</div>
             }
 
-            <form asp-action="Login" method="post">
+            <form asp-action="Login" method="post" class="auth-form">
                 <div asp-validation-summary="All" class="text-danger mb-3"></div>
                 @if (ViewData["ReturnUrl"] is string returnUrl && !string.IsNullOrWhiteSpace(returnUrl))
                 {
@@ -36,7 +36,7 @@
                 <button type="submit" class="btn btn-primary w-100">Log in</button>
             </form>
 
-            <p class="text-center text-muted mt-4 mb-0">
+            <p class="auth-switch">
                 New to FoodLoop?
                 <a asp-action="Register" class="fw-semibold">Register an organization</a>
             </p>

@@ -2,79 +2,192 @@
     ViewData["Title"] = "Good food. Greater impact.";
 }
 
-<section class="foodloop-hero" aria-labelledby="foodloop-hero-title">
-    <div class="foodloop-hero__content">
-        <p class="hero-eyebrow mb-0">Food rescue, coordinated</p>
-        <h1 id="foodloop-hero-title">Good food. Greater impact.</h1>
-        <p class="foodloop-hero__lead">
-            Connect surplus food with the organizations that need it. One shared journey, from a donor’s kitchen to a verified delivery.
-        </p>
-        <div class="foodloop-hero__actions">
-            @if (User.Identity?.IsAuthenticated != true)
-            {
-                <a class="btn btn-brand btn-lg" asp-controller="Auth" asp-action="Register">Register an organization</a>
-                <a class="btn btn-outline-light btn-lg" asp-controller="Auth" asp-action="Login">Log in</a>
-            }
-            else if (User.IsInRole("Beneficiary"))
-            {
-                <a class="btn btn-brand btn-lg" asp-controller="Donations" asp-action="Available">Browse marketplace</a>
-                <a class="btn btn-outline-light btn-lg" asp-controller="Claims" asp-action="Mine">View my claims</a>
-            }
-            else if (User.IsInRole("Donor"))
-            {
-                <a class="btn btn-brand btn-lg" asp-controller="Donations" asp-action="Create">Create a donation</a>
-                <a class="btn btn-outline-light btn-lg" asp-controller="Donations" asp-action="Mine">View my donations</a>
-            }
-            else if (User.IsInRole("Courier"))
-            {
-                <a class="btn btn-brand btn-lg" asp-controller="Courier" asp-action="MyTasks">Open delivery tasks</a>
-            }
-            else if (User.IsInRole("Admin"))
-            {
-                <a class="btn btn-brand btn-lg" asp-controller="Admin" asp-action="Index">Open admin dashboard</a>
-            }
-        </div>
-    </div>
-    <aside class="rescue-journey" aria-label="The food rescue journey">
-        <svg class="harvest-art" viewBox="0 0 320 180" fill="none" aria-hidden="true">
-            <ellipse cx="160" cy="155" rx="120" ry="12" fill="#0c281e"/>
-            <path d="M63 80h196l-18 73H80L63 80Z" fill="#e3bb7c"/>
-            <path d="M92 99h140M98 119h128M105 139h114" stroke="#b98848" stroke-width="5" stroke-linecap="round"/>
-            <path d="M90 79c-19-27-9-61 12-57 8-26 35-23 40 2 27-13 43 16 17 54" fill="#8eb778"/>
-            <path d="m112 80 6-44m-3 27-15-14m17 2 12-12" stroke="#355f3c" stroke-width="4" stroke-linecap="round"/>
-            <path d="M172 80c-16-22-8-54 18-56 25-1 30 28 23 55" fill="#f4dcab"/>
-            <path d="m180 41 14 5m-16 10 17 5" stroke="#c19a61" stroke-width="4" stroke-linecap="round"/>
-            <circle cx="224" cy="71" r="25" fill="#d88960"/><path d="m216 46 8 9 9-10m-9 9 1-17" stroke="#47704a" stroke-width="4" stroke-linecap="round"/>
+<div class="home">
+    <section class="home-hero" aria-labelledby="foodloop-hero-title">
+        <svg class="home-hero__botanical" viewBox="0 0 420 520" fill="none" aria-hidden="true" focusable="false">
+            <g stroke="currentColor" stroke-width="1.25" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M40 510C90 400 120 300 210 210S360 80 400 20"/>
+                <path d="M96 392c-30-8-52-32-56-66 32 6 52 30 56 66Z"/><path d="M96 392 52 336"/>
+                <path d="M132 316c10-30 36-50 70-52-8 32-34 50-70 52Z"/><path d="m132 316 64-46"/>
+                <path d="M214 206c-26-18-38-46-32-80 28 16 40 44 32 80Z"/><path d="m214 206-26-70"/>
+                <path d="M276 150c14-28 42-42 76-38-12 30-40 42-76 38Z"/><path d="m276 150 68-34"/>
+                <path d="M338 86c-20-22-24-52-12-82 22 22 26 52 12 82Z"/>
+            </g>
         </svg>
-        <p class="journey-caption">A little coordination. A meaningful difference.</p>
-        <ol class="journey-steps">
-            <li><span>01</span><div><strong>Share surplus</strong><small>Publish food and pickup details</small></div></li>
-            <li><span>02</span><div><strong>Connect a community</strong><small>Claim food and coordinate a courier</small></div></li>
-            <li><span>03</span><div><strong>Complete the handover</strong><small>Verify pickup, then delivery</small></div></li>
-        </ol>
-    </aside>
-</section>
 
-<section class="row g-3 g-lg-4 feature-grid" aria-label="How FoodLoop works">
-    <div class="col-md-4">
-        <article class="feature-card">
-            <span class="feature-card__number" aria-hidden="true">01</span>
-            <h2>Share useful surplus</h2>
-            <p>Donors publish validated food donations with clear quantity, storage, pickup and expiry information.</p>
-        </article>
-    </div>
-    <div class="col-md-4">
-        <article class="feature-card">
-            <span class="feature-card__number" aria-hidden="true">02</span>
-            <h2>Coordinate the handoff</h2>
-            <p>Beneficiaries claim available food and admins connect the reservation to an assigned courier.</p>
-        </article>
-    </div>
-    <div class="col-md-4">
-        <article class="feature-card">
-            <span class="feature-card__number" aria-hidden="true">03</span>
-            <h2>Verify the journey</h2>
-            <p>One-time codes confirm pickup and delivery, keeping every handover accountable.</p>
-        </article>
-    </div>
-</section>
+        <div class="home-hero__content">
+            <p class="home-eyebrow" data-reveal>Food rescue, coordinated</p>
+            <h1 id="foodloop-hero-title" class="home-hero__title" data-reveal="1">Good food. <em>Greater impact.</em></h1>
+            <p class="home-hero__lead" data-reveal="2">
+                Connect surplus food with the organizations that need it. One shared journey, from a donor’s kitchen to a verified delivery.
+            </p>
+            <div class="home-hero__actions" data-reveal="3">
+                @if (User.Identity?.IsAuthenticated != true)
+                {
+                    <a class="btn btn-brand btn-lg" asp-controller="Auth" asp-action="Register">Register an organization</a>
+                    <a class="btn btn-outline-brand btn-lg" asp-controller="Auth" asp-action="Login">Log in</a>
+                }
+                else if (User.IsInRole("Beneficiary"))
+                {
+                    <a class="btn btn-brand btn-lg" asp-controller="Donations" asp-action="Available">Browse marketplace</a>
+                    <a class="btn btn-outline-brand btn-lg" asp-controller="Claims" asp-action="Mine">View my claims</a>
+                }
+                else if (User.IsInRole("Donor"))
+                {
+                    <a class="btn btn-brand btn-lg" asp-controller="Donations" asp-action="Create">Create a donation</a>
+                    <a class="btn btn-outline-brand btn-lg" asp-controller="Donations" asp-action="Mine">View my donations</a>
+                }
+                else if (User.IsInRole("Courier"))
+                {
+                    <a class="btn btn-brand btn-lg" asp-controller="Courier" asp-action="MyTasks">Open delivery tasks</a>
+                }
+                else if (User.IsInRole("Admin"))
+                {
+                    <a class="btn btn-brand btn-lg" asp-controller="Admin" asp-action="Index">Open admin dashboard</a>
+                }
+            </div>
+        </div>
+
+        <figure class="home-loop" data-reveal="4">
+            <svg class="home-loop__art" viewBox="0 0 400 400" fill="none" aria-hidden="true" focusable="false">
+                <circle cx="200" cy="200" r="184" fill="#EEF8F0" stroke="#DAF1DE"/>
+                <circle cx="200" cy="200" r="140" stroke="#8EB69B" stroke-width="1.5"/>
+                <circle cx="200" cy="200" r="112" stroke="#8EB69B" stroke-dasharray="1 8" stroke-linecap="round" stroke-width="2"/>
+                <g stroke="#235347" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="m197 54 6 6-6 6" transform="rotate(50 200 200)"/>
+                    <path d="m197 54 6 6-6 6" transform="rotate(140 200 200)"/>
+                    <path d="m197 54 6 6-6 6" transform="rotate(230 200 200)"/>
+                    <path d="m197 54 6 6-6 6" transform="rotate(320 200 200)"/>
+                </g>
+                <g fill="#DAF1DE" stroke="#8EB69B" stroke-width="1.25" stroke-linejoin="round">
+                    <g transform="rotate(24 200 200)"><path d="M200 60c3-9 10-14 20-15-2 9-9 14-20 15Z"/><path d="M200 60c-2-8-8-13-17-14 1 8 7 13 17 14Z"/></g>
+                    <g transform="rotate(114 200 200)"><path d="M200 60c3-9 10-14 20-15-2 9-9 14-20 15Z"/></g>
+                    <g transform="rotate(204 200 200)"><path d="M200 60c3-9 10-14 20-15-2 9-9 14-20 15Z"/><path d="M200 60c-2-8-8-13-17-14 1 8 7 13 17 14Z"/></g>
+                    <g transform="rotate(294 200 200)"><path d="M200 60c3-9 10-14 20-15-2 9-9 14-20 15Z"/></g>
+                </g>
+                <circle cx="200" cy="200" r="88" stroke="#DAF1DE"/>
+                <circle cx="200" cy="200" r="78" fill="#0B2B26"/>
+            </svg>
+            <div class="home-loop__centre" aria-hidden="true">
+                <svg viewBox="0 0 32 32" fill="none"><path d="M26 16a10 10 0 1 1-2.93-7.07" stroke="#8EB69B" stroke-width="2.25" stroke-linecap="round"/><path d="M23.07 8.93C23.07 4.9 25.4 2.6 29.5 2.5c-.1 4.1-2.4 6.43-6.43 6.43Z" fill="#DAF1DE"/><path d="M11.5 19.5c2.2-3.4 5-5.3 8.5-6" stroke="#DAF1DE" stroke-width="2" stroke-linecap="round" opacity=".7"/></svg>
+                <span>One loop</span>
+            </div>
+            <figcaption class="visually-hidden">The FoodLoop journey, in order:</figcaption>
+            <ol class="home-loop__nodes">
+                <li class="home-loop__node home-loop__node--1"><span aria-hidden="true">01</span>Donor</li>
+                <li class="home-loop__node home-loop__node--2"><span aria-hidden="true">02</span>Community</li>
+                <li class="home-loop__node home-loop__node--3"><span aria-hidden="true">03</span>Courier</li>
+                <li class="home-loop__node home-loop__node--4"><span aria-hidden="true">04</span>Delivery</li>
+            </ol>
+        </figure>
+    </section>
+
+    <section class="home-section" aria-labelledby="home-how-title">
+        <header class="home-section__header" data-reveal>
+            <p class="home-eyebrow">How FoodLoop works</p>
+            <h2 id="home-how-title" class="home-section__title">From surplus to delivery, in three accountable steps.</h2>
+        </header>
+        <ol class="home-steps">
+            <li class="home-step" data-reveal>
+                <span class="home-step__marker" aria-hidden="true"><svg class="fl-icon" viewBox="0 0 24 24"><path d="M4 10h16l-1.6 8.4a2 2 0 0 1-2 1.6H7.6a2 2 0 0 1-2-1.6L4 10Z"/><path d="m8.5 10 2-5.5M15.5 10l-2-5.5M9 14v2.5M15 14v2.5"/></svg></span>
+                <div>
+                    <span class="home-step__num">01</span>
+                    <h3>Share surplus</h3>
+                    <p>Donors publish validated food donations with clear quantity, storage, pickup and expiry information.</p>
+                </div>
+            </li>
+            <li class="home-step" data-reveal="1">
+                <span class="home-step__marker" aria-hidden="true"><svg class="fl-icon" viewBox="0 0 24 24"><circle cx="7.5" cy="8" r="2.75"/><circle cx="16.5" cy="8" r="2.75"/><path d="M3 19c.7-3 2.4-4.5 4.5-4.5S11.3 16 12 19c.7-3 2.4-4.5 4.5-4.5S20.3 16 21 19"/></svg></span>
+                <div>
+                    <span class="home-step__num">02</span>
+                    <h3>Connect a community</h3>
+                    <p>Beneficiaries claim available food and admins connect the reservation to an assigned courier.</p>
+                </div>
+            </li>
+            <li class="home-step" data-reveal="2">
+                <span class="home-step__marker" aria-hidden="true"><svg class="fl-icon" viewBox="0 0 24 24"><path d="M12 3.5 19 6.3v5c0 4.3-2.9 7.8-7 9.2-4.1-1.4-7-4.9-7-9.2v-5l7-2.8Z"/><path d="m9 12 2.2 2.2L15.2 10"/></svg></span>
+                <div>
+                    <span class="home-step__num">03</span>
+                    <h3>Complete the handover</h3>
+                    <p>One-time codes confirm pickup and delivery, keeping every handover accountable.</p>
+                </div>
+            </li>
+        </ol>
+    </section>
+
+    <section class="home-section" aria-labelledby="home-roles-title">
+        <header class="home-section__header" data-reveal>
+            <p class="home-eyebrow">One loop. Four roles.</p>
+            <h2 id="home-roles-title" class="home-section__title">Everyone in the loop has a clear part to play.</h2>
+        </header>
+        <ul class="home-roles">
+            <li class="home-role" data-reveal>
+                <span class="home-role__icon" aria-hidden="true"><svg class="fl-icon" viewBox="0 0 24 24"><path d="M12 20v-7.5"/><path d="M12 12.5c0-4.2 2.8-7.2 7-7.5.2 4.3-2.8 7.3-7 7.5Z"/><path d="M12 15c0-3.3-2.3-5.7-6-6-.1 3.5 2.3 5.8 6 6Z"/></svg></span>
+                <h3>Donor</h3>
+                <p>Publish surplus food ready for responsible collection.</p>
+            </li>
+            <li class="home-role" data-reveal="1">
+                <span class="home-role__icon" aria-hidden="true"><svg class="fl-icon" viewBox="0 0 24 24"><path d="M4 10.5 12 4.5l8 6V19a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1v-8.5Z"/><path d="M9.5 20v-5h5v5"/></svg></span>
+                <h3>Beneficiary</h3>
+                <p>Discover available donations and coordinate collection.</p>
+            </li>
+            <li class="home-role" data-reveal="2">
+                <span class="home-role__icon" aria-hidden="true"><svg class="fl-icon" viewBox="0 0 24 24"><circle cx="6" cy="18" r="2"/><circle cx="18" cy="6" r="2"/><path d="M8 18h6.5a3 3 0 0 0 0-6h-5a3 3 0 0 1 0-6H16"/></svg></span>
+                <h3>Courier</h3>
+                <p>Move donations safely between organisations.</p>
+            </li>
+            <li class="home-role" data-reveal="3">
+                <span class="home-role__icon" aria-hidden="true"><svg class="fl-icon" viewBox="0 0 24 24"><rect x="5" y="4" width="14" height="17" rx="2"/><path d="M9 4.5V3.5h6v1M8.5 12.5l2.3 2.3 4.7-4.8"/></svg></span>
+                <h3>Admin</h3>
+                <p>Review organisations and oversee platform activity.</p>
+            </li>
+        </ul>
+    </section>
+
+    <section class="home-proof" aria-labelledby="home-proof-title" data-reveal>
+        <svg class="home-proof__botanical" viewBox="0 0 320 320" fill="none" aria-hidden="true" focusable="false">
+            <g stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.25">
+                <circle cx="200" cy="120" r="150"/>
+                <circle cx="200" cy="120" r="112" stroke-dasharray="1 8" stroke-width="2"/>
+                <path d="M40 300C100 250 150 190 170 110"/>
+                <path d="M104 246c-26-4-44-22-48-50 26 4 44 22 48 50Z"/>
+                <path d="M140 188c6-26 26-42 54-44-6 26-26 42-54 44Z"/>
+                <path d="M163 128c-18-16-24-40-16-64 18 16 24 40 16 64Z"/>
+            </g>
+        </svg>
+        <p class="home-eyebrow">Accountability</p>
+        <h2 id="home-proof-title" class="home-proof__title">Built for accountable handovers.</h2>
+        <ul class="home-proof__facts">
+            <li class="home-proof__fact">
+                <svg class="fl-icon home-proof__icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><circle cx="12" cy="12" r="8.5"/><path d="M12 7.5V12l3 2"/></svg>
+                <h3>Expiry-aware listings</h3>
+                <p>Every donation carries pickup and expiry details, so food is only offered while it is still good to use.</p>
+            </li>
+            <li class="home-proof__fact">
+                <svg class="fl-icon home-proof__icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><rect x="4" y="4" width="6" height="6" rx="1"/><rect x="14" y="4" width="6" height="6" rx="1"/><rect x="4" y="14" width="6" height="6" rx="1"/><path d="M14 14h2.5v2.5H14zM20 14v6h-6"/></svg>
+                <h3>One-time handover verification</h3>
+                <p>Pickup and delivery are each confirmed with a temporary code that can be used only once.</p>
+            </li>
+            <li class="home-proof__fact">
+                <svg class="fl-icon home-proof__icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M9 6.5h11M9 12h11M9 17.5h11"/><circle cx="4.75" cy="6.5" r=".75"/><circle cx="4.75" cy="12" r=".75"/><circle cx="4.75" cy="17.5" r=".75"/></svg>
+                <h3>Recorded operational activity</h3>
+                <p>Key operational steps are recorded so administrators can review what happened, and when.</p>
+            </li>
+        </ul>
+    </section>
+
+    @if (User.Identity?.IsAuthenticated != true)
+    {
+        <section class="home-cta" aria-labelledby="home-cta-title" data-reveal>
+            <svg class="home-cta__botanical" viewBox="0 0 240 160" fill="none" aria-hidden="true" focusable="false"><g stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 150C70 120 120 70 150 10"/><path d="M62 124c-18-6-28-20-28-40 20 2 32 14 28 40ZM96 92c-6-20 0-38 18-50 8 20 2 38-18 50ZM128 54c-2-16 6-30 22-36 2 16-6 30-22 36ZM80 110c20-10 40-8 58 6-18 12-38 10-58-6ZM112 74c16-8 32-6 46 4-14 10-30 10-46-4Z"/></g></svg>
+            <div class="home-cta__copy">
+                <h2 id="home-cta-title" class="home-cta__title">Turn surplus into something useful.</h2>
+                <p>Register your organization to join the loop. An administrator reviews every registration before it becomes active.</p>
+            </div>
+            <div class="home-cta__actions">
+                <a class="btn btn-brand btn-lg" asp-controller="Auth" asp-action="Register">Register an organization</a>
+                <a class="btn btn-outline-brand btn-lg" asp-controller="Auth" asp-action="Login">Log in</a>
+            </div>
+        </section>
+    }
+</div>

@@ -1,4 +1,26 @@
 // Presentation-only layout behaviour. Everything here is optional: without it the page and navigation still work.
+
+// Scroll reveal for [data-reveal] (Home). Content is visible by default; the hidden start state only
+// applies once .has-motion is set, which happens only when IntersectionObserver exists and motion is allowed.
+(function () {
+    'use strict';
+
+    var targets = document.querySelectorAll('[data-reveal]');
+    if (!targets.length || !('IntersectionObserver' in window)) return;
+    if (window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+
+    var observer = new IntersectionObserver(function (entries) {
+        entries.forEach(function (entry) {
+            if (!entry.isIntersecting) return;
+            entry.target.classList.add('is-revealed');
+            observer.unobserve(entry.target);
+        });
+    }, { rootMargin: '0px 0px -8% 0px', threshold: 0.12 });
+
+    document.documentElement.classList.add('has-motion');
+    targets.forEach(function (el) { observer.observe(el); });
+})();
+
 (function () {
     'use strict';
 
