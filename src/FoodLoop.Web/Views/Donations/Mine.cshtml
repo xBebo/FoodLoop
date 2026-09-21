@@ -3,28 +3,19 @@
 @functions {
     private static string IsoUtc(DateTimeOffset value) => value.ToUniversalTime().ToString("yyyy-MM-ddTHH:mm:ss'Z'");
     private static string DisplayUtc(DateTimeOffset value) => value.ToUniversalTime().ToString("dd MMM yyyy, HH:mm 'UTC'");
-    private static string StatusClass(DonationStatus status) => status switch
-    {
-        DonationStatus.Draft => "text-bg-secondary",
-        DonationStatus.Available => "text-bg-success",
-        DonationStatus.Claimed => "text-bg-primary",
-        DonationStatus.Closed => "text-bg-dark",
-        DonationStatus.Expired => "text-bg-warning",
-        _ => "text-bg-secondary"
-    };
 }
 @{
     ViewData["Title"] = "My Donations";
 }
 
-<div class="page-shell donations-page">
-    <header class="page-header donations-heading">
+<div class="page-shell">
+    <header class="page-header">
         <div>
             <p class="page-eyebrow mb-1">Donor workspace</p>
-            <h1 class="page-header__title">My Donations</h1>
+            <h1 class="page-header__title">My donations</h1>
             <p class="page-header__lead">Your organization's donation history. All times are shown in UTC.</p>
         </div>
-        <a asp-action="Create" class="btn btn-primary">Create Donation</a>
+        <a asp-action="Create" class="btn btn-primary">Create donation</a>
     </header>
 
     @if (TempData["SuccessMessage"] is string success)
@@ -36,8 +27,8 @@
         <div class="alert alert-danger" role="alert">@error</div>
     }
 
-    <form asp-action="Mine" method="get" class="surface-panel filter-panel mb-4 donations-filter">
-        <div>
+    <form asp-action="Mine" method="get" class="fl-toolbar fl-toolbar--compact mb-4">
+        <div class="fl-toolbar__field">
             <label for="status" class="form-label">Status</label>
             <select id="status" name="status" class="form-select">
                 <option value="">All statuses</option>
@@ -47,7 +38,7 @@
                 }
             </select>
         </div>
-        <div class="donations-filter__actions">
+        <div class="fl-toolbar__actions">
             <button type="submit" class="btn btn-primary">Filter</button>
             <a asp-action="Mine" class="btn btn-outline-secondary">Clear</a>
         </div>
@@ -56,35 +47,36 @@
     @if (Model.Items.Count == 0)
     {
         <div class="empty-state">
-            @(Model.Status is null ? "No donations yet." : $"No {Model.Status} donations.")
+            <h2 class="empty-state__title">@(Model.Status is null ? "No donations yet." : $"No {Model.Status} donations.")</h2>
+            <p>@(Model.Status is null ? "Create a draft to describe food you can offer, then publish it to the marketplace." : "Try another status or clear the filter to see every donation.")</p>
         </div>
     }
     else
     {
-        <div class="table-responsive">
-            <table class="table table-hover align-middle donations-table">
-                <thead class="table-light">
+        <div class="table-responsive responsive-records">
+            <table class="table align-middle donations-table">
+                <thead>
                     <tr>
                         <th scope="col">Title</th>
                         <th scope="col">Category</th>
                         <th scope="col">Quantity</th>
                         <th scope="col">Expires (UTC)</th>
                         <th scope="col">Status</th>
-                        <th scope="col">Actions</th>
+                        <th scope="col"><span class="visually-hidden">Actions</span></th>
                     </tr>
                 </thead>
                 <tbody>
                 @foreach (var item in Model.Items)
                 {
                     <tr>
-                        <td data-label="Title">@item.Title</td>
-                        <td data-label="Category">@item.Category</td>
-                        <td data-label="Quantity">@item.Quantity @item.Unit</td>
+                        <td data-label="Title" class="donations-table__title">@item.Title</td>
+                        <td data-label="Category" class="donations-table__muted">@item.Category</td>
+                        <td data-label="Quantity" class="fl-tabular">@item.Quantity @item.Unit</td>
                         <td data-label="Expires"><time datetime="@IsoUtc(item.ExpiresAtUtc)">@DisplayUtc(item.ExpiresAtUtc)</time></td>
-                        <td data-label="Status"><span class="badge @StatusClass(item.Status)">@item.Status</span></td>
-                        <td data-label="Actions">
+                        <td data-label="Status" class="donations-table__status"><span class="status-chip" data-status="@item.Status">@item.Status</span></td>
+                        <td data-label="Actions" class="donations-table__actions">
                             <div class="donation-actions">
-                                <a asp-action="Details" asp-route-id="@item.Id" class="btn btn-sm btn-outline-primary">Details</a>
+                                <a asp-action="Details" asp-route-id="@item.Id" class="btn btn-sm btn-outline-secondary">Details</a>
                                 @if (item.Status == DonationStatus.Draft)
                                 {
                                     <a asp-action="Edit" asp-route-id="@item.Id" class="btn btn-sm btn-outline-secondary">Edit</a>

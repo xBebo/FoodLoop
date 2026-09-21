@@ -4,28 +4,30 @@
     ViewData["Title"] = "Donation Details";
 }
 
-<div class="page-shell page-shell--narrow donation-details-page">
-    <a asp-action="Mine" class="btn btn-link px-0 mb-3"><span aria-hidden="true">&larr;</span> Back to My Donations</a>
+<div class="page-shell page-shell--narrow">
+    <a asp-action="Mine" class="btn btn-ghost ps-2 mb-3"><span aria-hidden="true">&larr;</span> Back to My Donations</a>
 
-    <header class="page-header donation-details-heading">
+    <header class="page-header">
         <div>
             <p class="page-eyebrow mb-1">Donation record</p>
             <h1 class="page-header__title">Donation Details</h1>
             <p class="page-header__lead">All times are shown in UTC.</p>
         </div>
-        <span class="badge text-bg-secondary donation-details-status">@Model.Status</span>
+        <span class="status-chip" data-status="@Model.Status">@Model.Status</span>
     </header>
 
-    <section class="surface-panel p-3 p-md-4 donation-card mobile-card-hook" aria-labelledby="donation-title">
-        <h2 id="donation-title" class="h4 mb-4">@Model.Title</h2>
-        <dl class="detail-grid donation-details-grid mb-0">
+    <section class="surface-panel fl-detail-panel" aria-labelledby="donation-title">
+        <h2 id="donation-title" class="fl-detail-panel__title">@Model.Title</h2>
+
+        <h3 class="fl-detail-panel__heading">Food</h3>
+        <dl class="detail-grid">
             <div>
                 <dt>Category</dt>
                 <dd>@Model.Category</dd>
             </div>
             <div>
                 <dt>Quantity</dt>
-                <dd>@Model.Quantity @Model.Unit</dd>
+                <dd class="fl-tabular">@Model.Quantity @Model.Unit</dd>
             </div>
             <div>
                 <dt>Prepared</dt>
@@ -35,18 +37,21 @@
                 <dt>Expires</dt>
                 <dd><time datetime="@Model.ExpiresAtUtc.ToUniversalTime().ToString("yyyy-MM-ddTHH:mm:ss'Z'")">@Model.ExpiresAtUtc.ToUniversalTime().ToString("dd MMM yyyy, HH:mm UTC")</time></dd>
             </div>
-            <div class="detail-grid__wide donation-details-wide">
+        </dl>
+
+        <h3 class="fl-detail-panel__heading">Collection</h3>
+        <dl class="detail-grid">
+            <div>
                 <dt>Pickup address</dt>
                 <dd>@Model.PickupAddress</dd>
             </div>
-            <div class="detail-grid__wide donation-details-wide">
+            <div>
                 <dt>Storage instructions</dt>
                 <dd>@(string.IsNullOrWhiteSpace(Model.StorageInstructions) ? "Not provided" : Model.StorageInstructions)</dd>
             </div>
-            <div class="detail-grid__wide donation-details-wide">
-                <dt>Description</dt>
-                <dd>@(string.IsNullOrWhiteSpace(Model.Description) ? "Not provided" : Model.Description)</dd>
-            </div>
         </dl>
+
+        <h3 class="fl-detail-panel__heading">Description</h3>
+        <p class="fl-detail-panel__prose">@(string.IsNullOrWhiteSpace(Model.Description) ? "Not provided" : Model.Description)</p>
     </section>
 </div>
