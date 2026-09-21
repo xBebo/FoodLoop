@@ -1,13 +1,11 @@
-/* Desktop: donor management table. Mobile card behaviour comes from the shared .responsive-records (<768px). */
-.donations-table thead th {
-    background: var(--fl-mint-50) !important;
-    color: var(--fl-text-secondary);
-}
-
+/* Desktop: donor management table. Mobile card behaviour comes from the shared .responsive-records (<768px).
+   Header tint comes from the shared .table rules; row actions (.donation-actions) live in site.css because
+   their links and form are tag-helper output. */
 .donations-table__title {
     color: var(--fl-forest-950);
     font-weight: 650;
     min-width: 12rem;
+    overflow-wrap: anywhere;
 }
 
 .donations-table__muted {
@@ -20,17 +18,6 @@
 
 .donations-table__actions {
     text-align: end;
-}
-
-.donation-actions {
-    display: flex;
-    flex-wrap: wrap;
-    gap: .5rem;
-    justify-content: flex-end;
-}
-
-.donation-actions form {
-    margin: 0;
 }
 
 @media (max-width: 767.98px) {
@@ -48,7 +35,6 @@
     .donations-table .donations-table__title {
         grid-column: 1;
         min-width: 0;
-        overflow-wrap: anywhere;
     }
 
     .donations-table .donations-table__status {
@@ -71,15 +57,5 @@
     .donations-table .donations-table__actions {
         margin-top: .35rem;
         padding-top: 1rem;
-    }
-
-    .donation-actions {
-        display: grid;
-        grid-auto-columns: minmax(0, 1fr);
-        grid-auto-flow: column;
-    }
-
-    .donation-actions .btn {
-        width: 100%;
     }
 }

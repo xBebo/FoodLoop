@@ -1,5 +1,6 @@
 /* Scoped to Views/Claims/Mine.cshtml through Razor CSS isolation (bundled into FoodLoop.Web.styles.css).
-   Built on the shared --fl-* tokens in site.css; badge tones mirror Details.cshtml.css. */
+   Built on the shared --fl-* tokens in site.css. Status badge tones, buttons, the pager and every
+   tag-helper element (details link, cancel form) are styled globally in site.css. */
 
 .claims-page {
   color: var(--fl-text);
@@ -149,10 +150,10 @@
 
 .claims-table thead th {
   padding: .8rem 1rem;
-  background: var(--fl-mint-50);
-  border-bottom: 1px solid var(--fl-border-color);
+  background: var(--fl-surface-tint);
+  border-bottom: 1px solid var(--fl-border-strong);
   color: var(--fl-text-muted);
-  font-size: .72rem;
+  font-size: .75rem;
   font-weight: 700;
   letter-spacing: .07em;
   text-align: left;
@@ -174,8 +175,9 @@
   border-bottom: 0;
 }
 
+/* Same row hover as the shared .table-hover. */
 .claims-row:hover > * {
-  background: #FAFBF8;
+  background: var(--fl-surface-tint);
 }
 
 .claims-donation {
@@ -185,38 +187,6 @@
   font-weight: 650;
   line-height: 1.35;
   overflow-wrap: anywhere;
-}
-
-.claims-page ::deep .claims-details-link {
-  display: flex;
-  align-items: center;
-  gap: .35rem;
-  width: fit-content;
-  padding-block: .35rem .1rem;
-  color: var(--fl-action);
-  font-size: .8125rem;
-  font-weight: 600;
-  text-decoration: none;
-}
-
-/* Chevron drawn with borders, so it adds nothing to the accessible name. */
-.claims-page ::deep .claims-details-link::after {
-  content: "";
-  width: .4rem;
-  height: .4rem;
-  border-top: 1.5px solid currentColor;
-  border-right: 1.5px solid currentColor;
-  transform: rotate(45deg);
-  transition: transform var(--fl-dur-fast) var(--fl-ease);
-}
-
-.claims-page ::deep .claims-details-link:hover {
-  color: var(--fl-action-hover);
-  text-decoration: underline;
-}
-
-.claims-page ::deep .claims-details-link:hover::after {
-  transform: translateX(2px) rotate(45deg);
 }
 
 .claims-address {
@@ -237,36 +207,6 @@
 .claims-actions {
   text-align: right;
 }
-
-/* ---- Status badges: the visible label carries the meaning; dot and tint only reinforce it.
-   Tone groups come from ClaimDisplay.Tone: pending = Booked/PickupPending, transit = PickedUp/InTransit,
-   done = Delivered/Closed, stopped = Cancelled/Failed. */
-.claims-badge {
-  display: inline-flex;
-  align-items: center;
-  gap: .45rem;
-  padding: .3rem .7rem;
-  border: 1px solid;
-  border-radius: var(--fl-radius-pill);
-  font-size: .8125rem;
-  font-weight: 600;
-  line-height: 1.3;
-  white-space: nowrap;
-}
-
-.claims-badge__dot {
-  flex: none;
-  width: .45rem;
-  height: .45rem;
-  border-radius: 50%;
-  background: currentColor;
-}
-
-.claims-badge--pending { color: var(--fl-warning); background: var(--fl-warning-bg); border-color: var(--fl-warning-border); }
-.claims-badge--transit { color: var(--fl-info); background: var(--fl-info-bg); border-color: var(--fl-info-border); }
-.claims-badge--done { color: var(--fl-success); background: var(--fl-success-bg); border-color: var(--fl-success-border); }
-.claims-badge--stopped { color: var(--fl-danger); background: var(--fl-danger-bg); border-color: var(--fl-danger-border); }
-.claims-badge--neutral { color: var(--fl-neutral); background: var(--fl-neutral-bg); border-color: var(--fl-neutral-border); }
 
 /* ---- Lifecycle progress: six dots joined by a line; reached = deep green, current = ringed, future = neutral */
 .claims-progress {
@@ -359,12 +299,12 @@
   background: var(--fl-danger);
 }
 
-/* ---- Empty state: shared empty-state language */
+/* ---- Empty state: same proportions as the shared .empty-state, with its own bag icon */
 .claims-empty {
   display: flex;
   flex-direction: column;
   align-items: center;
-  padding: 3rem 1.5rem;
+  padding: 2.5rem 2rem;
   border: 1px dashed var(--fl-border-strong);
   border-radius: var(--fl-radius);
   background: var(--fl-surface-tint);
@@ -375,9 +315,9 @@
 .claims-empty__icon {
   display: grid;
   place-items: center;
-  width: 3rem;
-  height: 3rem;
-  margin-bottom: 1rem;
+  width: 2.5rem;
+  height: 2.5rem;
+  margin-bottom: .9rem;
   border-radius: 50%;
   background: var(--fl-surface);
   box-shadow: inset 0 0 0 1px var(--fl-border-color);
@@ -385,8 +325,8 @@
 }
 
 .claims-empty__icon svg {
-  width: 1.4rem;
-  height: 1.4rem;
+  width: 1.25rem;
+  height: 1.25rem;
 }
 
 .claims-empty__title {
@@ -402,92 +342,9 @@
   color: var(--fl-text-muted);
 }
 
-.claims-empty ::deep .claims-button {
-  margin-top: 1.25rem;
-}
-
-/* ---- Buttons and pagination */
-.claims-page ::deep .claims-button {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: .4rem;
-  min-height: 44px;
-  padding: .55rem 1.05rem;
-  border: 1px solid var(--fl-action);
-  border-radius: var(--fl-radius-sm);
-  background: var(--fl-action);
-  color: var(--fl-white);
-  font-weight: 600;
-  text-decoration: none;
-  transition: color var(--fl-dur-fast) ease, background-color var(--fl-dur-fast) ease, border-color var(--fl-dur-fast) ease;
-}
-
-.claims-page ::deep .claims-button:hover {
-  border-color: var(--fl-action-hover);
-  background: var(--fl-action-hover);
-  color: var(--fl-white);
-}
-
-.claims-page ::deep .claims-button:active {
-  transform: translateY(1px);
-}
-
-/* Matches the shared .btn-outline-secondary used by the Marketplace pager. */
-.claims-page ::deep .claims-button--ghost {
-  border-color: var(--fl-border-strong);
-  background: var(--fl-surface);
-  color: var(--fl-text-secondary);
-}
-
-.claims-page ::deep .claims-button--ghost:hover {
-  border-color: var(--fl-text-muted);
-  background: var(--fl-paper);
-  color: var(--fl-forest-950);
-}
-
-/* Destructive but secondary: light surface, danger outline, tint on hover. */
-.claims-page ::deep .claims-button--danger {
-  padding-inline: .9rem;
-  border-color: var(--fl-danger-border);
-  background: var(--fl-surface);
-  color: var(--fl-danger);
-  font-size: .875rem;
-  white-space: nowrap;
-}
-
-.claims-page ::deep .claims-button--danger:hover {
-  border-color: var(--fl-danger);
-  background: var(--fl-danger-bg);
-  color: var(--fl-danger);
-}
-
-.claims-page ::deep .claims-button--danger:focus-visible {
-  outline-color: var(--fl-danger);
-}
-
-.claims-page ::deep .claims-cancel {
-  display: inline-block;
-  margin: 0;
-}
-
-.claims-pager {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  justify-content: center;
-  gap: .75rem;
-  margin-top: 2rem;
-}
-
-.claims-pager__current {
-  padding: .5rem .9rem;
-  color: var(--fl-text-secondary);
-  font-weight: 600;
-  font-variant-numeric: tabular-nums;
-}
-
-/* ---- Below 1200px each table row becomes a record card (two per row on tablets) */
+/* ---- Below 1200px each table row becomes a record card (two per row on tablets).
+   Seven columns (with the progress track) do not fit a readable table under 1200px, so this view
+   switches earlier than the shared .responsive-records (<768px). */
 @media (max-width: 1199.98px) {
   .claims-table,
   .claims-table tbody,
@@ -554,12 +411,6 @@
     font-size: 1.05rem;
   }
 
-  /* 44px tap target for the primary navigation action. */
-  .claims-page ::deep .claims-details-link {
-    min-height: 44px;
-    padding-block: 0;
-  }
-
   .claims-table tbody td.claims-status {
     order: -1;
     margin-bottom: .5rem;
@@ -578,7 +429,7 @@
   .claims-table tbody td:not(.claims-status):not(.claims-actions)::before {
     content: attr(data-label);
     color: var(--fl-text-muted);
-    font-size: .7rem;
+    font-size: .72rem;
     font-weight: 700;
     letter-spacing: .06em;
     text-transform: uppercase;
@@ -595,34 +446,20 @@
   .claims-table tbody td.claims-actions:empty {
     display: none;
   }
-
-  .claims-pager ::deep .claims-button {
-    flex: 1 1 8rem;
-  }
-
-  .claims-pager__current {
-    order: -1;
-    flex-basis: 100%;
-    text-align: center;
-  }
 }
 
 @media (min-width: 768px) and (max-width: 1199.98px) {
   .claims-table tbody {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
-
-  .claims-pager ::deep .claims-button {
-    flex: 0 1 auto;
-  }
-
-  .claims-pager__current {
-    order: 0;
-    flex-basis: auto;
-  }
 }
 
 @media (max-width: 767.98px) {
+  /* Matches the shared .page-header rhythm on phones. */
+  .claims-hero {
+    margin-bottom: 1.5rem;
+  }
+
   .claims-stats {
     grid-template-columns: repeat(2, minmax(0, 1fr));
     gap: .75rem;
@@ -635,6 +472,4 @@
 
 @media (prefers-reduced-motion: reduce) {
   .claims-empty { animation: none; }
-  .claims-page ::deep .claims-button:active { transform: none; }
-  .claims-page ::deep .claims-details-link:hover::after { transform: rotate(45deg); }
 }

@@ -99,7 +99,7 @@
                             <td data-label="Claimed" class="claims-nowrap"><time datetime="@IsoUtc(claim.ClaimedAtUtc)">@DisplayUtc(claim.ClaimedAtUtc)</time></td>
                             <td data-label="Expires" class="claims-nowrap claims-expires"><time datetime="@IsoUtc(claim.ExpiresAtUtc)">@DisplayUtc(claim.ExpiresAtUtc)</time></td>
                             <td data-label="Status" class="claims-status">
-                                <span class="claims-badge claims-badge--@tone">
+                                <span data-status="@claim.ClaimStatus" class="claims-badge claims-badge--@tone">
                                     <span class="claims-badge__dot" aria-hidden="true"></span>@Label(claim.ClaimStatus)
                                 </span>
                                 @if (step > 0)
@@ -127,7 +127,7 @@
                                     @* UX guard only: a declined confirm leaves the form re-submittable; a confirmed one flags it so a second submit is dropped. Server-side status/RowVersion checks stay authoritative. *@
                                     <form method="post" asp-action="Cancel" class="claims-cancel" onsubmit="if (this.dataset.submitted) return false; if (!confirm('Cancel this claim? This action cannot be undone.')) return false; this.dataset.submitted = 'true'; return true;">
                                         <input type="hidden" name="claimId" value="@claim.ClaimId" />
-                                        <button type="submit" class="claims-button claims-button--danger">Cancel claim<span class="visually-hidden">: @claim.DonationTitle</span></button>
+                                        <button type="submit" class="btn btn-sm btn-outline-danger">Cancel claim<span class="visually-hidden">: @claim.DonationTitle</span></button>
                                     </form>
                                 }</td>
                             }
@@ -147,7 +147,7 @@
             {
                 <h2 id="claims-empty-title" class="claims-empty__title">No claims on this page</h2>
                 <p class="claims-empty__text">You have reached the end of your claims.</p>
-                <a class="claims-button" asp-action="Mine" asp-route-page="1" asp-route-pageSize="@Model.PageSize">Go to the first page of claims</a>
+                <a class="btn btn-primary" asp-action="Mine" asp-route-page="1" asp-route-pageSize="@Model.PageSize">Go to the first page of claims</a>
             }
             else
             {
@@ -159,15 +159,15 @@
 
     @if (hasPrevious || mayHaveNext)
     {
-        <nav class="claims-pager" aria-label="My claims pages">
+        <nav class="fl-pager" aria-label="My claims pages">
             @if (hasPrevious)
             {
-                <a class="claims-button claims-button--ghost" asp-action="Mine" asp-route-page="@(Model.Page - 1)" asp-route-pageSize="@Model.PageSize"><span aria-hidden="true">&larr;</span> Previous<span class="visually-hidden"> page of claims</span></a>
+                <a class="btn btn-outline-secondary" asp-action="Mine" asp-route-page="@(Model.Page - 1)" asp-route-pageSize="@Model.PageSize"><span aria-hidden="true">&larr;</span> Previous<span class="visually-hidden"> page of claims</span></a>
             }
-            <span class="claims-pager__current" aria-current="page">Page @Model.Page</span>
+            <span class="fl-pager__current" aria-current="page">Page @Model.Page</span>
             @if (mayHaveNext)
             {
-                <a class="claims-button claims-button--ghost" asp-action="Mine" asp-route-page="@(Model.Page + 1)" asp-route-pageSize="@Model.PageSize">Next<span class="visually-hidden"> page of claims</span> <span aria-hidden="true">&rarr;</span></a>
+                <a class="btn btn-outline-secondary" asp-action="Mine" asp-route-page="@(Model.Page + 1)" asp-route-pageSize="@Model.PageSize">Next<span class="visually-hidden"> page of claims</span> <span aria-hidden="true">&rarr;</span></a>
             }
         </nav>
     }

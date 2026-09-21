@@ -43,7 +43,7 @@
         <h2 class="form-section-title">Profile</h2>
         <div class="row g-3">
             <div class="col-md-6">
-                <label asp-for="Name" class="form-label">Organization Name</label>
+                <label asp-for="Name" class="form-label">Organization name</label>
                 <input asp-for="Name" class="form-control" readonly="@(Model.IsReadOnly ? "readonly" : null)" />
                 <span asp-validation-for="Name" class="text-danger"></span>
             </div>
@@ -59,11 +59,11 @@
         <p class="form-text mt-n2 mb-3">These details are fixed and can't be edited here.</p>
         <div class="row g-3">
             <div class="col-md-6">
-                <label for="organization-license" class="form-label">License Number</label>
+                <label for="organization-license" class="form-label">License number</label>
                 <input id="organization-license" class="form-control" value="@Model.LicenseNumber" disabled />
             </div>
             <div class="col-md-6">
-                <label for="organization-type" class="form-label">Organization Type</label>
+                <label for="organization-type" class="form-label">Organization type</label>
                 <input id="organization-type" class="form-control" value="@Model.Type" disabled />
             </div>
         </div>
