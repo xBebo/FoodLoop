@@ -1,4 +1,4 @@
-﻿@model FoodLoop.Web.Models.Organizations.OrganizationProfileViewModel
+@model FoodLoop.Web.Models.Organizations.OrganizationProfileViewModel
 
 @{
     ViewData["Title"] = "My Organization Profile";
@@ -16,7 +16,7 @@
         <div>
             <p class="page-eyebrow mb-1">Organization settings</p>
             <h1 class="page-header__title">My organization</h1>
-            <p class="page-header__lead">Review your approved organization identity and update the safe profile fields available to your account.</p>
+            <p class="page-header__lead">Keep your organization name and pickup or delivery address up to date.</p>
         </div>
         <span class="badge @badgeClass fs-6">@Model.Status</span>
     </header>
@@ -33,7 +33,7 @@
     @if (Model.IsReadOnly)
     {
         <div class="alert alert-warning mb-4">
-            <strong>Read-only access.</strong> Your organization status is <strong>@Model.Status</strong>, so profile editing is disabled.
+            <strong>Read-Only Access.</strong> Your organization status is <strong>@Model.Status</strong>, so profile editing is disabled.
         </div>
     }
 
@@ -60,12 +60,12 @@
 
         <div class="row">
             <div class="col-md-6 mb-3">
-                <label class="form-label">License Number</label>
-                <input class="form-control" value="@Model.LicenseNumber" disabled />
+                <label for="organization-license" class="form-label">License Number</label>
+                <input id="organization-license" class="form-control" value="@Model.LicenseNumber" disabled />
             </div>
             <div class="col-md-6 mb-3">
-                <label class="form-label">Organization Type</label>
-                <input class="form-control" value="@Model.Type" disabled />
+                <label for="organization-type" class="form-label">Organization Type</label>
+                <input id="organization-type" class="form-control" value="@Model.Type" disabled />
             </div>
         </div>
 

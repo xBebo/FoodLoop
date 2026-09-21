@@ -1,13 +1,13 @@
-﻿@{
-    ViewData["Title"] = "تسجيل الدخول";
+@{
+    ViewData["Title"] = "Welcome back";
 }
 
-<div class="auth-shell" dir="rtl">
+<div class="auth-shell">
     <section class="card auth-card">
         <div class="auth-card__header">
             <p class="auth-brandline mb-0">FoodLoop</p>
-            <h1 class="auth-title">تسجيل الدخول</h1>
-            <p class="auth-subtitle">ادخل إلى حسابك لمتابعة عمليات التبرع والاستلام.</p>
+            <h1 class="auth-title">Welcome back</h1>
+            <p class="auth-subtitle">Pick up where you left off. Good food is on the move.</p>
         </div>
 
         <div class="auth-card__body">
@@ -24,21 +24,21 @@
                 }
 
                 <div class="mb-3">
-                    <label class="form-label">البريد الإلكتروني</label>
-                    <input type="email" name="email" class="form-control" autocomplete="email" required />
+                    <label class="form-label" for="email">Email address</label>
+                    <input id="email" type="email" name="email" class="form-control" autocomplete="email" required />
                 </div>
 
                 <div class="mb-4">
-                    <label class="form-label">كلمة المرور</label>
-                    <input type="password" name="password" class="form-control" autocomplete="current-password" required />
+                    <label class="form-label" for="password">Password</label>
+                    <input id="password" type="password" name="password" class="form-control" autocomplete="current-password" required />
                 </div>
 
-                <button type="submit" class="btn btn-primary w-100">دخول</button>
+                <button type="submit" class="btn btn-primary w-100">Log in</button>
             </form>
 
             <p class="text-center text-muted mt-4 mb-0">
-                ليس لديك حساب مؤسسة؟
-                <a asp-action="Register" class="fw-semibold">تسجيل مؤسسة جديدة</a>
+                New to FoodLoop?
+                <a asp-action="Register" class="fw-semibold">Register an organization</a>
             </p>
         </div>
     </section>

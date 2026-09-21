@@ -1,13 +1,13 @@
-﻿@{
-    ViewData["Title"] = "تسجيل حساب مؤسسة جديد";
+@{
+    ViewData["Title"] = "Register an organization";
 }
 
-<div class="auth-shell" dir="rtl">
+<div class="auth-shell">
     <section class="card auth-card">
         <div class="auth-card__header">
             <p class="auth-brandline mb-0">FoodLoop</p>
-            <h1 class="auth-title">تسجيل مؤسسة جديدة</h1>
-            <p class="auth-subtitle">أنشئ طلب تسجيل كجهة مانحة أو مستفيدة. سيحتاج الحساب إلى موافقة الإدارة قبل الاستخدام.</p>
+            <h1 class="auth-title">Register an organization</h1>
+            <p class="auth-subtitle">Join as a donor or beneficiary organization. An administrator will review your registration before you can start.</p>
         </div>
 
         <div class="auth-card__body">
@@ -20,41 +20,41 @@
 
             <form asp-controller="Auth" asp-action="Register" method="post">
                 <div class="mb-3">
-                    <label class="form-label">اسم المؤسسة</label>
-                    <input type="text" name="orgName" class="form-control" placeholder="اسم المؤسسة" autocomplete="organization" required />
+                    <label class="form-label" for="orgName">Organization name</label>
+                    <input id="orgName" type="text" name="orgName" class="form-control" placeholder="Organization name" autocomplete="organization" required />
                 </div>
 
                 <div class="mb-3">
-                    <label class="form-label">رقم الترخيص</label>
-                    <input type="text" name="licenseNumber" class="form-control" placeholder="رقم الترخيص الرسمي" required />
+                    <label class="form-label" for="licenseNumber">License number</label>
+                    <input id="licenseNumber" type="text" name="licenseNumber" class="form-control" placeholder="Official license number" required />
                 </div>
 
                 <div class="mb-3">
-                    <label class="form-label">نوع المؤسسة</label>
-                    <select name="orgType" class="form-select" required>
-                        <option value="" selected disabled>اختر نوع المؤسسة</option>
-                        <option value="Donor">مانح (Donor)</option>
-                        <option value="Beneficiary">مستفيد (Beneficiary)</option>
+                    <label class="form-label" for="orgType">Organization type</label>
+                    <select id="orgType" name="orgType" class="form-select" required>
+                        <option value="" selected disabled>Choose an organization type</option>
+                        <option value="Donor">Donor — share surplus food</option>
+                        <option value="Beneficiary">Beneficiary — receive food</option>
                     </select>
                 </div>
 
                 <div class="mb-3">
-                    <label class="form-label">البريد الإلكتروني</label>
-                    <input type="email" name="email" class="form-control" placeholder="name@example.com" autocomplete="email" required />
+                    <label class="form-label" for="email">Email address</label>
+                    <input id="email" type="email" name="email" class="form-control" placeholder="name@example.com" autocomplete="email" required />
                 </div>
 
                 <div class="mb-4">
-                    <label class="form-label">كلمة المرور</label>
-                    <input type="password" name="password" class="form-control" autocomplete="new-password" required />
-                    <div class="form-text">استخدم 10 أحرف على الأقل مع حرف كبير وصغير ورقم ورمز.</div>
+                    <label class="form-label" for="password">Password</label>
+                    <input id="password" type="password" name="password" class="form-control" autocomplete="new-password" required />
+                    <div class="form-text">Use at least 10 characters, including uppercase and lowercase letters, a number and a symbol.</div>
                 </div>
 
-                <button type="submit" class="btn btn-primary w-100">إرسال طلب التسجيل</button>
+                <button type="submit" class="btn btn-primary w-100">Submit registration</button>
             </form>
 
             <p class="text-center text-muted mt-4 mb-0">
-                لديك حساب بالفعل؟
-                <a asp-controller="Auth" asp-action="Login" class="fw-semibold">تسجيل الدخول</a>
+                Already registered?
+                <a asp-controller="Auth" asp-action="Login" class="fw-semibold">Welcome back</a>
             </p>
         </div>
     </section>

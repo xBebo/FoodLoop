@@ -1,14 +1,14 @@
 /* Scoped to Views/Claims/Mine.cshtml through Razor CSS isolation (bundled into FoodLoop.Web.styles.css). */
 
 .claims-page {
-  --claims-green: #198754;
-  --claims-green-strong: #0f5132;
-  --claims-green-soft: #e9f5ee;
+  --claims-green: var(--fl-forest-700);
+  --claims-green-strong: var(--fl-forest-900);
+  --claims-green-soft: var(--fl-leaf-100);
   --claims-warm: #9a4a06;
   --claims-warm-soft: #fff4e5;
-  --claims-ink: #1d2a24;
-  --claims-muted: #56655d;
-  --claims-line: #e2e8e4;
+  --claims-ink: var(--fl-ink);
+  --claims-muted: var(--fl-muted);
+  --claims-line: var(--fl-border);
   --claims-surface: #ffffff;
   --claims-subtle: #f8faf9;
   --claims-radius: 1rem;
@@ -25,7 +25,7 @@
   margin-bottom: 1.75rem;
   border: 1px solid var(--claims-line);
   border-radius: calc(var(--claims-radius) * 1.25);
-  background: linear-gradient(120deg, var(--claims-green-soft) 0%, #f6faf7 55%, var(--claims-warm-soft) 100%);
+  background: var(--fl-leaf-100);
 }
 
 .claims-hero::after {
@@ -57,7 +57,7 @@
   width: 1.5rem;
   height: .25rem;
   border-radius: 1rem;
-  background: linear-gradient(90deg, var(--claims-green), #e8833a);
+  background: var(--fl-leaf-100);
 }
 
 .claims-title {
@@ -367,7 +367,8 @@
   gap: .4rem;
   padding: .55rem 1.1rem;
   border: 1px solid var(--claims-green);
-  border-radius: 999px;
+  border-radius: var(--fl-radius-sm);
+  min-height: 44px;
   background: var(--claims-green);
   color: #fff;
   font-weight: 650;
@@ -552,25 +553,5 @@
     order: -1;
     flex-basis: 100%;
     text-align: center;
-  }
-}
-
-/* ---- Motion: a single subtle entrance, only when the user allows motion */
-@media (prefers-reduced-motion: no-preference) {
-  .claims-summary,
-  .claims-list,
-  .claims-empty {
-    animation: claims-rise .35s ease-out both;
-  }
-
-  .claims-list {
-    animation-delay: .05s;
-  }
-}
-
-@keyframes claims-rise {
-  from {
-    opacity: 0;
-    transform: translateY(6px);
   }
 }

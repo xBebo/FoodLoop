@@ -1,17 +1,17 @@
 @model IEnumerable<FoodLoop.Domain.Entities.Organization>
 
 @{
-    ViewData["Title"] = "طلبات الاعتماد المعلقة";
+    ViewData["Title"] = "Pending approvals";
 }
 
-<div class="page-shell" dir="rtl">
+<div class="page-shell">
     <header class="page-header">
         <div>
-            <p class="page-eyebrow mb-1">إدارة FoodLoop</p>
-            <h1 class="page-header__title">طلبات تفعيل المؤسسات المعلقة</h1>
-            <p class="page-header__lead">راجع بيانات المؤسسة ثم وافق أو ارفض طلب التسجيل.</p>
+            <p class="page-eyebrow mb-1">FoodLoop admin</p>
+            <h1 class="page-header__title">Pending organization approvals</h1>
+            <p class="page-header__lead">Review each organization before approving access to FoodLoop.</p>
         </div>
-        <a class="btn btn-outline-success" asp-action="Manage">إدارة المؤسسات</a>
+        <a class="btn btn-outline-success" asp-action="Manage">Manage organizations</a>
     </header>
 
     @if (TempData["ErrorMessage"] is string error)
@@ -26,22 +26,22 @@
         </div>
     }
 
-    <div class="table-responsive">
+    <div class="table-responsive responsive-records">
         <table class="table table-hover table-striped align-middle">
             <thead>
                 <tr>
-                    <th>اسم المؤسسة</th>
-                    <th>رقم الترخيص</th>
-                    <th>نوع المؤسسة</th>
-                    <th>الحالة الحاليّة</th>
-                    <th class="text-center">الإجراءات</th>
+                    <th scope="col">Organization name</th>
+                    <th scope="col">License number</th>
+                    <th scope="col">Organization type</th>
+                    <th scope="col">Current status</th>
+                    <th scope="col" class="text-center">Actions</th>
                 </tr>
             </thead>
             <tbody>
                 @if (!Model.Any())
                 {
                     <tr>
-                        <td colspan="5" class="text-center py-5 text-muted">لا توجد طلبات معلقة حالياً.</td>
+                        <td colspan="5" class="text-center py-5 text-muted">All caught up. No organizations are waiting for approval.</td>
                     </tr>
                 }
                 else
@@ -49,17 +49,17 @@
                     @foreach (var org in Model)
                     {
                         <tr>
-                            <td class="fw-semibold">@org.Name</td>
-                            <td>@org.LicenseNumber</td>
-                            <td><span class="status-chip">@org.Type</span></td>
-                            <td><span class="badge bg-warning text-dark">@org.Status</span></td>
-                            <td class="text-center">
+                            <td data-label="Name" class="fw-semibold">@org.Name</td>
+                            <td data-label="License">@org.LicenseNumber</td>
+                            <td data-label="Type"><span class="status-chip">@org.Type</span></td>
+                            <td data-label="Status"><span class="badge bg-warning text-dark">@org.Status</span></td>
+                            <td data-label="Actions" class="text-center">
                                 <div class="d-flex flex-wrap justify-content-center gap-2">
                                     <form asp-controller="Organizations" asp-action="ApproveOrganization" asp-route-id="@org.Id" method="post">
-                                        <button type="submit" class="btn btn-success btn-sm px-3">قبول (Approve)</button>
+                                        <button type="submit" class="btn btn-success btn-sm px-3">Approve</button>
                                     </form>
                                     <form asp-controller="Organizations" asp-action="RejectOrganization" asp-route-id="@org.Id" method="post">
-                                        <button type="submit" class="btn btn-outline-danger btn-sm px-3">رفض (Reject)</button>
+                                        <button type="submit" class="btn btn-outline-danger btn-sm px-3">Reject</button>
                                     </form>
                                 </div>
                             </td>

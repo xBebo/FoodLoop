@@ -1,3 +1,8 @@
+@{
+    string? CurrentPage(string controller, string action) =>
+        string.Equals(ViewContext.RouteData.Values["controller"]?.ToString(), controller, StringComparison.OrdinalIgnoreCase) &&
+        string.Equals(ViewContext.RouteData.Values["action"]?.ToString(), action, StringComparison.OrdinalIgnoreCase) ? "page" : null;
+}
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -11,11 +16,12 @@
     <link rel="stylesheet" href="~/FoodLoop.Web.styles.css" asp-append-version="true" />
 </head>
 <body class="app-body">
+    <a href="#main-content" class="skip-link">Skip to content</a>
     <header class="app-header">
-        <nav class="navbar navbar-expand-lg foodloop-navbar">
+        <nav aria-label="Main navigation" class="navbar navbar-expand-lg foodloop-navbar">
             <div class="container-xxl">
                 <a class="navbar-brand foodloop-brand" asp-area="" asp-controller="Home" asp-action="Index" aria-label="FoodLoop home">
-                    <span class="foodloop-brand__mark" aria-hidden="true">F</span>
+                    <span class="foodloop-brand__mark" aria-hidden="true"><svg viewBox="0 0 32 32" fill="none"><path d="M25 7C13 5 6 11 9 20c9 3 17-3 16-13Z" stroke="currentColor" stroke-width="2"/><path d="m7 26 13-13M8 8l-3 5m0-5v5h5M24 24l3-5m0 5v-5h-5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
                     <span>FoodLoop</span>
                 </a>
 
@@ -26,35 +32,35 @@
 
                 <div id="foodloopNav" class="collapse navbar-collapse">
                     <ul class="navbar-nav me-auto align-items-lg-center gap-lg-1">
-                        <li class="nav-item"><a class="nav-link" asp-area="" asp-controller="Home" asp-action="Index">Home</a></li>
+                        <li class="nav-item"><a class="nav-link" aria-current="@CurrentPage("Home", "Index")" asp-area="" asp-controller="Home" asp-action="Index">Home</a></li>
 
                         @if (User.IsInRole(FoodLoop.Application.Identity.AppRoles.Admin))
                         {
-                            <li class="nav-item"><a class="nav-link" asp-controller="Admin" asp-action="Index">Dashboard</a></li>
-                            <li class="nav-item"><a class="nav-link" asp-controller="Organizations" asp-action="Manage">Organizations</a></li>
-                            <li class="nav-item"><a class="nav-link" asp-controller="Courier" asp-action="AssignCourier">Courier assignment</a></li>
-                            <li class="nav-item"><a class="nav-link" asp-controller="Admin" asp-action="Audit">Audit</a></li>
+                            <li class="nav-item"><a class="nav-link" aria-current="@CurrentPage("Admin", "Index")" asp-controller="Admin" asp-action="Index">Dashboard</a></li>
+                            <li class="nav-item"><a class="nav-link" aria-current="@CurrentPage("Organizations", "Manage")" asp-controller="Organizations" asp-action="Manage">Organizations</a></li>
+                            <li class="nav-item"><a class="nav-link" aria-current="@CurrentPage("Courier", "AssignCourier")" asp-controller="Courier" asp-action="AssignCourier">Courier assignment</a></li>
+                            <li class="nav-item"><a class="nav-link" aria-current="@CurrentPage("Admin", "Audit")" asp-controller="Admin" asp-action="Audit">Audit</a></li>
                         }
 
                         @if (User.IsInRole("Donor"))
                         {
-                            <li class="nav-item"><a class="nav-link" asp-controller="Donations" asp-action="Create">Create donation</a></li>
-                            <li class="nav-item"><a class="nav-link" asp-controller="Donations" asp-action="Mine">My donations</a></li>
-                            <li class="nav-item"><a class="nav-link" asp-controller="Courier" asp-action="Codes">Handover</a></li>
-                            <li class="nav-item"><a class="nav-link" asp-controller="MyOrganization" asp-action="Index">Organization</a></li>
+                            <li class="nav-item"><a class="nav-link" aria-current="@CurrentPage("Donations", "Create")" asp-controller="Donations" asp-action="Create">Create donation</a></li>
+                            <li class="nav-item"><a class="nav-link" aria-current="@CurrentPage("Donations", "Mine")" asp-controller="Donations" asp-action="Mine">My donations</a></li>
+                            <li class="nav-item"><a class="nav-link" aria-current="@CurrentPage("Courier", "Codes")" asp-controller="Courier" asp-action="Codes">Handover</a></li>
+                            <li class="nav-item"><a class="nav-link" aria-current="@CurrentPage("MyOrganization", "Index")" asp-controller="MyOrganization" asp-action="Index">Organization</a></li>
                         }
 
                         @if (User.IsInRole("Beneficiary"))
                         {
-                            <li class="nav-item"><a class="nav-link" asp-controller="Donations" asp-action="Available">Marketplace</a></li>
-                            <li class="nav-item"><a class="nav-link" asp-controller="Claims" asp-action="Mine">My claims</a></li>
-                            <li class="nav-item"><a class="nav-link" asp-controller="Courier" asp-action="Codes">Handover</a></li>
-                            <li class="nav-item"><a class="nav-link" asp-controller="MyOrganization" asp-action="Index">Organization</a></li>
+                            <li class="nav-item"><a class="nav-link" aria-current="@CurrentPage("Donations", "Available")" asp-controller="Donations" asp-action="Available">Marketplace</a></li>
+                            <li class="nav-item"><a class="nav-link" aria-current="@CurrentPage("Claims", "Mine")" asp-controller="Claims" asp-action="Mine">My claims</a></li>
+                            <li class="nav-item"><a class="nav-link" aria-current="@CurrentPage("Courier", "Codes")" asp-controller="Courier" asp-action="Codes">Handover</a></li>
+                            <li class="nav-item"><a class="nav-link" aria-current="@CurrentPage("MyOrganization", "Index")" asp-controller="MyOrganization" asp-action="Index">Organization</a></li>
                         }
 
                         @if (User.IsInRole("Courier"))
                         {
-                            <li class="nav-item"><a class="nav-link" asp-controller="Courier" asp-action="MyTasks">My tasks</a></li>
+                            <li class="nav-item"><a class="nav-link" aria-current="@CurrentPage("Courier", "MyTasks")" asp-controller="Courier" asp-action="MyTasks">My tasks</a></li>
                         }
                     </ul>
 
@@ -69,7 +75,7 @@
                         }
                         else
                         {
-                            <li class="nav-item"><a class="nav-link" asp-controller="Auth" asp-action="Login">Log in</a></li>
+                            <li class="nav-item"><a class="nav-link" aria-current="@CurrentPage("Auth", "Login")" asp-controller="Auth" asp-action="Login">Log in</a></li>
                             <li class="nav-item"><a class="btn btn-sm btn-brand" asp-controller="Auth" asp-action="Register">Join FoodLoop</a></li>
                         }
                     </ul>
@@ -78,7 +84,7 @@
         </nav>
     </header>
 
-    <main role="main" class="container-xxl app-main">
+    <main id="main-content" tabindex="-1" class="container-xxl app-main">
         @RenderBody()
     </main>
 

@@ -3,15 +3,17 @@
     ViewData["Title"] = "Edit Draft Donation";
 }
 
-<div class="container py-4" style="max-width: 760px;">
-    <h1 class="h3 mb-1">Edit Draft Donation</h1>
+<div class="page-shell page-shell--narrow">
+    <p class="page-eyebrow">Donor workspace</p>
+    <h1 class="page-header__title">Edit Draft Donation</h1>
     <p class="text-muted mb-4">Only a current draft can be saved. If it changes elsewhere, refresh before trying again.</p>
 
-    <form asp-action="Edit" asp-route-id="@Model.Id" method="post" class="card card-body shadow-sm">
+    <form asp-action="Edit" asp-route-id="@Model.Id" method="post" class="surface-panel p-3 p-md-4">
         <input asp-for="Id" type="hidden" />
         <input asp-for="RowVersion" type="hidden" />
         <div asp-validation-summary="ModelOnly" class="text-danger mb-3"></div>
 
+        <h2 class="form-section-title"><span>01</span> Food details</h2>
         <div class="mb-3">
             <label asp-for="Title" class="form-label"></label>
             <input asp-for="Title" class="form-control" />
@@ -19,7 +21,7 @@
         </div>
 
         <div class="mb-3">
-            <label asp-for="FoodCategoryId" class="form-label"></label>
+            <label asp-for="FoodCategoryId" class="form-label">Food category</label>
             <select asp-for="FoodCategoryId" asp-items="Model.Categories" class="form-select">
                 <option value="">Choose a category</option>
             </select>
@@ -45,6 +47,7 @@
             </div>
         </div>
 
+        <h2 class="form-section-title"><span>02</span> Timing &amp; pickup</h2>
         <div class="row">
             <div class="col-md-6 mb-3">
                 <label asp-for="PreparedAt" class="form-label">Prepared at (local time)</label>
@@ -60,13 +63,13 @@
         <p class="form-text mt-n2">Times are entered in local time and stored as UTC.</p>
 
         <div class="mb-3">
-            <label asp-for="StorageInstructions" class="form-label"></label>
+            <label asp-for="StorageInstructions" class="form-label">Storage instructions</label>
             <textarea asp-for="StorageInstructions" class="form-control" rows="2"></textarea>
             <span asp-validation-for="StorageInstructions" class="text-danger"></span>
         </div>
 
         <div class="mb-3">
-            <label asp-for="PickupAddress" class="form-label"></label>
+            <label asp-for="PickupAddress" class="form-label">Pickup address</label>
             <input asp-for="PickupAddress" class="form-control" />
             <span asp-validation-for="PickupAddress" class="text-danger"></span>
         </div>

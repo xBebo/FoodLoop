@@ -1,4 +1,4 @@
-﻿@using FoodLoop.Domain.Entities
+@using FoodLoop.Domain.Entities
 @using FoodLoop.Domain.Enums
 @model IEnumerable<DonationClaim>
 
@@ -11,7 +11,7 @@
         <div>
             <p class="page-eyebrow mb-1">Courier workspace</p>
             <h1 class="page-header__title">My delivery tasks</h1>
-            <p class="page-header__lead">Your assigned claims, current lifecycle state and next verified handover step.</p>
+            <p class="page-header__lead">See where to go next and verify each pickup and delivery.</p>
         </div>
     </header>
 
@@ -23,14 +23,14 @@
         </div>
     }
 
-    <div class="table-responsive">
+    <div class="table-responsive responsive-records">
         <table class="table table-hover align-middle">
             <thead>
                 <tr>
-                    <th>Donation</th>
-                    <th>Status</th>
-                    <th>Next step</th>
-                    <th class="text-center">Action</th>
+                    <th scope="col">Donation</th>
+                    <th scope="col">Status</th>
+                    <th scope="col">Next step</th>
+                    <th scope="col" class="text-center">Action</th>
                 </tr>
             </thead>
             <tbody>
@@ -46,20 +46,21 @@
                     var pickupPending = task.Status == ClaimStatus.PickupPending;
                     var inTransit = task.Status == ClaimStatus.InTransit;
                     <tr>
-                        <td class="fw-semibold">@task.FoodDonation?.Title</td>
-                        <td>
+                        <td data-label="Donation" class="fw-semibold">@task.FoodDonation?.Title
+                            <a class="record-link" asp-action="Details" asp-route-id="@task.Id">Task details<span class="visually-hidden">: @task.FoodDonation?.Title</span></a></td>
+                        <td data-label="Status">
                             @if (closed) { <span class="badge bg-secondary">Closed</span> }
                             else if (inTransit) { <span class="badge bg-warning text-dark">In Transit</span> }
                             else if (pickupPending) { <span class="badge bg-info text-dark">Pickup Pending</span> }
                             else { <span class="badge bg-primary">@task.Status</span> }
                         </td>
-                        <td>
+                        <td data-label="Next step">
                             @if (pickupPending) { <span>Awaiting pickup verification</span> }
                             else if (inTransit) { <span>Awaiting delivery verification</span> }
                             else if (closed) { <span>Delivery completed</span> }
                             else { <span class="text-muted">No handover action available</span> }
                         </td>
-                        <td class="text-center">
+                        <td data-label="Action" class="text-center">
                             @if (closed)
                             {
                                 <button class="btn btn-outline-secondary btn-sm" type="button" disabled>Completed</button>

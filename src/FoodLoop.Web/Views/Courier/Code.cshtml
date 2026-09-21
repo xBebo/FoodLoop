@@ -7,14 +7,14 @@
     <section class="surface-panel handover-code-card p-3 p-md-4 text-center">
         <p class="page-eyebrow mb-1">@Model.HandoverType handover</p>
         <h1 class="page-header__title">Your one-time handover code</h1>
-        <p class="page-header__lead mx-auto">Show the QR code or copy the same code to the assigned courier. This page displays the raw code only for this issuance.</p>
+        <p class="page-header__lead mx-auto">Show the QR code or copy the same code to the assigned courier. Keep this page open until the courier has the code.</p>
 
         <div class="handover-qr" role="img" aria-label="QR code containing the handover token">
             @Html.Raw(Model.QrSvg)
         </div>
 
         <label for="handoverCode" class="form-label">Handover code</label>
-        <div class="input-group mx-auto" style="max-width: 620px">
+        <div class="input-group mx-auto handover-copy">
             <input id="handoverCode" class="form-control font-monospace" type="text" readonly value="@Model.RawToken" />
             <button id="copyCode" class="btn btn-primary" type="button">Copy code</button>
         </div>
@@ -27,7 +27,7 @@
         </div>
 
         <div class="alert alert-warning text-start mb-4" role="note">
-            Regenerating a code invalidates the previous one. The server, not this page, decides whether a code is still valid.
+            Regenerating a code invalidates the previous one. Each code can be used once and must be verified before it expires.
         </div>
 
         <a asp-action="Codes" class="btn btn-outline-secondary">Back to handovers</a>

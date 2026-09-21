@@ -29,7 +29,7 @@
                 <label class="form-label" for="to">To (UTC, exclusive)</label>
                 <input type="datetime-local" class="form-control" id="to" name="to" value="@Model.Filter.ToUtc?.UtcDateTime.ToString("yyyy-MM-ddTHH:mm")" />
             </div>
-            <div class="col-lg-2 d-flex gap-2">
+            <div class="col-12 d-flex gap-2">
                 <button type="submit" class="btn btn-primary">Apply filters</button>
                 <a class="btn btn-outline-secondary" asp-action="Audit">Clear</a>
             </div>
@@ -48,11 +48,11 @@
 
     @if (Model.Items.Count == 0)
     {
-        <div class="empty-state" role="status">No audit records yet. Recorded actions will appear here.</div>
+        <div class="empty-state" role="status">No records match this view. Clear the filters to see all recorded activity.</div>
     }
     else
     {
-        <div class="table-responsive">
+        <div class="table-responsive responsive-records">
             <table class="table table-striped align-middle">
                 <caption class="px-3">@Model.TotalCount records. Page @Model.Page of @Model.TotalPages.</caption>
                 <thead>
@@ -62,19 +62,19 @@
                 @foreach (var entry in Model.Items)
                 {
                     <tr>
-                        <td class="fw-semibold">@entry.Action</td>
-                        <td>
+                        <td data-label="Action" class="fw-semibold">@entry.Action</td>
+                        <td data-label="Actor">
                             @entry.ActorName
                             @if (entry.ActorUserId.HasValue)
                             {
                                 <small class="d-block text-muted audit-id">@entry.ActorUserId</small>
                             }
                         </td>
-                        <td>
+                        <td data-label="Entity">
                             @entry.EntityType
                             <small class="d-block text-muted audit-id">@entry.EntityId</small>
                         </td>
-                        <td class="text-nowrap"><time datetime="@entry.TimestampUtc.ToUniversalTime().ToString("O")">@entry.TimestampUtc.ToUniversalTime().ToString("yyyy-MM-dd HH:mm:ss")</time></td>
+                        <td data-label="Timestamp (UTC)" class="text-nowrap"><time datetime="@entry.TimestampUtc.ToUniversalTime().ToString("O")">@entry.TimestampUtc.ToUniversalTime().ToString("yyyy-MM-dd HH:mm:ss")</time></td>
                     </tr>
                 }
                 </tbody>

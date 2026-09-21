@@ -6,16 +6,28 @@
         <div>
             <p class="page-eyebrow mb-1">FoodLoop admin</p>
             <h1 class="page-header__title">Operations overview</h1>
-            <p class="page-header__lead">A read-only snapshot of organization, donation and claim activity.</p>
+            <p class="page-header__lead">Keep food moving. Review access, coordinate couriers and follow completed deliveries.</p>
         </div>
         <div class="d-flex flex-wrap gap-2">
             <a class="btn btn-outline-success" asp-controller="Organizations" asp-action="Manage">Manage organizations</a>
-            <a class="btn btn-outline-success" asp-controller="Organizations" asp-action="PendingRequests">Review pending</a>
-            <a class="btn btn-outline-success" asp-controller="Courier" asp-action="AssignCourier">Assign courier</a>
+
+
             <a class="btn btn-outline-success" asp-action="Audit">View audit log</a>
         </div>
     </header>
 
+    <section class="operations-priority" aria-labelledby="operations-next">
+        <div>
+            <p class="page-eyebrow mb-2">Start here</p>
+            <h2 id="operations-next">@(Model.PendingOrganizations > 0 ? "Organizations are ready for your review" : "Keep the next rescue moving")</h2>
+            <p>@(Model.PendingOrganizations > 0 ? "Review pending registrations so approved organizations can begin sharing and receiving food." : "Check courier assignments to help claimed donations reach their next handover.")</p>
+        </div>
+        <div class="d-flex flex-wrap gap-2">
+            <a class="btn btn-primary" asp-controller="Organizations" asp-action="PendingRequests">Review pending (@Model.PendingOrganizations)</a>
+            <a class="btn btn-outline-brand" asp-controller="Courier" asp-action="AssignCourier">Assign couriers</a>
+        </div>
+    </section>
+    <h2 class="section-heading">The operation at a glance</h2>
     <section class="metric-grid" aria-label="Operational impact summary">
         <article class="metric-card">
             <p class="metric-card__label">Pending organizations</p>
@@ -40,7 +52,7 @@
         <article class="metric-card">
             <p class="metric-card__label">Expired donations</p>
             <p class="metric-card__value" data-testid="expired">@Model.ExpiredDonations</p>
-            <p class="metric-card__help">Donations persisted in the Expired state.</p>
+            <p class="metric-card__help">Donations marked as expired.</p>
         </article>
     </section>
 
