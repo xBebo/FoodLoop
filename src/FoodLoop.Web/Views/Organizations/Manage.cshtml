@@ -4,14 +4,14 @@
     ViewData["Title"] = "Organization management";
 }
 
-<div class="page-shell">
+<div class="page-shell admin-page">
     <header class="page-header">
         <div>
-            <p class="page-eyebrow mb-1">FoodLoop admin</p>
-            <h1 class="page-header__title">Organization management</h1>
+            <p class="page-eyebrow admin-eyebrow mb-1">Organization management</p>
+            <h1 class="page-header__title">Manage organizations</h1>
             <p class="page-header__lead">Review access, manage active organizations and find registrations awaiting approval.</p>
         </div>
-        <a class="btn btn-outline-success" asp-action="PendingRequests">Pending requests</a>
+        <a class="btn btn-outline-brand" asp-action="PendingRequests">Pending requests</a>
     </header>
 
     @if (TempData["SuccessMessage"] is string success)
@@ -23,57 +23,60 @@
         <div class="alert alert-danger" role="alert">@error</div>
     }
 
-    <form method="get" asp-action="Manage" class="surface-panel filter-panel mb-4">
-        <div class="row g-3 align-items-end">
-            <div class="col-sm-6 col-md-4">
-                <label for="status" class="form-label">Status</label>
-                <select id="status" name="status" class="form-select">
-                    <option value="">All statuses</option>
-                    @foreach (var value in Enum.GetValues<OrganizationStatus>())
+    <form method="get" asp-action="Manage" class="fl-toolbar fl-toolbar--compact admin-filter">
+        <div class="fl-toolbar__field">
+            <label for="status" class="form-label">Status</label>
+            <select id="status" name="status" class="form-select">
+                <option value="">All statuses</option>
+                @foreach (var value in Enum.GetValues<OrganizationStatus>())
+                {
+                    if (Model.Status == value)
                     {
-                        if (Model.Status == value)
-                        {
-                            <option value="@value" selected>@value</option>
-                        }
-                        else
-                        {
-                            <option value="@value">@value</option>
-                        }
+                        <option value="@value" selected>@value</option>
                     }
-                </select>
-            </div>
-            <div class="col-auto"><button type="submit" class="btn btn-primary">Filter</button></div>
-            <div class="col-auto"><a asp-action="Manage" class="btn btn-outline-secondary">Clear</a></div>
+                    else
+                    {
+                        <option value="@value">@value</option>
+                    }
+                }
+            </select>
+        </div>
+        <div class="fl-toolbar__actions">
+            <button type="submit" class="btn btn-primary">Filter</button>
+            <a asp-action="Manage" class="btn btn-outline-secondary">Clear</a>
         </div>
     </form>
 
     @if (Model.Items.Count == 0)
     {
-        <div class="empty-state">No organizations match this filter.</div>
+        <section class="empty-state" aria-labelledby="orgs-empty-title">
+            <h2 id="orgs-empty-title" class="empty-state__title">No organizations to show</h2>
+            <p>No organizations match this filter.</p>
+        </section>
     }
     else
     {
-        <div class="table-responsive responsive-records">
-            <table class="table table-striped align-middle">
-                <caption class="px-3">@Model.TotalCount organizations. Page @Model.Page of @Model.TotalPages.</caption>
+        <div class="table-responsive responsive-records admin-table">
+            <table class="table table-hover align-middle">
+                <caption>@Model.TotalCount organizations. Page @Model.Page of @Model.TotalPages.</caption>
                 <thead>
-                    <tr><th scope="col">Name</th><th scope="col">Type</th><th scope="col">License</th><th scope="col">Status</th><th scope="col" class="text-end">Action</th></tr>
+                    <tr><th scope="col">Name</th><th scope="col">Type</th><th scope="col">License</th><th scope="col">Status</th><th scope="col" class="text-end">Actions</th></tr>
                 </thead>
                 <tbody>
                 @foreach (var organization in Model.Items)
                 {
                     <tr>
-                        <td data-label="Name" class="fw-semibold">@organization.Name</td>
+                        <td data-label="Name" class="admin-table__name">@organization.Name</td>
                         <td data-label="Type">@organization.Type</td>
-                        <td data-label="License" class="text-break">@organization.LicenseNumber</td>
-                        <td data-label="Status"><span class="status-chip">@organization.Status</span></td>
-                        <td data-label="Action" class="text-end">
+                        <td data-label="License"><span class="admin-mono">@organization.LicenseNumber</span></td>
+                        <td data-label="Status"><span class="status-chip" data-status="@organization.Status">@organization.Status</span></td>
+                        <td data-label="Actions" class="text-end">
                             @if (organization.Status == OrganizationStatus.Active)
                             {
                                 <form asp-action="Suspend" asp-route-status="@Model.Status" asp-route-page="@Model.Page" method="post" class="d-inline"
                                       onsubmit="return confirm('Suspend this organization? This stops new operations and current delivery actions, but does not automatically cancel existing claims.');">
                                     <input type="hidden" name="id" value="@organization.Id" />
-                                    <button class="btn btn-outline-danger btn-sm" type="submit">Suspend</button>
+                                    <button class="btn btn-outline-danger btn-sm" type="submit">Suspend<span class="visually-hidden"> @organization.Name</span></button>
                                 </form>
                             }
                             else if (organization.Status == OrganizationStatus.Suspended)
@@ -81,12 +84,12 @@
                                 <form asp-action="Reactivate" asp-route-status="@Model.Status" asp-route-page="@Model.Page" method="post" class="d-inline"
                                       onsubmit="return confirm('Reactivate this organization? Operations will still be subject to normal rules such as expiry.');">
                                     <input type="hidden" name="id" value="@organization.Id" />
-                                    <button class="btn btn-outline-success btn-sm" type="submit">Reactivate</button>
+                                    <button class="btn btn-outline-brand btn-sm" type="submit">Reactivate<span class="visually-hidden"> @organization.Name</span></button>
                                 </form>
                             }
                             else
                             {
-                                <span class="text-muted">Use Pending Requests for approval decisions.</span>
+                                <span class="admin-table__note">Use Pending Requests for approval decisions.</span>
                             }
                         </td>
                     </tr>
@@ -95,7 +98,7 @@
             </table>
         </div>
 
-        <nav aria-label="Organization pages">
+        <nav class="admin-pager" aria-label="Organization pages">
             <ul class="pagination">
                 @if (Model.HasPrevious)
                 {

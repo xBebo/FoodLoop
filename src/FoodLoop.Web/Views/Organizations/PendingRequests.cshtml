@@ -4,14 +4,14 @@
     ViewData["Title"] = "Pending approvals";
 }
 
-<div class="page-shell">
+<div class="page-shell admin-page">
     <header class="page-header">
         <div>
-            <p class="page-eyebrow mb-1">FoodLoop admin</p>
+            <p class="page-eyebrow admin-eyebrow mb-1">Admin workspace</p>
             <h1 class="page-header__title">Pending organization approvals</h1>
             <p class="page-header__lead">Review each organization before approving access to FoodLoop.</p>
         </div>
-        <a class="btn btn-outline-success" asp-action="Manage">Manage organizations</a>
+        <a class="btn btn-outline-brand" asp-action="Manage">Manage organizations</a>
     </header>
 
     @if (TempData["ErrorMessage"] is string error)
@@ -26,47 +26,43 @@
         </div>
     }
 
-    <div class="table-responsive responsive-records">
-        <table class="table table-hover table-striped align-middle">
-            <thead>
-                <tr>
-                    <th scope="col">Organization name</th>
-                    <th scope="col">License number</th>
-                    <th scope="col">Organization type</th>
-                    <th scope="col">Current status</th>
-                    <th scope="col" class="text-center">Actions</th>
-                </tr>
-            </thead>
-            <tbody>
-                @if (!Model.Any())
-                {
-                    <tr>
-                        <td colspan="5" class="text-center py-5 text-muted">All caught up. No organizations are waiting for approval.</td>
-                    </tr>
-                }
-                else
-                {
-                    @foreach (var org in Model)
-                    {
-                        <tr>
-                            <td data-label="Name" class="fw-semibold">@org.Name</td>
-                            <td data-label="License">@org.LicenseNumber</td>
-                            <td data-label="Type"><span class="status-chip">@org.Type</span></td>
-                            <td data-label="Status"><span class="badge bg-warning text-dark">@org.Status</span></td>
-                            <td data-label="Actions" class="text-center">
-                                <div class="d-flex flex-wrap justify-content-center gap-2">
-                                    <form asp-controller="Organizations" asp-action="ApproveOrganization" asp-route-id="@org.Id" method="post">
-                                        <button type="submit" class="btn btn-success btn-sm px-3">Approve</button>
-                                    </form>
-                                    <form asp-controller="Organizations" asp-action="RejectOrganization" asp-route-id="@org.Id" method="post">
-                                        <button type="submit" class="btn btn-outline-danger btn-sm px-3">Reject</button>
-                                    </form>
-                                </div>
-                            </td>
-                        </tr>
-                    }
-                }
-            </tbody>
-        </table>
-    </div>
+    @if (!Model.Any())
+    {
+        <section class="empty-state admin-empty" aria-labelledby="pending-empty-title">
+            <h2 id="pending-empty-title" class="empty-state__title">All caught up</h2>
+            <p>No organizations are waiting for approval.</p>
+        </section>
+    }
+    else
+    {
+        <ul class="admin-queue" aria-label="Organizations awaiting approval">
+            @foreach (var org in Model)
+            {
+                <li class="admin-card">
+                    <div class="admin-card__head">
+                        <h2 class="admin-card__title">@org.Name</h2>
+                        <span class="status-chip" data-status="@org.Status">@org.Status</span>
+                    </div>
+                    <dl class="courier-facts">
+                        <div>
+                            <dt>Organization type</dt>
+                            <dd>@org.Type</dd>
+                        </div>
+                        <div>
+                            <dt>License number</dt>
+                            <dd class="admin-mono">@org.LicenseNumber</dd>
+                        </div>
+                    </dl>
+                    <div class="admin-card__actions">
+                        <form asp-controller="Organizations" asp-action="ApproveOrganization" asp-route-id="@org.Id" method="post">
+                            <button type="submit" class="btn btn-primary">Approve<span class="visually-hidden"> @org.Name</span></button>
+                        </form>
+                        <form asp-controller="Organizations" asp-action="RejectOrganization" asp-route-id="@org.Id" method="post">
+                            <button type="submit" class="btn btn-outline-danger">Reject<span class="visually-hidden"> @org.Name</span></button>
+                        </form>
+                    </div>
+                </li>
+            }
+        </ul>
+    }
 </div>

@@ -1,38 +1,36 @@
 @model FoodLoop.Application.Admin.AuditPage
 @{ ViewData["Title"] = "Audit log"; }
 
-<div class="page-shell">
+<div class="page-shell admin-page">
     <header class="page-header">
         <div>
-            <p class="page-eyebrow mb-1">FoodLoop admin</p>
+            <p class="page-eyebrow admin-eyebrow mb-1">Admin workspace</p>
             <h1 class="page-header__title">Audit log</h1>
             <p class="page-header__lead">Recorded actions, newest first. All times are UTC.</p>
         </div>
-        <a class="btn btn-outline-success" asp-action="Index">Back to dashboard</a>
+        <a class="btn btn-outline-brand" asp-action="Index">Back to dashboard</a>
     </header>
 
-    <form method="get" asp-action="Audit" class="surface-panel audit-filter">
-        <div class="row gy-3 gx-3 align-items-end">
-            <div class="col-sm-6 col-lg-3">
-                <label class="form-label" for="actionName">Action</label>
-                <input type="text" class="form-control" id="actionName" name="actionName" value="@Model.Filter.Action" placeholder="e.g. ClaimCreated" />
-            </div>
-            <div class="col-sm-6 col-lg-3">
-                <label class="form-label" for="actor">Actor</label>
-                <input type="text" class="form-control" id="actor" name="actor" value="@Model.Filter.Actor" placeholder="Name or System" />
-            </div>
-            <div class="col-sm-6 col-lg-2">
-                <label class="form-label" for="from">From (UTC)</label>
-                <input type="datetime-local" class="form-control" id="from" name="from" value="@Model.Filter.FromUtc?.UtcDateTime.ToString("yyyy-MM-ddTHH:mm")" />
-            </div>
-            <div class="col-sm-6 col-lg-2">
-                <label class="form-label" for="to">To (UTC, exclusive)</label>
-                <input type="datetime-local" class="form-control" id="to" name="to" value="@Model.Filter.ToUtc?.UtcDateTime.ToString("yyyy-MM-ddTHH:mm")" />
-            </div>
-            <div class="col-12 d-flex gap-2">
-                <button type="submit" class="btn btn-primary">Apply filters</button>
-                <a class="btn btn-outline-secondary" asp-action="Audit">Clear</a>
-            </div>
+    <form method="get" asp-action="Audit" class="fl-toolbar audit-filter">
+        <div class="audit-filter__field">
+            <label class="form-label" for="actionName">Action</label>
+            <input type="text" class="form-control" id="actionName" name="actionName" value="@Model.Filter.Action" placeholder="e.g. ClaimCreated" />
+        </div>
+        <div class="audit-filter__field">
+            <label class="form-label" for="actor">Actor</label>
+            <input type="text" class="form-control" id="actor" name="actor" value="@Model.Filter.Actor" placeholder="Name or System" />
+        </div>
+        <div class="audit-filter__field">
+            <label class="form-label" for="from">From (UTC)</label>
+            <input type="datetime-local" class="form-control" id="from" name="from" value="@Model.Filter.FromUtc?.UtcDateTime.ToString("yyyy-MM-ddTHH:mm")" />
+        </div>
+        <div class="audit-filter__field">
+            <label class="form-label" for="to">To (UTC, exclusive)</label>
+            <input type="datetime-local" class="form-control" id="to" name="to" value="@Model.Filter.ToUtc?.UtcDateTime.ToString("yyyy-MM-ddTHH:mm")" />
+        </div>
+        <div class="fl-toolbar__actions audit-filter__actions">
+            <button type="submit" class="btn btn-primary">Apply filters</button>
+            <a class="btn btn-outline-secondary" asp-action="Audit">Clear</a>
         </div>
     </form>
 
@@ -48,13 +46,16 @@
 
     @if (Model.Items.Count == 0)
     {
-        <div class="empty-state" role="status">No records match this view. Clear the filters to see all recorded activity.</div>
+        <section class="empty-state" role="status" aria-labelledby="audit-empty-title">
+            <h2 id="audit-empty-title" class="empty-state__title">No matching records</h2>
+            <p>No records match this view. Clear the filters to see all recorded activity.</p>
+        </section>
     }
     else
     {
-        <div class="table-responsive responsive-records">
-            <table class="table table-striped align-middle">
-                <caption class="px-3">@Model.TotalCount records. Page @Model.Page of @Model.TotalPages.</caption>
+        <div class="table-responsive responsive-records admin-table audit-table">
+            <table class="table table-hover align-middle">
+                <caption>@Model.TotalCount records. Page @Model.Page of @Model.TotalPages.</caption>
                 <thead>
                     <tr><th scope="col">Action</th><th scope="col">Actor</th><th scope="col">Entity</th><th scope="col">Timestamp (UTC)</th></tr>
                 </thead>
@@ -62,26 +63,26 @@
                 @foreach (var entry in Model.Items)
                 {
                     <tr>
-                        <td data-label="Action" class="fw-semibold">@entry.Action</td>
+                        <td data-label="Action"><span class="audit-tag">@entry.Action</span></td>
                         <td data-label="Actor">
-                            @entry.ActorName
+                            <span class="audit-primary">@entry.ActorName</span>
                             @if (entry.ActorUserId.HasValue)
                             {
-                                <small class="d-block text-muted audit-id">@entry.ActorUserId</small>
+                                <small class="audit-id" title="@entry.ActorUserId">@entry.ActorUserId</small>
                             }
                         </td>
                         <td data-label="Entity">
-                            @entry.EntityType
-                            <small class="d-block text-muted audit-id">@entry.EntityId</small>
+                            <span class="audit-primary">@entry.EntityType</span>
+                            <small class="audit-id" title="@entry.EntityId">@entry.EntityId</small>
                         </td>
-                        <td data-label="Timestamp (UTC)" class="text-nowrap"><time datetime="@entry.TimestampUtc.ToUniversalTime().ToString("O")">@entry.TimestampUtc.ToUniversalTime().ToString("yyyy-MM-dd HH:mm:ss")</time></td>
+                        <td data-label="Timestamp (UTC)" class="audit-time"><time datetime="@entry.TimestampUtc.ToUniversalTime().ToString("O")">@entry.TimestampUtc.ToUniversalTime().ToString("yyyy-MM-dd HH:mm:ss")</time></td>
                     </tr>
                 }
                 </tbody>
             </table>
         </div>
 
-        <nav aria-label="Audit pagination">
+        <nav class="admin-pager" aria-label="Audit pagination">
             <ul class="pagination">
                 @if (Model.HasPrevious)
                 {

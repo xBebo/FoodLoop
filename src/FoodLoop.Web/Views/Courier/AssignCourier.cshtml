@@ -3,10 +3,10 @@
 
 @{ ViewData["Title"] = "Assign courier"; }
 
-<div class="page-shell page-shell--narrow">
+<div class="page-shell page-shell--narrow admin-page">
     <header class="page-header">
         <div>
-            <p class="page-eyebrow mb-1">Admin workflow</p>
+            <p class="page-eyebrow admin-eyebrow mb-1">Admin workspace</p>
             <h1 class="page-header__title">Assign courier</h1>
             <p class="page-header__lead">Connect eligible claims with a valid courier before pickup begins.</p>
         </div>
@@ -23,25 +23,48 @@
 
     @if (!Model.Any())
     {
-        <div class="empty-state">No claims waiting for assignment.</div>
+        <section class="empty-state admin-empty" aria-labelledby="dispatch-empty-title">
+            <h2 id="dispatch-empty-title" class="empty-state__title">Nothing to dispatch</h2>
+            <p>No claims waiting for assignment.</p>
+        </section>
     }
 
     @foreach (var claim in Model)
     {
-        <form asp-action="AssignCourier" method="post" class="workflow-card">
-            <div class="workflow-card__topline">
-                <div>
-                    <h2 class="workflow-card__title">@claim.FoodDonation.Title</h2>
-                    <p class="workflow-card__meta">@claim.BeneficiaryOrganization.Name</p>
-                </div>
-                <span class="status-chip">@claim.Status</span>
+        <form asp-action="AssignCourier" method="post" class="admin-card dispatch-card">
+            <div class="admin-card__head">
+                <h2 class="admin-card__title">@claim.FoodDonation.Title</h2>
+                <span class="status-chip" data-status="@claim.Status">@ClaimDisplay.Label(claim.Status)</span>
             </div>
+
+            <dl class="courier-facts">
+                <div>
+                    <dt>From donor</dt>
+                    <dd>@claim.FoodDonation.DonorOrganization?.Name</dd>
+                </div>
+                <div>
+                    <dt>To beneficiary</dt>
+                    <dd>@claim.BeneficiaryOrganization.Name</dd>
+                </div>
+                <div>
+                    <dt>Quantity</dt>
+                    <dd class="fl-tabular">@ClaimDisplay.Quantity(claim.FoodDonation.Quantity, claim.FoodDonation.Unit)</dd>
+                </div>
+                <div>
+                    <dt>Expires</dt>
+                    <dd><time class="courier-expiry" datetime="@ClaimDisplay.IsoUtc(claim.FoodDonation.ExpiresAtUtc)">@ClaimDisplay.DisplayUtc(claim.FoodDonation.ExpiresAtUtc)</time></dd>
+                </div>
+                <div class="courier-facts__wide">
+                    <dt>Pickup address</dt>
+                    <dd>@claim.FoodDonation.PickupAddress</dd>
+                </div>
+            </dl>
 
             <input type="hidden" name="claimId" value="@claim.Id" />
 
-            <div class="workflow-card__actions">
-                <div class="flex-grow-1">
-                    <label for="courier-@claim.Id" class="form-label">Courier</label>
+            <div class="dispatch-card__assign">
+                <label for="courier-@claim.Id" class="form-label">Courier</label>
+                <div class="dispatch-card__controls">
                     <select id="courier-@claim.Id" name="courierUserId" class="form-select" required>
                         <option value="">Choose a courier</option>
                         @foreach (var courier in (IReadOnlyList<CourierOption>)ViewBag.Couriers)
@@ -49,8 +72,8 @@
                             <option value="@courier.Id">@courier.Name</option>
                         }
                     </select>
+                    <button class="btn btn-primary" type="submit">Assign<span class="visually-hidden"> courier for @claim.FoodDonation.Title</span></button>
                 </div>
-                <button class="btn btn-primary" type="submit">Assign</button>
             </div>
         </form>
     }
