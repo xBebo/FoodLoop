@@ -1,0 +1,19 @@
+FROM mcr.microsoft.com/dotnet/sdk:10.0 AS build
+WORKDIR /src
+
+COPY global.json ./
+COPY src/FoodLoop.Domain/FoodLoop.Domain.csproj src/FoodLoop.Domain/
+COPY src/FoodLoop.Application/FoodLoop.Application.csproj src/FoodLoop.Application/
+COPY src/FoodLoop.Infrastructure/FoodLoop.Infrastructure.csproj src/FoodLoop.Infrastructure/
+COPY src/FoodLoop.Web/FoodLoop.Web.csproj src/FoodLoop.Web/
+RUN dotnet restore src/FoodLoop.Web/FoodLoop.Web.csproj
+
+COPY src/ src/
+RUN dotnet publish src/FoodLoop.Web/FoodLoop.Web.csproj -c Release -o /app/publish --no-restore
+
+FROM mcr.microsoft.com/dotnet/aspnet:10.0 AS runtime
+WORKDIR /app
+COPY --from=build /app/publish .
+ENV ASPNETCORE_URLS=http://0.0.0.0:3000
+EXPOSE 3000
+ENTRYPOINT ["dotnet", "FoodLoop.Web.dll"]

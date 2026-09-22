@@ -1,11 +1,12 @@
 using FoodLoop.Domain.Entities;
 using FoodLoop.Infrastructure.Identity;
+using Microsoft.AspNetCore.DataProtection.EntityFrameworkCore;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
 namespace FoodLoop.Infrastructure.Persistence;
 public sealed class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options)
-    : IdentityDbContext<ApplicationUser, IdentityRole<Guid>, Guid>(options)
+    : IdentityDbContext<ApplicationUser, IdentityRole<Guid>, Guid>(options), IDataProtectionKeyContext
 {
     public DbSet<Organization> Organizations => Set<Organization>();
     public DbSet<FoodCategory> FoodCategories => Set<FoodCategory>();
@@ -14,6 +15,7 @@ public sealed class ApplicationDbContext(DbContextOptions<ApplicationDbContext> 
     public DbSet<HandoverRecord> HandoverRecords => Set<HandoverRecord>();
     public DbSet<QrVerificationToken> QrVerificationTokens => Set<QrVerificationToken>();
     public DbSet<AuditLog> AuditLogs => Set<AuditLog>();
+    public DbSet<DataProtectionKey> DataProtectionKeys => Set<DataProtectionKey>();
     protected override void OnModelCreating(ModelBuilder builder)
     {
         base.OnModelCreating(builder);

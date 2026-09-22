@@ -4,6 +4,7 @@
     <ProjectReference Include="..\FoodLoop.Application\FoodLoop.Application.csproj" />
     <ProjectReference Include="..\FoodLoop.Domain\FoodLoop.Domain.csproj" />
     <FrameworkReference Include="Microsoft.AspNetCore.App" />
+    <PackageReference Include="Microsoft.AspNetCore.DataProtection.EntityFrameworkCore" Version="10.0.12" />
     <PackageReference Include="Microsoft.AspNetCore.Identity.EntityFrameworkCore" Version="10.0.12" />
     <PackageReference Include="Microsoft.EntityFrameworkCore.SqlServer" Version="10.0.12" />
     <PackageReference Include="Microsoft.EntityFrameworkCore.Tools" Version="10.0.12"><PrivateAssets>all</PrivateAssets></PackageReference>
