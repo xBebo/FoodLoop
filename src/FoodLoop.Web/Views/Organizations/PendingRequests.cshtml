@@ -1,4 +1,4 @@
-@model IEnumerable<FoodLoop.Domain.Entities.Organization>
+@model IReadOnlyList<FoodLoop.Application.Organizations.PendingOrganizationItem>
 
 @{
     ViewData["Title"] = "Pending approvals";
@@ -52,7 +52,7 @@
                             <td data-label="Name" class="fw-semibold">@org.Name</td>
                             <td data-label="License">@org.LicenseNumber</td>
                             <td data-label="Type"><span class="status-chip">@org.Type</span></td>
-                            <td data-label="Status"><span class="badge bg-warning text-dark">@org.Status</span></td>
+                            <td data-label="Status"><span class="badge bg-warning text-dark">Pending</span></td>
                             <td data-label="Actions" class="text-center">
                                 <div class="d-flex flex-wrap justify-content-center gap-2">
                                     <form asp-controller="Organizations" asp-action="ApproveOrganization" asp-route-id="@org.Id" method="post">

@@ -28,9 +28,17 @@ public sealed class OrganizationAdminReadRepository(ApplicationDbContext db) : I
             .ThenBy(x => x.Id)
             .Skip((page - 1) * pageSize)
             .Take(pageSize)
-            .Select(x => new OrganizationAdminItem(x.Id, x.Name, x.Type, x.LicenseNumber, x.Status))
+            .Select(x => new OrganizationAdminItem(x.Id, x.Name, x.Type, x.LicenseNumber, x.Status, x.CreatedAtUtc))
             .ToListAsync(ct);
 
         return new OrganizationAdminPage(items, page, pageSize, total, status);
     }
+
+    public async Task<IReadOnlyList<PendingOrganizationItem>> GetPendingAsync(CancellationToken ct = default) =>
+        await db.Organizations.AsNoTracking()
+            .Where(x => x.Status == OrganizationStatus.Pending)
+            .OrderBy(x => x.CreatedAtUtc)
+            .ThenBy(x => x.Id)
+            .Select(x => new PendingOrganizationItem(x.Id, x.Name, x.Type, x.LicenseNumber, x.CreatedAtUtc))
+            .ToListAsync(ct);
 }

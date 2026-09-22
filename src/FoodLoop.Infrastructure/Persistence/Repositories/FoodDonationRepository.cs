@@ -21,16 +21,8 @@ public sealed class FoodDonationRepository(ApplicationDbContext db, TimeProvider
 
         var skip = ((long)page - 1) * pageSize;
         if (skip > int.MaxValue) return new([], false);
-        var now = clock.GetUtcNow();
         var normalizedSearch = search?.Trim();
-
-        var query = Context.FoodDonations.AsNoTracking()
-            .Include(x => x.FoodCategory)
-            .Include(x => x.DonorOrganization)
-            .Where(x => x.Status == DonationStatus.Available
-                && x.ExpiresAtUtc > now
-                && x.DonorOrganization.Status == OrganizationStatus.Active
-                && x.DonorOrganization.Type == OrganizationType.Donor);
+        var query = Marketplace();
 
         if (!string.IsNullOrWhiteSpace(normalizedSearch))
             query = query.Where(x => x.Title.Contains(normalizedSearch));
@@ -47,6 +39,22 @@ public sealed class FoodDonationRepository(ApplicationDbContext db, TimeProvider
         var hasNext = items.Count > pageSize;
         if (hasNext) items.RemoveAt(items.Count - 1);
         return new(items, hasNext);
+    }
+
+    public Task<FoodDonation?> GetAvailableByIdAsync(Guid donationId, CancellationToken cancellationToken = default)
+        => Marketplace().SingleOrDefaultAsync(x => x.Id == donationId, cancellationToken);
+
+    // The one marketplace visibility predicate: list and details both read through it.
+    private IQueryable<FoodDonation> Marketplace()
+    {
+        var now = clock.GetUtcNow();
+        return Context.FoodDonations.AsNoTracking()
+            .Include(x => x.FoodCategory)
+            .Include(x => x.DonorOrganization)
+            .Where(x => x.Status == DonationStatus.Available
+                && x.ExpiresAtUtc > now
+                && x.DonorOrganization.Status == OrganizationStatus.Active
+                && x.DonorOrganization.Type == OrganizationType.Donor);
     }
 
     // Compatibility overload for existing concrete-repository callers. New marketplace code uses the filtered page contract above.

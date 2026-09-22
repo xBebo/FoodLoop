@@ -1,0 +1,47 @@
+/* Audit log: dense, monospaced, premium. Filters stay compact — this is a log, not a form. */
+
+.audit-filters { align-items: stretch; }
+
+.audit-daterange { flex: 1 1 18rem; display: flex; align-items: center; gap: 0.5rem; }
+.audit-daterange .adm-input { flex: 1 1 0; min-width: 0; font-family: var(--font-mono); }
+.audit-daterange__sep { color: var(--color-text-muted); font-weight: 700; }
+
+.audit-clear {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  padding-inline: 0.9rem;
+  border-radius: 12px 4px 12px 4px;
+  color: var(--forest-700);
+  font-size: var(--text-sm);
+  font-weight: 700;
+  transition: background-color var(--dur-fast) var(--ease-out);
+}
+.audit-clear:hover { background: rgb(35 83 71 / 0.07); }
+
+.audit-action {
+  display: inline-block;
+  max-width: 100%;
+  padding: 0.2rem 0.5rem;
+  border-radius: 5px;
+  background: var(--paper-deep);
+  color: var(--forest-800);
+  font-family: var(--font-mono);
+  font-size: 0.8125rem;
+  font-weight: 650;
+  letter-spacing: 0.01em;
+  overflow-wrap: anywhere;
+}
+
+.audit-ledger .ledger__mono { font-size: 0.8125rem; }
+.audit-ledger th:first-child,
+.audit-ledger td:first-child { white-space: nowrap; }
+/* Entity column: entityId can be a long, unbroken machine-generated value (GUID) — let it wrap
+   inside the cell instead of forcing the table wider than the frame that clips around it. */
+.audit-ledger td:last-child { overflow-wrap: anywhere; }
+.audit-ledger td:last-child .ledger__mono { white-space: normal; }
+
+/* Mobile record cards: action code + relative time up top. */
+.record__time { color: var(--color-text-muted); font-size: var(--text-xs); font-weight: 600; white-space: nowrap; }
+
+.adm-empty svg { width: 28px; height: 28px; color: var(--color-text-muted); margin-bottom: var(--space-1); }

@@ -7,7 +7,8 @@ public sealed record OrganizationAdminItem(
     string Name,
     OrganizationType Type,
     string LicenseNumber,
-    OrganizationStatus Status);
+    OrganizationStatus Status,
+    DateTimeOffset CreatedAtUtc = default);
 
 public sealed record OrganizationAdminPage(
     IReadOnlyList<OrganizationAdminItem> Items,
@@ -20,6 +21,13 @@ public sealed record OrganizationAdminPage(
     public bool HasPrevious => Page > 1;
     public bool HasNext => Page < TotalPages;
 }
+
+public sealed record PendingOrganizationItem(
+    Guid Id,
+    string Name,
+    OrganizationType Type,
+    string LicenseNumber,
+    DateTimeOffset CreatedAtUtc);
 
 public enum OrganizationStatusChangeOutcome
 {

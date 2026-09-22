@@ -98,11 +98,13 @@ public sealed class ClaimService(
         // Allowlist: Active, plus Suspended for read-only access to its own history. Pending, Rejected and any future status are denied.
         if (beneficiary.Status is not (OrganizationStatus.Active or OrganizationStatus.Suspended)) return new(GetMyClaimsOutcome.Forbidden, []);
 
-        var items = await claims.GetForBeneficiaryOrganizationAsync(beneficiary.Id, page, pageSize, ct);
+        // The repository reads one row past the page, so HasNext needs no count query.
+        var rows = await claims.GetForBeneficiaryOrganizationAsync(beneficiary.Id, page, pageSize, ct);
+        var items = rows.Take(pageSize);
         return new(GetMyClaimsOutcome.Success, [.. items.Select(x => new ClaimSummary(
             x.Id, x.FoodDonationId, x.FoodDonation.Title, x.FoodDonation.Quantity, x.FoodDonation.Unit, x.FoodDonation.PickupAddress,
             x.FoodDonation.ExpiresAtUtc, x.Status, x.CreatedAtUtc,
-            CanCancel(beneficiary.Status, x.Status, x.AssignedCourierUserId is not null, x.FoodDonation.Status)))]);
+            CanCancel(beneficiary.Status, x.Status, x.AssignedCourierUserId is not null, x.FoodDonation.Status)))], rows.Count > pageSize);
     }
 
     public async Task<GetClaimDetailsResult> GetDetailsAsync(Guid claimId, CancellationToken ct)

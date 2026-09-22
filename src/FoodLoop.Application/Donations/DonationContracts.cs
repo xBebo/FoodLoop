@@ -48,7 +48,8 @@ public sealed record DonationListItem(
     DateTimeOffset ExpiresAtUtc,
     DonationStatus Status,
     string PickupAddress,
-    string? DonorName = null);
+    string? DonorName = null,
+    Guid CategoryId = default);
 
 public sealed record DonationDetailsItem(
     Guid Id,
@@ -61,7 +62,8 @@ public sealed record DonationDetailsItem(
     DateTimeOffset ExpiresAtUtc,
     string PickupAddress,
     string StorageInstructions,
-    DonationStatus Status);
+    DonationStatus Status,
+    Guid CategoryId = default);
 
 public sealed record DonationExpiryResult(bool Succeeded, int ExpiredCount, string? Error = null)
 {
@@ -77,7 +79,31 @@ public sealed record AvailableDonationsPage(
     bool HasPrevious,
     bool HasNext,
     string Search,
-    Guid? CategoryId);
+    Guid? CategoryId,
+    bool IsAllowed = true);
+
+// A beneficiary's view of one marketplace donation: only what they need to decide on a claim.
+public sealed record MarketplaceDonationItem(
+    Guid Id,
+    string Title,
+    string Description,
+    DonationCategoryItem Category,
+    decimal Quantity,
+    QuantityUnit Unit,
+    DateTimeOffset PreparedAtUtc,
+    DateTimeOffset ExpiresAtUtc,
+    string StorageInstructions,
+    string PickupAddress,
+    string DonorName);
+
+public enum GetMarketplaceDonationOutcome
+{
+    Success,
+    Forbidden,
+    NotFound
+}
+
+public sealed record GetMarketplaceDonationResult(GetMarketplaceDonationOutcome Outcome, MarketplaceDonationItem? Donation = null);
 
 public enum GetDonationForEditOutcome
 {
@@ -89,8 +115,22 @@ public enum GetDonationForEditOutcome
 
 public sealed record GetDonationForEditResult(GetDonationForEditOutcome Outcome, DonationEditItem? Donation = null);
 
-public sealed record DonationOperationResult(bool Succeeded, string? Error = null, Guid? DonationId = null)
+// Transport-neutral failure categories; the web layer decides how each one is presented.
+public enum DonationFailureKind
+{
+    Validation,
+    Forbidden,
+    NotFound,
+    InvalidState,
+    Conflict
+}
+
+public sealed record DonationOperationResult(
+    bool Succeeded,
+    string? Error = null,
+    Guid? DonationId = null,
+    DonationFailureKind? Failure = null)
 {
     public static DonationOperationResult Success(Guid? donationId = null) => new(true, null, donationId);
-    public static DonationOperationResult Failure(string error) => new(false, error, null);
+    public static DonationOperationResult Fail(DonationFailureKind failure, string error) => new(false, error, null, failure);
 }

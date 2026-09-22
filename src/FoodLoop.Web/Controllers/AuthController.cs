@@ -1,31 +1,17 @@
-using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
-using FoodLoop.Domain.Entities;
+using FoodLoop.Application.Identity;
 using FoodLoop.Domain.Enums;
 using FoodLoop.Infrastructure.Identity;
-using FoodLoop.Infrastructure.Persistence;
 
 namespace FoodLoop.Web.Controllers
 {
     public class AuthController : Controller
     {
-        private readonly SignInManager<ApplicationUser> _signInManager;
-        private readonly UserManager<ApplicationUser> _userManager;
-        private readonly RoleManager<IdentityRole<Guid>> _roleManager;
-        private readonly ApplicationDbContext _context;
+        private readonly AccountService _accounts;
 
-        public AuthController(
-            SignInManager<ApplicationUser> signInManager,
-            UserManager<ApplicationUser> userManager,
-            RoleManager<IdentityRole<Guid>> roleManager,
-            ApplicationDbContext context)
+        public AuthController(AccountService accounts)
         {
-            _signInManager = signInManager;
-            _userManager = userManager;
-            _roleManager = roleManager;
-            _context = context;
+            _accounts = accounts;
         }
 
         [HttpGet]
@@ -44,52 +30,39 @@ namespace FoodLoop.Web.Controllers
                 return View();
             }
 
-            await using var transaction = await _context.Database.BeginTransactionAsync();
-            var org = new Organization
-            {
-                Name = orgName,
-                LicenseNumber = licenseNumber,
-                Type = orgType,
-                Status = OrganizationStatus.Pending
-            };
-
-            var user = new ApplicationUser
-            {
-                UserName = email,
-                Email = email,
-                Organization = org
-            };
-
-            var result = await _userManager.CreateAsync(user, password);
+            var result = await _accounts.RegisterAsync(new RegisterOrganizationRequest(orgName, licenseNumber, orgType, email), password);
             if (result.Succeeded)
             {
-                string roleName = orgType == OrganizationType.Donor ? "Donor" : "Beneficiary";
-
-                if (!await _roleManager.RoleExistsAsync(roleName))
-                {
-                    ModelState.AddModelError("", "Account roles are not configured. Contact the administrator.");
-                    return View();
-                }
-
-                var roleResult = await _userManager.AddToRoleAsync(user, roleName);
-                if (!roleResult.Succeeded)
-                {
-                    ModelState.AddModelError("", "حدث خطأ أثناء تعيين الصلاحية للمستخدم.");
-                    return View();
-                }
-
-                await transaction.CommitAsync();
                 TempData["SuccessMessage"] = "تم تقديم طلب التسجيل بنجاح! في انتظار موافقة الأدمن لتفعيل الحساب.";
                 return RedirectToAction("Login");
             }
 
-            foreach (var error in result.Errors)
+            switch (result.Outcome)
             {
-                ModelState.AddModelError("", error.Description);
+                case RegistrationOutcome.IdentityFailed or RegistrationOutcome.DuplicateAccount when result.Errors.Count > 0:
+                    foreach (var error in result.Errors) ModelState.AddModelError("", error.Description);
+                    break;
+                default:
+                    ModelState.AddModelError("", RegistrationMessage(result.Outcome));
+                    break;
             }
 
             return View();
         }
+
+        private static string RegistrationMessage(RegistrationOutcome outcome) => outcome switch
+        {
+            RegistrationOutcome.InvalidOrganizationType => "نوع المؤسسة غير صحيح.",
+            RegistrationOutcome.InvalidInput => "Organization name, license number and password are required.",
+            RegistrationOutcome.DuplicateLicense => "An organization with this license number is already registered.",
+            RegistrationOutcome.DuplicateAccount => "An account with this email is already registered.",
+            RegistrationOutcome.RolesNotConfigured => "Account roles are not configured. Contact the administrator.",
+            RegistrationOutcome.RoleAssignmentFailed => "حدث خطأ أثناء تعيين الصلاحية للمستخدم.",
+            _ => "Registration could not be completed."
+        };
+
+        public const string InvalidCredentialsMessage = "Invalid email or password.";
+        public const string AccountUnavailableMessage = "This account cannot sign in right now. Contact the FoodLoop team if you think this is a mistake.";
 
         [HttpGet]
         public IActionResult Login(string? returnUrl = null)
@@ -104,36 +77,25 @@ namespace FoodLoop.Web.Controllers
         {
             ViewData["ReturnUrl"] = returnUrl;
 
-            var user = await _context.Users
-                .Include(u => u.Organization)
-                .FirstOrDefaultAsync(u => u.Email == email);
-
-            if (user == null)
+            switch ((await _accounts.SignInAsync(email, password)).Outcome)
             {
-                ModelState.AddModelError("", "بيانات الدخول غير صحيحة.");
-                return View();
+                case LoginOutcome.Succeeded:
+                    // Safe ReturnUrl Check: Only local URLs, strictly ignoring external / scheme-relative URLs
+                    if (!string.IsNullOrEmpty(returnUrl) && Url.IsLocalUrl(returnUrl) && !returnUrl.StartsWith("//") && !returnUrl.StartsWith("/\\"))
+                    {
+                        return Redirect(returnUrl);
+                    }
+
+                    return RedirectToAction("Index", "Home");
+                case LoginOutcome.AccountUnavailable:
+                    // Only reached after the password is proven; the exact organization status is still not shown.
+                    ModelState.AddModelError("", AccountUnavailableMessage);
+                    break;
+                default:
+                    ModelState.AddModelError("", InvalidCredentialsMessage);
+                    break;
             }
 
-            if (user.Organization != null && (user.Organization.Status is OrganizationStatus.Pending or OrganizationStatus.Rejected ||
-                (user.Organization.Status == OrganizationStatus.Suspended && user.Organization.Type != OrganizationType.Beneficiary)))
-            {
-                ModelState.AddModelError("", "حساب المؤسسة الخاص بك ما زال في انتظار موافقة الأدمن.");
-                return View();
-            }
-
-            var result = await _signInManager.PasswordSignInAsync(user.UserName!, password, false, false);
-            if (result.Succeeded)
-            {
-                // Safe ReturnUrl Check: Only local URLs, strictly ignoring external / scheme-relative URLs
-                if (!string.IsNullOrEmpty(returnUrl) && Url.IsLocalUrl(returnUrl) && !returnUrl.StartsWith("//") && !returnUrl.StartsWith("/\\"))
-                {
-                    return Redirect(returnUrl);
-                }
-
-                return RedirectToAction("Index", "Home");
-            }
-
-            ModelState.AddModelError("", "كلمة المرور غير صحيحة.");
             return View();
         }
 
@@ -141,7 +103,7 @@ namespace FoodLoop.Web.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Logout()
         {
-            await _signInManager.SignOutAsync();
+            await _accounts.SignOutAsync();
             return RedirectToAction("Login");
         }
     }

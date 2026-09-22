@@ -11,4 +11,4 @@ public enum GetMyClaimsOutcome
 public sealed record ClaimSummary(
     Guid ClaimId, Guid DonationId, string DonationTitle, decimal Quantity, QuantityUnit Unit, string PickupAddress,
     DateTimeOffset ExpiresAtUtc, ClaimStatus ClaimStatus, DateTimeOffset ClaimedAtUtc, bool CanCancel);
-public sealed record GetMyClaimsResult(GetMyClaimsOutcome Outcome, IReadOnlyList<ClaimSummary> Claims);
+public sealed record GetMyClaimsResult(GetMyClaimsOutcome Outcome, IReadOnlyList<ClaimSummary> Claims, bool HasNext = false);

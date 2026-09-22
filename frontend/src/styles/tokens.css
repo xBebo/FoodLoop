@@ -1,0 +1,115 @@
+/* FoodLoop design tokens — single source of truth for color, type, space, shape, depth. */
+
+:root {
+  /* ---- Core palette ---- */
+  --forest-950: #051f20;
+  --forest-900: #0b2b26;
+  --forest-800: #163832;
+  --forest-700: #235347;
+  --sage-500: #8eb69b;
+  --mint-100: #daf1de;
+
+  /* ---- Supporting neutrals (warm, forest-tinted) ---- */
+  --paper: #f3efe4;
+  --paper-deep: #ebe5d5;
+  --warm-white: #fbf9f3;
+  --stone-200: #e2dccd;
+  --stone-300: #cdc5b2;
+  --stone-500: #8a8474;
+  --ink-900: #122420;
+  --ink-700: #33423d;
+  --ink-500: #56635e;
+
+  /* ---- Semantic color ---- */
+  --color-bg: var(--paper);
+  --color-surface: var(--warm-white);
+  --color-surface-sunken: var(--paper-deep);
+  --color-text: var(--ink-900);
+  --color-text-muted: var(--ink-500);
+  --color-border: rgb(18 36 32 / 0.12);
+  --color-border-strong: rgb(18 36 32 / 0.24);
+  --color-accent: var(--forest-700);
+  --color-on-dark: #eef6ef;
+  --color-on-dark-muted: rgb(218 241 222 / 0.72);
+  --color-border-on-dark: rgb(218 241 222 / 0.14);
+  --color-focus: var(--forest-700);
+  --color-focus-on-dark: var(--mint-100);
+
+  /* Status tones — text colors meet 4.5:1 on their own backgrounds */
+  --tone-neutral-bg: var(--stone-200);
+  --tone-neutral-fg: var(--ink-700);
+  --tone-warning-bg: #f2e1bd;
+  --tone-warning-fg: #6a4708;
+  --tone-info-bg: #d9e5e7;
+  --tone-info-fg: #1f4750;
+  --tone-success-bg: var(--mint-100);
+  --tone-success-fg: #1c4a3e;
+  --tone-complete-bg: var(--forest-800);
+  --tone-complete-fg: var(--mint-100);
+  --tone-danger-bg: #f3d8ce;
+  --tone-danger-fg: #8a2c1a;
+  --danger: #9a3320;
+  --danger-hover: #822914;
+
+  /* ---- Typography ---- */
+  --font-display: 'Fraunces', 'Iowan Old Style', 'Palatino Linotype', Palatino, Georgia, serif;
+  --font-sans: 'Manrope', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+  --font-mono: ui-monospace, 'Cascadia Mono', 'SFMono-Regular', Menlo, Consolas, monospace;
+
+  --text-hero: clamp(3.1rem, 1.35rem + 7.4vw, 8.75rem);
+  --text-h1: clamp(2.5rem, 1.55rem + 4.2vw, 5.5rem);
+  --text-h2: clamp(2rem, 1.45rem + 2.5vw, 3.75rem);
+  --text-h3: clamp(1.5rem, 1.25rem + 1.1vw, 2.25rem);
+  --text-h4: clamp(1.1875rem, 1.1rem + 0.4vw, 1.4375rem);
+  --text-lead: clamp(1.125rem, 1.03rem + 0.45vw, 1.375rem);
+  --text-body: 1.0625rem;
+  --text-sm: 0.9375rem;
+  --text-xs: 0.8125rem; /* floor — nothing renders smaller */
+
+  --leading-tight: 0.95;
+  --leading-heading: 1.06;
+  --leading-body: 1.6;
+  --tracking-display: -0.025em;
+  --tracking-label: 0.14em;
+
+  /* ---- Space (4px base) ---- */
+  --space-1: 0.25rem;
+  --space-2: 0.5rem;
+  --space-3: 0.75rem;
+  --space-4: 1rem;
+  --space-5: 1.5rem;
+  --space-6: 2rem;
+  --space-7: 3rem;
+  --space-8: 4rem;
+  --space-9: 6rem;
+  --space-10: 8rem;
+  --section-space: clamp(4.5rem, 2.6rem + 7vw, 10rem);
+
+  /* ---- Layout ---- */
+  --container-max: 1440px;
+  --container-text: 42rem;
+  --gutter: clamp(1.25rem, 0.55rem + 3vw, 3.5rem);
+  --grid-gap: clamp(1rem, 0.6rem + 1.4vw, 2rem);
+  --header-height: 4.5rem;
+
+  /* ---- Shape ---- */
+  --radius-sm: 10px;
+  --radius-md: 16px;
+  --radius-lg: 24px;
+  --radius-xl: 36px;
+  --radius-pill: 999px;
+  --radius-leaf: 44px 12px 44px 12px; /* signature asymmetric corner */
+
+  /* ---- Depth (forest-tinted, layered) ---- */
+  --shadow-sm: 0 1px 2px rgb(5 31 32 / 0.06), 0 2px 8px rgb(5 31 32 / 0.04);
+  --shadow-md: 0 2px 4px rgb(5 31 32 / 0.04), 0 14px 32px -10px rgb(5 31 32 / 0.16);
+  --shadow-lg: 0 4px 10px rgb(5 31 32 / 0.05), 0 36px 72px -20px rgb(5 31 32 / 0.28);
+  --shadow-inset-top: inset 0 1px 0 rgb(255 255 255 / 0.6);
+
+  /* ---- Texture ---- */
+  --grain: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='3' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 .9 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+
+  --z-header: 50;
+  --z-sheet: 60;
+  --z-grain: 100;
+}

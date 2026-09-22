@@ -40,6 +40,7 @@ public static class DependencyInjection
         services.AddScoped<ICourierRepository, CourierRepository>();
         services.AddScoped<ICourierTaskDetailsReadRepository, CourierTaskDetailsReadRepository>();
         services.AddScoped<ICourierDirectory, CourierDirectory>();
+        services.AddScoped<AccountService>();
         services.AddScoped<DevelopmentDataSeeder>();
         return services;
     }

@@ -1,6 +1,6 @@
-@using FoodLoop.Domain.Entities
+@using FoodLoop.Application.Courier
 @using FoodLoop.Domain.Enums
-@model IEnumerable<DonationClaim>
+@model IEnumerable<CourierTaskItem>
 
 @{
     ViewData["Title"] = "My delivery tasks";
@@ -42,12 +42,12 @@
             {
                 @foreach (var task in Model)
                 {
-                    var closed = task.Status == ClaimStatus.Closed;
-                    var pickupPending = task.Status == ClaimStatus.PickupPending;
-                    var inTransit = task.Status == ClaimStatus.InTransit;
+                    var closed = task.NextStep == CourierNextStep.Completed;
+                    var pickupPending = task.NextStep == CourierNextStep.VerifyPickup;
+                    var inTransit = task.NextStep == CourierNextStep.VerifyDelivery;
                     <tr>
-                        <td data-label="Donation" class="fw-semibold">@task.FoodDonation?.Title
-                            <a class="record-link" asp-action="Details" asp-route-id="@task.Id">Task details<span class="visually-hidden">: @task.FoodDonation?.Title</span></a></td>
+                        <td data-label="Donation" class="fw-semibold">@task.DonationTitle
+                            <a class="record-link" asp-action="Details" asp-route-id="@task.ClaimId">Task details<span class="visually-hidden">: @task.DonationTitle</span></a></td>
                         <td data-label="Status">
                             @if (closed) { <span class="badge bg-secondary">Closed</span> }
                             else if (inTransit) { <span class="badge bg-warning text-dark">In Transit</span> }
@@ -67,7 +67,7 @@
                             }
                             else
                             {
-                                <a asp-action="VerifyHandover" asp-route-claimId="@task.Id" class="btn btn-primary btn-sm">Verify handover</a>
+                                <a asp-action="VerifyHandover" asp-route-claimId="@task.ClaimId" class="btn btn-primary btn-sm">Verify handover</a>
                             }
                         </td>
                     </tr>

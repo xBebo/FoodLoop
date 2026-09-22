@@ -30,6 +30,12 @@ public sealed class OrganizationManagementService(
         return readRepository.GetPageAsync(status, Math.Max(1, page), 20, ct);
     }
 
+    public Task<IReadOnlyList<PendingOrganizationItem>> GetPendingAsync(CancellationToken ct = default)
+    {
+        RequireAdmin();
+        return readRepository.GetPendingAsync(ct);
+    }
+
     public Task<OrganizationStatusChangeResult> SuspendAsync(Guid id, CancellationToken ct = default) =>
         ChangeStatusAsync(id, OrganizationStatus.Active, OrganizationStatus.Suspended, "OrganizationSuspended", ct);
 

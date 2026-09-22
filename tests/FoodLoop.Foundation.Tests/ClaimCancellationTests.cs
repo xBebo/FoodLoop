@@ -317,7 +317,7 @@ public sealed partial class ClaimServiceTests
         if (cancelSavesFirst)
         {
             Assert.Equal(new CancelClaimResult(CancelClaimOutcome.Cancelled, DonationStatus.Available), cancelResult);
-            Assert.Equal(new CourierResult(false, "This task changed. Refresh and try again."), assignResult);
+            Assert.Equal(CourierResult.Fail(CourierFailureKind.Conflict, "This task changed. Refresh and try again."), assignResult);
             Assert.Equal(ClaimStatus.Cancelled, claim.Status); Assert.Null(claim.AssignedCourierUserId);
             Assert.Equal(DonationStatus.Available, claim.FoodDonation.Status);
             Assert.Equal("ClaimCancelled", audit.Action);

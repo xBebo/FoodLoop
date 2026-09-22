@@ -145,8 +145,8 @@ public sealed class TeamIntegrationTests(DatabaseFixture fixture) : IClassFixtur
         await using var db = fixture.CreateContext(); var d = await Seed(db);
         d.Donor.Status=OrganizationStatus.Pending; await db.SaveChangesAsync();
         var service = new OrganizationApprovalService(d.Admin,new Repository<Organization>(db),new AuditService(db,d.Admin,TimeProvider.System),new UnitOfWork(db));
-        Assert.Null(await service.DecideAsync(d.Donor.Id,approve,default));
-        Assert.NotNull(await service.DecideAsync(d.Donor.Id,!approve,default));
+        Assert.True((await service.DecideAsync(d.Donor.Id,approve,default)).Succeeded);
+        Assert.Equal(OrganizationStatusChangeOutcome.InvalidState,(await service.DecideAsync(d.Donor.Id,!approve,default)).Outcome);
         var audit = await db.AuditLogs.SingleAsync(x=>x.EntityId==d.Donor.Id);
         Assert.Equal(d.Admin.Id,audit.ActorUserId);
         Assert.Equal(approve?OrganizationStatus.Active:OrganizationStatus.Rejected,d.Donor.Status);
@@ -309,7 +309,8 @@ public sealed class TeamIntegrationTests(DatabaseFixture fixture) : IClassFixtur
         await using var a=fixture.CreateContext(); await using var b=fixture.CreateContext(); var gate=new Gate();
         OrganizationApprovalService Make(ApplicationDbContext db) => new(d.Admin,new Repository<Organization>(db),new AuditService(db,d.Admin,TimeProvider.System),new GatedSave(db,gate));
         var results=await Task.WhenAll(Make(a).DecideAsync(d.Donor.Id,true,default),Make(b).DecideAsync(d.Donor.Id,false,default));
-        Assert.Single(results,x=>x==null);
+        Assert.Single(results,x=>x.Succeeded);
+        Assert.Single(results,x=>x.Outcome==OrganizationStatusChangeOutcome.Conflict);
         await using var check=fixture.CreateContext();
         Assert.Equal(1,await check.AuditLogs.CountAsync(x=>x.EntityId==d.Donor.Id));
     }

@@ -31,6 +31,9 @@ public sealed class CourierTaskDetailsReadRepository(ApplicationDbContext db) : 
             .OrderBy(x => x.CompletedAtUtc)
             .ToListAsync(ct);
 
+        HandoverEvidenceItem? Evidence(HandoverType type) =>
+            evidence.FirstOrDefault(x => x.Type == type) is { } record ? new(record.CompletedAtUtc) : null;
+
         return new CourierTaskDetailsDto
         {
             ClaimId = claim.Id,
@@ -40,9 +43,9 @@ public sealed class CourierTaskDetailsReadRepository(ApplicationDbContext db) : 
             PickupAddress = claim.FoodDonation.PickupAddress,
             ExpiryDate = claim.FoodDonation.ExpiresAtUtc,
             Status = claim.Status,
-            NextStep = CourierTaskDetailsDto.DetermineNextStep(claim.Status),
-            PickupHandoverEvidence = evidence.FirstOrDefault(x => x.Type == HandoverType.Pickup),
-            DeliveryHandoverEvidence = evidence.FirstOrDefault(x => x.Type == HandoverType.Delivery)
+            NextStepKind = CourierService.NextStep(claim.Status),
+            PickupHandoverEvidence = Evidence(HandoverType.Pickup),
+            DeliveryHandoverEvidence = Evidence(HandoverType.Delivery)
         };
     }
 }

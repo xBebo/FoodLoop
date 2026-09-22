@@ -1,0 +1,68 @@
+@import './tokens.css';
+@import './motion.css';
+@import './typography.css';
+@import './utilities.css';
+
+/* ---- Reset ---- */
+*, *::before, *::after { box-sizing: border-box; }
+* { margin: 0; }
+
+html {
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
+}
+
+/* Anchor / focus targets clear the sticky header. (Not scroll-padding on <html>: that makes focusing
+   anything inside the sticky header scroll the page, since the header sits in the padded zone.) */
+[id] { scroll-margin-top: calc(var(--header-height) + var(--space-4)); }
+
+body {
+  min-height: 100svh;
+  background-color: var(--color-bg);
+  color: var(--color-text);
+  font-family: var(--font-sans);
+  font-size: var(--text-body);
+  line-height: var(--leading-body);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  overflow-x: clip;
+}
+
+/* Page-wide paper grain — fixed, non-interactive, barely there. */
+body::after {
+  content: '';
+  position: fixed;
+  inset: 0;
+  z-index: var(--z-grain);
+  background-image: var(--grain);
+  opacity: 0.045;
+  mix-blend-mode: multiply;
+  pointer-events: none;
+}
+
+img, picture, svg, video, canvas { display: block; max-width: 100%; }
+input, button, textarea, select { font: inherit; color: inherit; }
+button { cursor: pointer; background: none; border: 0; padding: 0; }
+a { color: inherit; text-decoration-thickness: 1px; text-underline-offset: 0.2em; }
+ul[role='list'], ol[role='list'] { list-style: none; padding: 0; }
+#root { isolation: isolate; }
+
+::selection { background: var(--sage-500); color: var(--forest-950); }
+
+/* ---- Focus: always visible for keyboard users, colour flips on dark ---- */
+:focus-visible {
+  outline: 2px solid var(--color-focus);
+  outline-offset: 3px;
+  border-radius: 4px;
+}
+
+.on-dark :focus-visible,
+.on-dark:focus-visible { outline-color: var(--color-focus-on-dark); }
+
+.on-dark {
+  color: var(--color-on-dark);
+  --color-text: var(--color-on-dark);
+  --color-text-muted: var(--color-on-dark-muted);
+  --color-border: var(--color-border-on-dark);
+  --heading-accent: var(--sage-500);
+}

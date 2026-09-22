@@ -1,6 +1,5 @@
 using FoodLoop.Application.Identity;
 using FoodLoop.Application.Interfaces.Identity;
-using FoodLoop.Domain.Entities;
 using FoodLoop.Domain.Enums;
 
 namespace FoodLoop.Application.Courier;
@@ -36,15 +35,18 @@ public sealed class CourierTaskDetailsDto
     public string PickupAddress { get; init; } = string.Empty;
     public DateTimeOffset ExpiryDate { get; init; }
     public ClaimStatus Status { get; init; }
-    public string NextStep { get; init; } = string.Empty;
-    public HandoverRecord? PickupHandoverEvidence { get; init; }
-    public HandoverRecord? DeliveryHandoverEvidence { get; init; }
+    public CourierNextStep NextStepKind { get; init; }
+    public string NextStep => DetermineNextStep(NextStepKind);
+    public HandoverEvidenceItem? PickupHandoverEvidence { get; init; }
+    public HandoverEvidenceItem? DeliveryHandoverEvidence { get; init; }
 
-    public static string DetermineNextStep(ClaimStatus status) => status switch
+    public static string DetermineNextStep(CourierNextStep step) => step switch
     {
-        ClaimStatus.PickupPending => "Scan Donor QR Code to complete Pickup",
-        ClaimStatus.InTransit => "Scan Beneficiary QR Code to complete Delivery",
-        ClaimStatus.Closed => "Task Completed",
+        CourierNextStep.VerifyPickup => "Scan Donor QR Code to complete Pickup",
+        CourierNextStep.VerifyDelivery => "Scan Beneficiary QR Code to complete Delivery",
+        CourierNextStep.Completed => "Task Completed",
         _ => "No action required"
     };
 }
+
+public sealed record HandoverEvidenceItem(DateTimeOffset CompletedAtUtc);
