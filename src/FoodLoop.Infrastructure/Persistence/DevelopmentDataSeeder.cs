@@ -5,15 +5,14 @@ using FoodLoop.Infrastructure.Identity;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 namespace FoodLoop.Infrastructure.Persistence;
-public sealed class DevelopmentDataSeeder(ApplicationDbContext db, RoleManager<IdentityRole<Guid>> roles, UserManager<ApplicationUser> users)
+public sealed class DevelopmentDataSeeder(
+    ApplicationDbContext db,
+    ReferenceDataSeeder referenceData,
+    UserManager<ApplicationUser> users)
 {
     public async Task SeedAsync(string? password, CancellationToken cancellationToken = default)
     {
-        foreach (var role in AppRoles.All)
-            if (!await roles.RoleExistsAsync(role)) Check(await roles.CreateAsync(new IdentityRole<Guid>(role)));
-        foreach (var name in new[] { "Prepared meals", "Produce", "Packaged food" })
-            if (!await db.FoodCategories.AnyAsync(x => x.Name == name, cancellationToken)) db.FoodCategories.Add(new FoodCategory { Name = name });
-        await db.SaveChangesAsync(cancellationToken);
+        await referenceData.SeedAsync(cancellationToken);
         // User accounts are optional and use a password supplied privately by each developer.
         if (string.IsNullOrWhiteSpace(password)) return;
         var donor = await OrganizationAsync("DEMO-DONOR", "Demo donor", OrganizationType.Donor, OrganizationStatus.Active, cancellationToken);
