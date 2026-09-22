@@ -305,7 +305,7 @@ public sealed class ContractPrepTests(DatabaseFixture fixture) : IClassFixture<D
         async Task<LoginOutcome> SignIn(string? email, string? password)
         {
             await using var scope = host.Services.CreateAsyncScope();
-            return await Accounts(scope).SignInAsync(email, password);
+            return (await Accounts(scope).SignInAsync(email, password)).Outcome;
         }
         async Task SetStatus(OrganizationStatus status)
         {
@@ -314,14 +314,17 @@ public sealed class ContractPrepTests(DatabaseFixture fixture) : IClassFixture<D
             await db.SaveChangesAsync();
         }
 
-        Assert.Equal(LoginOutcome.UnknownAccount, await SignIn("nobody-" + Guid.NewGuid() + "@r61.local", Password));
-        Assert.Equal(LoginOutcome.UnknownAccount, await SignIn(null, Password));
-        Assert.Equal(LoginOutcome.OrganizationNotActive, await SignIn(request.Email, Password));
+        // R6.2: unknown account and wrong password are one outcome, and status is only reported after the password is proven.
+        Assert.Equal(LoginOutcome.InvalidCredentials, await SignIn("nobody-" + Guid.NewGuid() + "@r61.local", Password));
+        Assert.Equal(LoginOutcome.InvalidCredentials, await SignIn(null, Password));
+        Assert.Equal(LoginOutcome.InvalidCredentials, await SignIn(request.Email, "wrong-password-1"));
+        Assert.Equal(LoginOutcome.AccountUnavailable, await SignIn(request.Email, Password));
         await SetStatus(OrganizationStatus.Active);
-        Assert.Equal(LoginOutcome.InvalidPassword, await SignIn(request.Email, "wrong-password-1"));
+        Assert.Equal(LoginOutcome.InvalidCredentials, await SignIn(request.Email, "wrong-password-1"));
         Assert.Equal(LoginOutcome.Succeeded, await SignIn(request.Email, Password));
+        Assert.Equal(LoginOutcome.Succeeded, await SignIn(request.Email!.ToUpperInvariant(), Password));
         await SetStatus(OrganizationStatus.Suspended);
-        Assert.Equal(LoginOutcome.OrganizationNotActive, await SignIn(request.Email, Password));
+        Assert.Equal(LoginOutcome.AccountUnavailable, await SignIn(request.Email, Password));
     }
 
     // ---- Registration

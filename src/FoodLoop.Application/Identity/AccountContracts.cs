@@ -2,13 +2,19 @@ using FoodLoop.Domain.Enums;
 
 namespace FoodLoop.Application.Identity;
 
+// Unknown account and wrong password are one outcome, and eligibility is only reported after the password
+// is proven, so a caller without the password learns nothing about the account or its organization.
 public enum LoginOutcome
 {
     Succeeded,
-    UnknownAccount,
-    OrganizationNotActive,
-    InvalidPassword
+    InvalidCredentials,
+    AccountUnavailable
 }
+
+// What a signed-in caller may learn about their own account. No ids, email or security data.
+public sealed record SessionOrganization(string Name, OrganizationType Type, OrganizationStatus Status);
+public sealed record AccountSession(string DisplayName, IReadOnlyList<string> Roles, SessionOrganization? Organization);
+public sealed record LoginResult(LoginOutcome Outcome, AccountSession? Session = null);
 
 public static class LoginEligibility
 {
@@ -41,8 +47,11 @@ public enum RegistrationOutcome
     RoleAssignmentFailed
 }
 
-public sealed record RegistrationResult(RegistrationOutcome Outcome, IReadOnlyList<string>? Errors = null)
+// Code is Identity's stable error code (e.g. PasswordTooShort); Description is its safe, user-facing text.
+public sealed record RegistrationError(string Code, string Description);
+
+public sealed record RegistrationResult(RegistrationOutcome Outcome, IReadOnlyList<RegistrationError>? Errors = null)
 {
     public bool Succeeded => Outcome == RegistrationOutcome.Succeeded;
-    public IReadOnlyList<string> Errors { get; } = Errors ?? [];
+    public IReadOnlyList<RegistrationError> Errors { get; } = Errors ?? [];
 }

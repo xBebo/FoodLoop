@@ -1,3 +1,4 @@
+using System.Security.Claims;
 using FoodLoop.Application.Identity;
 using FoodLoop.Domain.Entities;
 using FoodLoop.Domain.Enums;
@@ -15,19 +16,42 @@ public sealed class AccountService(
     RoleManager<IdentityRole<Guid>> roles,
     SignInManager<ApplicationUser> signIn)
 {
-    public async Task<LoginOutcome> SignInAsync(string? email, string? password, CancellationToken ct = default)
+    public async Task<LoginResult> SignInAsync(string? email, string? password, CancellationToken ct = default)
     {
-        if (string.IsNullOrEmpty(email) || password is null) return LoginOutcome.UnknownAccount;
+        if (string.IsNullOrWhiteSpace(email) || string.IsNullOrEmpty(password)) return new(LoginOutcome.InvalidCredentials);
 
-        var user = await db.Users.Include(u => u.Organization).FirstOrDefaultAsync(u => u.Email == email, ct);
-        if (user is null) return LoginOutcome.UnknownAccount;
+        var normalized = users.NormalizeEmail(email.Trim());
+        var user = await db.Users.Include(u => u.Organization).FirstOrDefaultAsync(u => u.NormalizedEmail == normalized, ct);
+        if (user is null)
+        {
+            // Spend the same hashing work as a real check so response time does not reveal unknown accounts.
+            users.PasswordHasher.HashPassword(new ApplicationUser(), password);
+            return new(LoginOutcome.InvalidCredentials);
+        }
 
-        // Kept in the original order (status before password) so MVC messages are unchanged; see R6.2 note.
+        // Password proof first, without issuing a cookie; only then may the account's eligibility be revealed.
+        if (!(await signIn.CheckPasswordSignInAsync(user, password, lockoutOnFailure: false)).Succeeded)
+            return new(LoginOutcome.InvalidCredentials);
         if (!LoginEligibility.CanSignIn(user.Organization?.Type, user.Organization?.Status))
-            return LoginOutcome.OrganizationNotActive;
+            return new(LoginOutcome.AccountUnavailable);
 
-        var result = await signIn.PasswordSignInAsync(user.UserName!, password, isPersistent: false, lockoutOnFailure: false);
-        return result.Succeeded ? LoginOutcome.Succeeded : LoginOutcome.InvalidPassword;
+        await signIn.SignInAsync(user, isPersistent: false);
+        return new(LoginOutcome.Succeeded, await SessionOf(user));
+    }
+
+    // Reads the account fresh from the database, so the session reflects the current organization status.
+    public async Task<AccountSession?> GetSessionAsync(ClaimsPrincipal principal, CancellationToken ct = default)
+    {
+        if (!Guid.TryParse(users.GetUserId(principal), out var id)) return null;
+        var user = await db.Users.Include(u => u.Organization).FirstOrDefaultAsync(u => u.Id == id, ct);
+        return user is null ? null : await SessionOf(user);
+    }
+
+    private async Task<AccountSession> SessionOf(ApplicationUser user)
+    {
+        var org = user.Organization;
+        var displayName = !string.IsNullOrWhiteSpace(user.DisplayName) ? user.DisplayName : org?.Name ?? "FoodLoop member";
+        return new(displayName, [.. await users.GetRolesAsync(user)], org is null ? null : new(org.Name, org.Type, org.Status));
     }
 
     public Task SignOutAsync() => signIn.SignOutAsync();
@@ -71,7 +95,7 @@ public sealed class AccountService(
         {
             var duplicate = created.Errors.Any(e => e.Code is "DuplicateEmail" or "DuplicateUserName");
             return new(duplicate ? RegistrationOutcome.DuplicateAccount : RegistrationOutcome.IdentityFailed,
-                created.Errors.Select(e => e.Description).ToList());
+                created.Errors.Select(e => new RegistrationError(e.Code, e.Description)).ToList());
         }
 
         var role = request.OrganizationType == OrganizationType.Donor ? AppRoles.Donor : AppRoles.Beneficiary;

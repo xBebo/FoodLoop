@@ -40,7 +40,7 @@ namespace FoodLoop.Web.Controllers
             switch (result.Outcome)
             {
                 case RegistrationOutcome.IdentityFailed or RegistrationOutcome.DuplicateAccount when result.Errors.Count > 0:
-                    foreach (var error in result.Errors) ModelState.AddModelError("", error);
+                    foreach (var error in result.Errors) ModelState.AddModelError("", error.Description);
                     break;
                 default:
                     ModelState.AddModelError("", RegistrationMessage(result.Outcome));
@@ -61,6 +61,9 @@ namespace FoodLoop.Web.Controllers
             _ => "Registration could not be completed."
         };
 
+        public const string InvalidCredentialsMessage = "Invalid email or password.";
+        public const string AccountUnavailableMessage = "This account cannot sign in right now. Contact the FoodLoop team if you think this is a mistake.";
+
         [HttpGet]
         public IActionResult Login(string? returnUrl = null)
         {
@@ -74,7 +77,7 @@ namespace FoodLoop.Web.Controllers
         {
             ViewData["ReturnUrl"] = returnUrl;
 
-            switch (await _accounts.SignInAsync(email, password))
+            switch ((await _accounts.SignInAsync(email, password)).Outcome)
             {
                 case LoginOutcome.Succeeded:
                     // Safe ReturnUrl Check: Only local URLs, strictly ignoring external / scheme-relative URLs
@@ -84,14 +87,12 @@ namespace FoodLoop.Web.Controllers
                     }
 
                     return RedirectToAction("Index", "Home");
-                case LoginOutcome.UnknownAccount:
-                    ModelState.AddModelError("", "بيانات الدخول غير صحيحة.");
-                    break;
-                case LoginOutcome.OrganizationNotActive:
-                    ModelState.AddModelError("", "حساب المؤسسة الخاص بك ما زال في انتظار موافقة الأدمن.");
+                case LoginOutcome.AccountUnavailable:
+                    // Only reached after the password is proven; the exact organization status is still not shown.
+                    ModelState.AddModelError("", AccountUnavailableMessage);
                     break;
                 default:
-                    ModelState.AddModelError("", "كلمة المرور غير صحيحة.");
+                    ModelState.AddModelError("", InvalidCredentialsMessage);
                     break;
             }
 
