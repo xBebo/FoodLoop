@@ -8,6 +8,7 @@ using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.AspNetCore.HttpOverrides;
 
 var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddControllersWithViews(options =>
@@ -22,7 +23,12 @@ builder.Services.AddControllersWithViews(options =>
         options.AllowInputFormatterExceptionMessages = false;
     });
 // The SPA sends the request token in this header; the global antiforgery filter above covers /api too.
-builder.Services.AddAntiforgery(options => options.HeaderName = "X-XSRF-TOKEN");
+builder.Services.AddAntiforgery(options =>
+{
+    options.HeaderName = "X-XSRF-TOKEN";
+    if (!builder.Environment.IsDevelopment())
+        options.Cookie.SecurePolicy = CookieSecurePolicy.Always;
+});
 // Every /api error carries a stable machine-readable code; endpoints set a more specific one where it matters.
 builder.Services.AddProblemDetails(options => options.CustomizeProblemDetails = context =>
     context.ProblemDetails.Extensions.TryAdd("code", context.ProblemDetails.Status switch
@@ -44,16 +50,49 @@ if (string.IsNullOrWhiteSpace(connectionString))
 }
 builder.Services.AddApplication();
 builder.Services.AddInfrastructure(connectionString);
+
+var reverseProxyEnabled = builder.Configuration.GetValue<bool>("ReverseProxy:Enabled");
+if (reverseProxyEnabled)
+{
+    builder.Services.Configure<ForwardedHeadersOptions>(options =>
+    {
+        options.ForwardedHeaders = ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto;
+        // Only enable this setting behind a trusted hosting proxy. Vercel is the intended production host.
+        options.KnownNetworks.Clear();
+        options.KnownProxies.Clear();
+    });
+}
 // MVC keeps its login / access-denied redirects; /api callers get a bare 401/403 that the API status pages turn into ProblemDetails.
 builder.Services.ConfigureApplicationCookie(options =>
 {
     options.Events.OnRedirectToLogin = ApiStatusOr(StatusCodes.Status401Unauthorized, options.Events.OnRedirectToLogin);
     options.Events.OnRedirectToAccessDenied = ApiStatusOr(StatusCodes.Status403Forbidden, options.Events.OnRedirectToAccessDenied);
+    if (!builder.Environment.IsDevelopment())
+        options.Cookie.SecurePolicy = CookieSecurePolicy.Always;
 });
 builder.Services.Configure<DonationExpirySchedulerOptions>(
     builder.Configuration.GetSection(DonationExpirySchedulerOptions.SectionName));
 builder.Services.AddHostedService<DonationExpiryBackgroundService>();
 var app = builder.Build();
+
+// Explicit production bootstrap. Normal startup never creates or migrates a database.
+if (args.Contains("--initialize-production", StringComparer.OrdinalIgnoreCase))
+{
+    await using var scope = app.Services.CreateAsyncScope();
+    var db = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+    if ((await db.Database.GetPendingMigrationsAsync()).Any())
+        throw new InvalidOperationException("Apply migrations before production initialization.");
+
+    await scope.ServiceProvider.GetRequiredService<ReferenceDataSeeder>().SeedAsync();
+    await scope.ServiceProvider.GetRequiredService<ProductionBootstrapSeeder>().SeedAsync(
+        app.Configuration["Bootstrap:AdminEmail"],
+        app.Configuration["Bootstrap:AdminPassword"],
+        app.Configuration["Bootstrap:CourierEmail"],
+        app.Configuration["Bootstrap:CourierPassword"]);
+
+    app.Logger.LogInformation("Production initialization completed.");
+    return;
+}
 
 // Explicit development command. Normal startup never creates or migrates a database.
 if (args.Contains("--seed", StringComparer.OrdinalIgnoreCase))
@@ -68,6 +107,9 @@ if (args.Contains("--seed", StringComparer.OrdinalIgnoreCase))
     app.Logger.LogInformation("Development seed completed. Accounts are created only when Seed:DemoPassword is configured.");
     return;
 }
+if (reverseProxyEnabled)
+    app.UseForwardedHeaders();
+
 if (!app.Environment.IsDevelopment())
 {
     app.UseExceptionHandler("/Home/Error");
