@@ -14,12 +14,18 @@ using Microsoft.Extensions.DependencyInjection;
 namespace FoodLoop.Infrastructure;
 public static class DependencyInjection
 {
-    public static IServiceCollection AddInfrastructure(this IServiceCollection services, string connectionString)
+    public static IServiceCollection AddInfrastructure(
+        this IServiceCollection services,
+        string connectionString,
+        bool persistDataProtectionKeys = false)
     {
         services.AddDbContext<ApplicationDbContext>(options => options.UseSqlServer(connectionString));
-        services.AddDataProtection()
-            .SetApplicationName("FoodLoop")
-            .PersistKeysToDbContext<ApplicationDbContext>();
+        if (persistDataProtectionKeys)
+        {
+            services.AddDataProtection()
+                .SetApplicationName("FoodLoop")
+                .PersistKeysToDbContext<ApplicationDbContext>();
+        }
         services.AddIdentity<ApplicationUser, IdentityRole<Guid>>(options => {
             options.User.RequireUniqueEmail = true;
             options.Password.RequiredLength = 10;
