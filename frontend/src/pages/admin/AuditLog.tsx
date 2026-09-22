@@ -12,7 +12,14 @@ import './audit.css'
 /** Backend page size for GET /api/admin/audit. */
 const PAGE_SIZE = 20
 
-/** yyyy-mm-dd (a UTC day) → the ISO instant that starts it; `next` gives the following midnight (toUtc is exclusive). */
+const UTC_DAY = /^\d{4}-\d{2}-\d{2}$/
+const isUtcDay = (value: string) => {
+  if (!UTC_DAY.test(value)) return false
+  const date = new Date(`${value}T00:00:00Z`)
+  return !Number.isNaN(date.getTime()) && date.toISOString().slice(0, 10) === value
+}
+
+/** A validated yyyy-mm-dd UTC day → its starting instant; `next` gives the following midnight (toUtc is exclusive). */
 const utcDayStart = (day: string, next = false) => {
   const d = new Date(`${day}T00:00:00Z`)
   if (next) d.setUTCDate(d.getUTCDate() + 1)
@@ -28,7 +35,9 @@ export function AuditLog() {
   const from = params.get('from') ?? ''
   const to = params.get('to') ?? ''
   const requested = Math.max(1, Number(params.get('page')) || 1)
-  const rangeInvalid = !!from && !!to && from > to
+  const invalidDate = (!!from && !isUtcDay(from)) || (!!to && !isUtcDay(to))
+  const rangeReversed = !invalidDate && !!from && !!to && from > to
+  const rangeInvalid = invalidDate || rangeReversed
 
   const query = {
     page: requested,
@@ -143,7 +152,9 @@ export function AuditLog() {
         {rangeInvalid && (
           <p className="ws-notice ws-notice--warning">
             <AlertCircle aria-hidden="true" />
-            The “from” date is after the “to” date, so no date filter is applied. Adjust the range to filter by date.
+            {invalidDate
+              ? 'The URL contains an invalid date, so no date filter is applied. Choose a valid date to continue.'
+              : 'The “from” date is after the “to” date, so no date filter is applied. Adjust the range to filter by date.'}
           </p>
         )}
       </div>

@@ -35,6 +35,11 @@ public sealed class AccountService(
         if (!LoginEligibility.CanSignIn(user.Organization?.Type, user.Organization?.Status))
             return new(LoginOutcome.AccountUnavailable);
 
+        // This application does not expose Identity's second-factor challenge yet. Never turn a
+        // successful password check into a full session for an account protected by two-factor auth.
+        if (await users.GetTwoFactorEnabledAsync(user))
+            return new(LoginOutcome.AccountUnavailable);
+
         await signIn.SignInAsync(user, isPersistent: false);
         return new(LoginOutcome.Succeeded, await SessionOf(user));
     }

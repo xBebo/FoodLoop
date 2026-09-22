@@ -14,7 +14,9 @@ export function useLoad<T>(key: string, load: (signal: AbortSignal) => Promise<T
     const controller = new AbortController()
     load(controller.signal).then(
       (data) => setState({ id, data }),
-      (error) => !controller.signal.aborted && setState((s) => ({ id, data: s?.data, error })),
+      // Keep stale data only when retrying the same request. If the key changed (for example,
+      // a new filter), showing the previous result under the new controls would be misleading.
+      (error) => !controller.signal.aborted && setState((s) => ({ id, data: s?.id === id ? s.data : undefined, error })),
     )
     return () => controller.abort()
     // `id` identifies the request; `load` is recreated every render by design.

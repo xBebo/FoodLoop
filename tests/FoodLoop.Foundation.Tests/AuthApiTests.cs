@@ -238,6 +238,25 @@ public sealed class AuthApiTests(AuthApiHost host) : IClassFixture<AuthApiHost>
     }
 
     [Fact]
+    public async Task Password_only_login_cannot_bypass_two_factor_authentication()
+    {
+        using var client = Client();
+        var email = await User(AppRoles.Admin);
+        await using (var scope = host.Factory.Services.CreateAsyncScope())
+        {
+            var users = scope.ServiceProvider.GetRequiredService<UserManager<ApplicationUser>>();
+            var user = (await users.FindByEmailAsync(email))!;
+            Assert.True((await users.SetTwoFactorEnabledAsync(user, true)).Succeeded);
+        }
+
+        var response = await Login(client, email);
+        await Problem(response, HttpStatusCode.Forbidden, "auth.account_unavailable");
+        Assert.DoesNotContain(response.Headers.TryGetValues("Set-Cookie", out var cookies) ? cookies : [],
+            cookie => cookie.StartsWith(".AspNetCore.Identity.Application=", StringComparison.Ordinal));
+        Assert.False((await Session(client))["isAuthenticated"]!.GetValue<bool>());
+    }
+
+    [Fact]
     public async Task Suspended_beneficiary_keeps_read_only_sign_in_and_sees_its_own_status()
     {
         using var client = Client();
