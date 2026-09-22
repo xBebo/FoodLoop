@@ -7,6 +7,7 @@ using FoodLoop.Infrastructure.Auditing;
 using FoodLoop.Infrastructure.Identity;
 using FoodLoop.Infrastructure.Persistence;
 using FoodLoop.Infrastructure.Persistence.Repositories;
+using Microsoft.AspNetCore.DataProtection;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
@@ -16,6 +17,9 @@ public static class DependencyInjection
     public static IServiceCollection AddInfrastructure(this IServiceCollection services, string connectionString)
     {
         services.AddDbContext<ApplicationDbContext>(options => options.UseSqlServer(connectionString));
+        services.AddDataProtection()
+            .SetApplicationName("FoodLoop")
+            .PersistKeysToDbContext<ApplicationDbContext>();
         services.AddIdentity<ApplicationUser, IdentityRole<Guid>>(options => {
             options.User.RequireUniqueEmail = true;
             options.Password.RequiredLength = 10;
@@ -41,6 +45,7 @@ public static class DependencyInjection
         services.AddScoped<ICourierTaskDetailsReadRepository, CourierTaskDetailsReadRepository>();
         services.AddScoped<ICourierDirectory, CourierDirectory>();
         services.AddScoped<AccountService>();
+        services.AddScoped<ReferenceDataSeeder>();
         services.AddScoped<DevelopmentDataSeeder>();
         return services;
     }
