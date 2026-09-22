@@ -33,4 +33,12 @@ public sealed class OrganizationAdminReadRepository(ApplicationDbContext db) : I
 
         return new OrganizationAdminPage(items, page, pageSize, total, status);
     }
+
+    public async Task<IReadOnlyList<PendingOrganizationItem>> GetPendingAsync(CancellationToken ct = default) =>
+        await db.Organizations.AsNoTracking()
+            .Where(x => x.Status == OrganizationStatus.Pending)
+            .OrderBy(x => x.CreatedAtUtc)
+            .ThenBy(x => x.Id)
+            .Select(x => new PendingOrganizationItem(x.Id, x.Name, x.Type, x.LicenseNumber, x.CreatedAtUtc))
+            .ToListAsync(ct);
 }

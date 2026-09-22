@@ -22,26 +22,26 @@ public sealed class DonationService(
     public async Task<DonationOperationResult> CreateAsync(CreateDonationRequest request, CancellationToken cancellationToken = default)
     {
         if (!currentUser.IsAuthenticated || !currentUser.IsInRole(AppRoles.Donor))
-            return DonationOperationResult.Failure("Only donor accounts can create donations.");
+            return DonationOperationResult.Fail(DonationFailureKind.Forbidden, "Only donor accounts can create donations.");
 
         var organizationId = await currentUser.GetOrganizationIdAsync(cancellationToken);
         if (organizationId is null)
-            return DonationOperationResult.Failure("This donor account is not linked to an organization.");
+            return DonationOperationResult.Fail(DonationFailureKind.Forbidden, "This donor account is not linked to an organization.");
 
         var organization = await organizations.GetByIdAsync(organizationId.Value, cancellationToken);
         if (organization is null || organization.Type != OrganizationType.Donor)
-            return DonationOperationResult.Failure("A valid donor organization is required.");
+            return DonationOperationResult.Fail(DonationFailureKind.Forbidden, "A valid donor organization is required.");
         if (organization.Status != OrganizationStatus.Active)
-            return DonationOperationResult.Failure("Your organization must be approved before creating donations.");
+            return DonationOperationResult.Fail(DonationFailureKind.Forbidden, "Your organization must be approved before creating donations.");
 
         var category = await categories.GetByIdAsync(request.FoodCategoryId, cancellationToken);
         if (category is null)
-            return DonationOperationResult.Failure("Please choose a valid food category.");
+            return DonationOperationResult.Fail(DonationFailureKind.Validation, "Please choose a valid food category.");
 
         var validationError = ValidateAndNormalize(
             request.Title, request.Description, request.Quantity, request.Unit, request.PreparedAt, request.ExpiresAt,
             request.StorageInstructions, request.PickupAddress, out var fields);
-        if (validationError is not null) return DonationOperationResult.Failure(validationError);
+        if (validationError is not null) return DonationOperationResult.Fail(DonationFailureKind.Validation, validationError);
 
         var donation = new FoodDonation
         {
@@ -62,7 +62,7 @@ public sealed class DonationService(
         donations.Add(donation);
         audit.Record("DonationCreated", nameof(FoodDonation), donation.Id);
         try { await unitOfWork.SaveChangesAsync(cancellationToken); }
-        catch (PersistenceConflictException) { return DonationOperationResult.Failure("This donation changed. Refresh and try again."); }
+        catch (PersistenceConflictException) { return DonationOperationResult.Fail(DonationFailureKind.Conflict, "This donation changed. Refresh and try again."); }
 
         return DonationOperationResult.Success(donation.Id);
     }
@@ -104,38 +104,38 @@ public sealed class DonationService(
         CancellationToken cancellationToken = default)
     {
         if (!currentUser.IsAuthenticated || !currentUser.IsInRole(AppRoles.Donor))
-            return DonationOperationResult.Failure("Only donor accounts can edit donations.");
+            return DonationOperationResult.Fail(DonationFailureKind.Forbidden, "Only donor accounts can edit donations.");
 
         var organizationId = await currentUser.GetOrganizationIdAsync(cancellationToken);
         if (organizationId is null)
-            return DonationOperationResult.Failure("This donor account is not linked to an organization.");
+            return DonationOperationResult.Fail(DonationFailureKind.Forbidden, "This donor account is not linked to an organization.");
 
         var organization = await organizations.GetByIdAsync(organizationId.Value, cancellationToken);
         if (organization is not { Type: OrganizationType.Donor, Status: OrganizationStatus.Active })
-            return DonationOperationResult.Failure("Your donor organization must be active before editing donations.");
+            return DonationOperationResult.Fail(DonationFailureKind.Forbidden, "Your donor organization must be active before editing donations.");
 
         var donation = await donations.GetByIdAsync(donationId, cancellationToken);
-        if (donation is null) return DonationOperationResult.Failure("Donation was not found.");
+        if (donation is null) return DonationOperationResult.Fail(DonationFailureKind.NotFound, "Donation was not found.");
         if (donation.DonorOrganizationId != organization.Id)
-            return DonationOperationResult.Failure("You cannot edit another organization's donation.");
+            return DonationOperationResult.Fail(DonationFailureKind.Forbidden, "You cannot edit another organization's donation.");
 
         byte[] submittedRowVersion;
         try { submittedRowVersion = Convert.FromBase64String(request.RowVersion ?? string.Empty); }
-        catch (FormatException) { return DonationOperationResult.Failure("This donation changed. Refresh and try again."); }
+        catch (FormatException) { return DonationOperationResult.Fail(DonationFailureKind.Conflict, "This donation changed. Refresh and try again."); }
         if (submittedRowVersion.Length == 0 || !donation.RowVersion.SequenceEqual(submittedRowVersion))
-            return DonationOperationResult.Failure("This donation changed. Refresh and try again.");
+            return DonationOperationResult.Fail(DonationFailureKind.Conflict, "This donation changed. Refresh and try again.");
 
         if (donation.Status != DonationStatus.Draft)
-            return DonationOperationResult.Failure("Only draft donations can be edited.");
+            return DonationOperationResult.Fail(DonationFailureKind.InvalidState, "Only draft donations can be edited.");
 
         var category = await categories.GetByIdAsync(request.FoodCategoryId, cancellationToken);
         if (category is null)
-            return DonationOperationResult.Failure("Please choose a valid food category.");
+            return DonationOperationResult.Fail(DonationFailureKind.Validation, "Please choose a valid food category.");
 
         var validationError = ValidateAndNormalize(
             request.Title, request.Description, request.Quantity, request.Unit, request.PreparedAt, request.ExpiresAt,
             request.StorageInstructions, request.PickupAddress, out var fields);
-        if (validationError is not null) return DonationOperationResult.Failure(validationError);
+        if (validationError is not null) return DonationOperationResult.Fail(DonationFailureKind.Validation, validationError);
 
         donation.FoodCategoryId = category.Id;
         donation.Title = fields.Title;
@@ -149,7 +149,7 @@ public sealed class DonationService(
 
         audit.Record("DonationUpdated", nameof(FoodDonation), donation.Id);
         try { await unitOfWork.SaveChangesAsync(cancellationToken); }
-        catch (PersistenceConflictException) { return DonationOperationResult.Failure("This donation changed. Refresh and try again."); }
+        catch (PersistenceConflictException) { return DonationOperationResult.Fail(DonationFailureKind.Conflict, "This donation changed. Refresh and try again."); }
 
         return DonationOperationResult.Success(donation.Id);
     }
@@ -157,28 +157,28 @@ public sealed class DonationService(
     public async Task<DonationOperationResult> PublishAsync(Guid donationId, CancellationToken cancellationToken = default)
     {
         if (!currentUser.IsAuthenticated || !currentUser.IsInRole(AppRoles.Donor))
-            return DonationOperationResult.Failure("Only donor accounts can publish donations.");
+            return DonationOperationResult.Fail(DonationFailureKind.Forbidden, "Only donor accounts can publish donations.");
 
         var organizationId = await currentUser.GetOrganizationIdAsync(cancellationToken);
         if (organizationId is null)
-            return DonationOperationResult.Failure("This donor account is not linked to an organization.");
+            return DonationOperationResult.Fail(DonationFailureKind.Forbidden, "This donor account is not linked to an organization.");
 
         var organization = await organizations.GetByIdAsync(organizationId.Value, cancellationToken);
         if (organization is null || organization.Type != OrganizationType.Donor || organization.Status != OrganizationStatus.Active)
-            return DonationOperationResult.Failure("Your donor organization must be active before publishing donations.");
+            return DonationOperationResult.Fail(DonationFailureKind.Forbidden, "Your donor organization must be active before publishing donations.");
 
         var donation = await donations.GetByIdAsync(donationId, cancellationToken);
-        if (donation is null) return DonationOperationResult.Failure("Donation was not found.");
-        if (donation.DonorOrganizationId != organization.Id) return DonationOperationResult.Failure("You cannot publish another organization's donation.");
-        if (donation.Status != DonationStatus.Draft) return DonationOperationResult.Failure("Only draft donations can be published.");
-        if (donation.Quantity <= 0) return DonationOperationResult.Failure("Quantity must be greater than zero.");
-        if (donation.ExpiresAtUtc <= donation.PreparedAtUtc) return DonationOperationResult.Failure("Expiry time must be after the preparation time.");
-        if (donation.ExpiresAtUtc <= clock.GetUtcNow()) return DonationOperationResult.Failure("Expired donations cannot be published.");
+        if (donation is null) return DonationOperationResult.Fail(DonationFailureKind.NotFound, "Donation was not found.");
+        if (donation.DonorOrganizationId != organization.Id) return DonationOperationResult.Fail(DonationFailureKind.Forbidden, "You cannot publish another organization's donation.");
+        if (donation.Status != DonationStatus.Draft) return DonationOperationResult.Fail(DonationFailureKind.InvalidState, "Only draft donations can be published.");
+        if (donation.Quantity <= 0) return DonationOperationResult.Fail(DonationFailureKind.InvalidState, "Quantity must be greater than zero.");
+        if (donation.ExpiresAtUtc <= donation.PreparedAtUtc) return DonationOperationResult.Fail(DonationFailureKind.InvalidState, "Expiry time must be after the preparation time.");
+        if (donation.ExpiresAtUtc <= clock.GetUtcNow()) return DonationOperationResult.Fail(DonationFailureKind.InvalidState, "Expired donations cannot be published.");
 
         donation.Status = DonationStatus.Available;
         audit.Record("DonationPublished", nameof(FoodDonation), donation.Id);
         try { await unitOfWork.SaveChangesAsync(cancellationToken); }
-        catch (PersistenceConflictException) { return DonationOperationResult.Failure("This donation changed. Refresh and try again."); }
+        catch (PersistenceConflictException) { return DonationOperationResult.Fail(DonationFailureKind.Conflict, "This donation changed. Refresh and try again."); }
 
         return DonationOperationResult.Success(donation.Id);
     }

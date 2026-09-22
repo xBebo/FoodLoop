@@ -2,7 +2,16 @@ using FoodLoop.Domain.Entities;
 using FoodLoop.Domain.Enums;
 namespace FoodLoop.Application.Courier;
 public record CourierOption(Guid Id, string Name);
-public record CourierResult(bool Succeeded, string? Error = null, string? Token = null, DateTimeOffset? ExpiresAtUtc = null);
+// Caller-not-permitted stays UnauthorizedAccessException (the convention shared with the admin services); these cover the rest.
+public enum CourierFailureKind { Validation, NotFound, InvalidState, Conflict }
+public record CourierResult(bool Succeeded, string? Error = null, string? Token = null, DateTimeOffset? ExpiresAtUtc = null, CourierFailureKind? Failure = null)
+{
+    public static CourierResult Fail(CourierFailureKind failure, string error) => new(false, error, Failure: failure);
+}
+// Only states the handover lifecycle actually produces: Booked -> PickupPending -> InTransit -> Closed.
+public enum CourierNextStep { None, VerifyPickup, VerifyDelivery, Completed }
+public record CourierTaskItem(Guid ClaimId, string DonationTitle, ClaimStatus Status, CourierNextStep NextStep);
+public record HandoverTaskItem(Guid ClaimId, string DonationTitle, ClaimStatus Status, HandoverType IssueType, bool CanIssue);
 public interface ICourierRepository
 {
     Task<DonationClaim?> GetAsync(Guid id, CancellationToken ct);

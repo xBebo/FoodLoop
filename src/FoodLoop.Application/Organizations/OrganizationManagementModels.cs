@@ -21,6 +21,13 @@ public sealed record OrganizationAdminPage(
     public bool HasNext => Page < TotalPages;
 }
 
+public sealed record PendingOrganizationItem(
+    Guid Id,
+    string Name,
+    OrganizationType Type,
+    string LicenseNumber,
+    DateTimeOffset CreatedAtUtc);
+
 public enum OrganizationStatusChangeOutcome
 {
     Updated,

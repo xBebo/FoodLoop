@@ -10,4 +10,6 @@ public interface IOrganizationAdminReadRepository
         int page,
         int pageSize,
         CancellationToken ct = default);
+
+    Task<IReadOnlyList<PendingOrganizationItem>> GetPendingAsync(CancellationToken ct = default);
 }

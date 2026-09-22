@@ -1,5 +1,4 @@
-@model IReadOnlyList<FoodLoop.Domain.Entities.DonationClaim>
-@using FoodLoop.Domain.Enums
+@model IReadOnlyList<FoodLoop.Application.Courier.HandoverTaskItem>
 
 @{ ViewData["Title"] = "Handover codes"; }
 
@@ -27,18 +26,17 @@
         <section class="workflow-card">
             <div class="workflow-card__topline">
                 <div>
-                    <h2 class="workflow-card__title">@claim.FoodDonation.Title</h2>
+                    <h2 class="workflow-card__title">@claim.DonationTitle</h2>
                     <p class="workflow-card__meta">Use the code only with the assigned courier at the current handover step.</p>
                 </div>
                 <span class="status-chip">@claim.Status</span>
             </div>
 
-            @if ((User.IsInRole("Donor") && claim.Status == ClaimStatus.PickupPending) ||
-                 (User.IsInRole("Beneficiary") && claim.Status == ClaimStatus.InTransit))
+            @if (claim.CanIssue)
             {
                 <form asp-action="IssueCode" method="post" class="mt-3">
-                    <input type="hidden" name="claimId" value="@claim.Id" />
-                    <input type="hidden" name="handoverType" value="@(User.IsInRole("Donor") ? HandoverType.Pickup : HandoverType.Delivery)" />
+                    <input type="hidden" name="claimId" value="@claim.ClaimId" />
+                    <input type="hidden" name="handoverType" value="@claim.IssueType" />
                     <button class="btn btn-primary" type="submit">Generate handover code</button>
                 </form>
             }

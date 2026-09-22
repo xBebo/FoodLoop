@@ -89,8 +89,22 @@ public enum GetDonationForEditOutcome
 
 public sealed record GetDonationForEditResult(GetDonationForEditOutcome Outcome, DonationEditItem? Donation = null);
 
-public sealed record DonationOperationResult(bool Succeeded, string? Error = null, Guid? DonationId = null)
+// Transport-neutral failure categories; the web layer decides how each one is presented.
+public enum DonationFailureKind
+{
+    Validation,
+    Forbidden,
+    NotFound,
+    InvalidState,
+    Conflict
+}
+
+public sealed record DonationOperationResult(
+    bool Succeeded,
+    string? Error = null,
+    Guid? DonationId = null,
+    DonationFailureKind? Failure = null)
 {
     public static DonationOperationResult Success(Guid? donationId = null) => new(true, null, donationId);
-    public static DonationOperationResult Failure(string error) => new(false, error, null);
+    public static DonationOperationResult Fail(DonationFailureKind failure, string error) => new(false, error, null, failure);
 }
