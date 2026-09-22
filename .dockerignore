@@ -1,0 +1,8 @@
+.git
+.github
+frontend
+tests
+docs
+**/bin
+**/obj
+**/node_modules
