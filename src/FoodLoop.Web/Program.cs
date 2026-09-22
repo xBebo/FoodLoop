@@ -49,7 +49,7 @@ if (string.IsNullOrWhiteSpace(connectionString))
     connectionString = "Server=(localdb)\\MSSQLLocalDB;Database=FoodLoop_Development;Trusted_Connection=True;TrustServerCertificate=True";
 }
 builder.Services.AddApplication();
-builder.Services.AddInfrastructure(connectionString);
+builder.Services.AddInfrastructure(connectionString, persistDataProtectionKeys: !builder.Environment.IsDevelopment());
 
 var reverseProxyEnabled = builder.Configuration.GetValue<bool>("ReverseProxy:Enabled");
 if (reverseProxyEnabled)
