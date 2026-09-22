@@ -7,7 +7,8 @@ public sealed record OrganizationAdminItem(
     string Name,
     OrganizationType Type,
     string LicenseNumber,
-    OrganizationStatus Status);
+    OrganizationStatus Status,
+    DateTimeOffset CreatedAtUtc = default);
 
 public sealed record OrganizationAdminPage(
     IReadOnlyList<OrganizationAdminItem> Items,

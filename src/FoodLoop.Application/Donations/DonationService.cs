@@ -19,6 +19,10 @@ public sealed class DonationService(
 {
     public const int MarketplacePageSize = 20;
 
+    // Display eligibility for the owning donor only; UpdateAsync and PublishAsync re-check every rule.
+    public static bool CanEdit(DonationStatus status) => status == DonationStatus.Draft;
+    public bool CanPublish(DonationStatus status, DateTimeOffset expiresAtUtc) => status == DonationStatus.Draft && expiresAtUtc > clock.GetUtcNow();
+
     public async Task<DonationOperationResult> CreateAsync(CreateDonationRequest request, CancellationToken cancellationToken = default)
     {
         if (!currentUser.IsAuthenticated || !currentUser.IsInRole(AppRoles.Donor))
@@ -220,7 +224,8 @@ public sealed class DonationService(
             donation.ExpiresAtUtc,
             donation.PickupAddress,
             donation.StorageInstructions,
-            donation.Status);
+            donation.Status,
+            donation.FoodCategoryId);
     }
 
     public async Task<AvailableDonationsPage> GetAvailableAsync(

@@ -14,11 +14,16 @@ public sealed class CourierService(ICurrentUserService user, ICourierRepository 
     private void Require(string role) { if (!user.IsAuthenticated || !user.IsInRole(role) || user.UserId is null) throw new UnauthorizedAccessException(); }
     public Task<IReadOnlyList<CourierOption>> CouriersAsync() { Require(AppRoles.Admin); return directory.ListAsync(); }
     public Task<IReadOnlyList<DonationClaim>> AssignableAsync(CancellationToken ct) { Require(AppRoles.Admin); return repo.AssignableAsync(ct); }
+    public async Task<IReadOnlyList<AssignableClaimItem>> AssignableItemsAsync(CancellationToken ct) =>
+        (await AssignableAsync(ct)).Select(c => new AssignableClaimItem(c.Id, c.FoodDonation.Title, c.FoodDonation.DonorOrganization.Name,
+            c.BeneficiaryOrganization.Name, c.FoodDonation.PickupAddress, c.FoodDonation.ExpiresAtUtc, c.CreatedAtUtc, c.Status,
+            c.AssignedCourierUserId is not null)).ToList();
     public async Task<IReadOnlyList<CourierTaskItem>> MyTasksAsync(CancellationToken ct)
     {
         Require(AppRoles.Courier);
         return (await repo.TasksAsync(user.UserId!.Value, ct))
-            .Select(c => new CourierTaskItem(c.Id, c.FoodDonation.Title, c.Status, NextStep(c.Status))).ToList();
+            .Select(c => new CourierTaskItem(c.Id, c.FoodDonation.Title, c.Status, NextStep(c.Status), c.FoodDonation.DonorOrganization.Name,
+                c.BeneficiaryOrganization.Name, c.FoodDonation.PickupAddress, c.FoodDonation.ExpiresAtUtc)).ToList();
     }
     public static CourierNextStep NextStep(ClaimStatus status) => status switch
     {

@@ -24,6 +24,6 @@ public sealed class ClaimRepository(ApplicationDbContext db) : Repository<Donati
         return await Context.DonationClaims.AsNoTracking().Include(x => x.FoodDonation)
             .Where(x => x.BeneficiaryOrganizationId == organizationId)
             .OrderByDescending(x => x.CreatedAtUtc).ThenBy(x => x.Id)
-            .Skip((int)skip).Take(pageSize).ToListAsync(cancellationToken);
+            .Skip((int)skip).Take(pageSize + 1).ToListAsync(cancellationToken);
     }
 }

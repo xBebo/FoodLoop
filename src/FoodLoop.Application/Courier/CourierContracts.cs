@@ -10,7 +10,12 @@ public record CourierResult(bool Succeeded, string? Error = null, string? Token 
 }
 // Only states the handover lifecycle actually produces: Booked -> PickupPending -> InTransit -> Closed.
 public enum CourierNextStep { None, VerifyPickup, VerifyDelivery, Completed }
-public record CourierTaskItem(Guid ClaimId, string DonationTitle, ClaimStatus Status, CourierNextStep NextStep);
+// Route fields are presentation only (names and the public pickup address), never ids.
+public record CourierTaskItem(Guid ClaimId, string DonationTitle, ClaimStatus Status, CourierNextStep NextStep,
+    string DonorName = "", string BeneficiaryName = "", string PickupAddress = "", DateTimeOffset ExpiresAtUtc = default);
+// Admin assignment view: presentation fields only, never courier ids or organization ids.
+public record AssignableClaimItem(Guid ClaimId, string DonationTitle, string DonorName, string BeneficiaryName, string PickupAddress,
+    DateTimeOffset ExpiresAtUtc, DateTimeOffset ClaimedAtUtc, ClaimStatus Status, bool HasCourier);
 public record HandoverTaskItem(Guid ClaimId, string DonationTitle, ClaimStatus Status, HandoverType IssueType, bool CanIssue);
 public interface ICourierRepository
 {

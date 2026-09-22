@@ -205,7 +205,9 @@ public sealed class ContractPrepTests(DatabaseFixture fixture) : IClassFixture<D
         await using var db = fixture.CreateContext(); var d = await Seed(db);
         Assert.True((await Courier(db, d.Admin, d).AssignAsync(d.Claim.Id, d.Courier.Id, default)).Succeeded);
         var task = Assert.Single(await Courier(db, d.Courier, d).MyTasksAsync(default));
-        Assert.Equal(new CourierTaskItem(d.Claim.Id, "R61 meals", ClaimStatus.PickupPending, CourierNextStep.VerifyPickup), task);
+        // Route fields (names, pickup address, expiry) are presentation extras added in R6.7; the projection core is unchanged.
+        Assert.Equal(new CourierTaskItem(d.Claim.Id, "R61 meals", ClaimStatus.PickupPending, CourierNextStep.VerifyPickup),
+            task with { DonorName = "", BeneficiaryName = "", PickupAddress = "", ExpiresAtUtc = default });
     }
 
     // ---- Organization approvals and pending query

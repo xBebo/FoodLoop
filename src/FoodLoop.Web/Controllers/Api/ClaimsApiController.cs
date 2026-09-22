@@ -24,8 +24,7 @@ public sealed class ClaimsApiController(ClaimService claims, ILogger<ClaimsApiCo
         var result = await claims.CreateAsync(request.DonationId!.Value, ct);
         switch (result.Outcome)
         {
-            // No Location header yet: GET /api/claims/{id} arrives with My Claims.
-            case CreateClaimOutcome.Created: return StatusCode(StatusCodes.Status201Created, new CreateClaimResponse(result.ClaimId!.Value));
+            case CreateClaimOutcome.Created: return Created($"/api/claims/{result.ClaimId}", new CreateClaimResponse(result.ClaimId!.Value));
             case CreateClaimOutcome.Unauthenticated: return this.Fail(StatusCodes.Status401Unauthorized, "auth.unauthenticated");
             case CreateClaimOutcome.Forbidden: return this.Fail(StatusCodes.Status403Forbidden, "auth.forbidden");
             case CreateClaimOutcome.OrganizationNotActive: return this.Fail(StatusCodes.Status403Forbidden, "organization.not_active");
@@ -37,6 +36,50 @@ public sealed class ClaimsApiController(ClaimService claims, ILogger<ClaimsApiCo
             case CreateClaimOutcome.Conflict: return this.Fail(StatusCodes.Status409Conflict, "claim.conflict");
             default:
                 logger.LogError("Claim creation returned unhandled outcome {Outcome}.", result.Outcome);
+                return this.Fail(StatusCodes.Status500InternalServerError, "server.error");
+        }
+    }
+
+    // ClaimSummary / ClaimDetails are application read models (no entities, ids of other parties or audit data).
+    [HttpGet]
+    public async Task<IActionResult> List(int page = 1, int pageSize = 20, CancellationToken ct = default)
+    {
+        page = Math.Max(page, 1);
+        pageSize = Math.Clamp(pageSize, 1, 100);
+        var result = await claims.GetMyClaimsAsync(page, pageSize, ct);
+        return result.Outcome == GetMyClaimsOutcome.Success
+            ? Ok(new { items = result.Claims, page, hasNext = result.HasNext })
+            : this.Fail(StatusCodes.Status403Forbidden, "auth.forbidden");
+    }
+
+    [HttpGet("{id:guid}")]
+    public async Task<IActionResult> Details(Guid id, CancellationToken ct)
+    {
+        var result = await claims.GetDetailsAsync(id, ct);
+        return result.Outcome switch
+        {
+            GetClaimDetailsOutcome.Success => Ok(result.Details),
+            GetClaimDetailsOutcome.OrganizationNotActive => this.Fail(StatusCodes.Status403Forbidden, "organization.not_active"),
+            GetClaimDetailsOutcome.NotFound => this.Fail(StatusCodes.Status404NotFound, "claim.not_found"),
+            _ => this.Fail(StatusCodes.Status403Forbidden, "auth.forbidden")
+        };
+    }
+
+    [HttpPost("{id:guid}/cancel")]
+    public async Task<IActionResult> Cancel(Guid id, CancellationToken ct)
+    {
+        var result = await claims.CancelAsync(id, ct);
+        switch (result.Outcome)
+        {
+            case CancelClaimOutcome.Cancelled: return NoContent();
+            case CancelClaimOutcome.OrganizationNotActive: return this.Fail(StatusCodes.Status403Forbidden, "organization.not_active");
+            case CancelClaimOutcome.ClaimNotFound: return this.Fail(StatusCodes.Status404NotFound, "claim.not_found");
+            case CancelClaimOutcome.NotCancellable: return this.Fail(StatusCodes.Status409Conflict, "claim.not_cancellable");
+            case CancelClaimOutcome.Conflict: return this.Fail(StatusCodes.Status409Conflict, "claim.conflict");
+            case CancelClaimOutcome.Unauthenticated: return this.Fail(StatusCodes.Status401Unauthorized, "auth.unauthenticated");
+            case CancelClaimOutcome.Forbidden: return this.Fail(StatusCodes.Status403Forbidden, "auth.forbidden");
+            default:
+                logger.LogError("Claim cancellation returned unhandled outcome {Outcome}.", result.Outcome);
                 return this.Fail(StatusCodes.Status500InternalServerError, "server.error");
         }
     }

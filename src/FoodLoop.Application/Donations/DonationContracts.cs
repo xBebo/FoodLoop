@@ -62,7 +62,8 @@ public sealed record DonationDetailsItem(
     DateTimeOffset ExpiresAtUtc,
     string PickupAddress,
     string StorageInstructions,
-    DonationStatus Status);
+    DonationStatus Status,
+    Guid CategoryId = default);
 
 public sealed record DonationExpiryResult(bool Succeeded, int ExpiredCount, string? Error = null)
 {

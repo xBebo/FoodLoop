@@ -28,7 +28,7 @@ public sealed class OrganizationAdminReadRepository(ApplicationDbContext db) : I
             .ThenBy(x => x.Id)
             .Skip((page - 1) * pageSize)
             .Take(pageSize)
-            .Select(x => new OrganizationAdminItem(x.Id, x.Name, x.Type, x.LicenseNumber, x.Status))
+            .Select(x => new OrganizationAdminItem(x.Id, x.Name, x.Type, x.LicenseNumber, x.Status, x.CreatedAtUtc))
             .ToListAsync(ct);
 
         return new OrganizationAdminPage(items, page, pageSize, total, status);
