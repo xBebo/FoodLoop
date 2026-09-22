@@ -48,7 +48,8 @@ public sealed record DonationListItem(
     DateTimeOffset ExpiresAtUtc,
     DonationStatus Status,
     string PickupAddress,
-    string? DonorName = null);
+    string? DonorName = null,
+    Guid CategoryId = default);
 
 public sealed record DonationDetailsItem(
     Guid Id,
@@ -77,7 +78,31 @@ public sealed record AvailableDonationsPage(
     bool HasPrevious,
     bool HasNext,
     string Search,
-    Guid? CategoryId);
+    Guid? CategoryId,
+    bool IsAllowed = true);
+
+// A beneficiary's view of one marketplace donation: only what they need to decide on a claim.
+public sealed record MarketplaceDonationItem(
+    Guid Id,
+    string Title,
+    string Description,
+    DonationCategoryItem Category,
+    decimal Quantity,
+    QuantityUnit Unit,
+    DateTimeOffset PreparedAtUtc,
+    DateTimeOffset ExpiresAtUtc,
+    string StorageInstructions,
+    string PickupAddress,
+    string DonorName);
+
+public enum GetMarketplaceDonationOutcome
+{
+    Success,
+    Forbidden,
+    NotFound
+}
+
+public sealed record GetMarketplaceDonationResult(GetMarketplaceDonationOutcome Outcome, MarketplaceDonationItem? Donation = null);
 
 public enum GetDonationForEditOutcome
 {

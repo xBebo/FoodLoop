@@ -43,8 +43,8 @@ public sealed class AuthApiController(AccountService accounts, IAntiforgery anti
         return result.Outcome switch
         {
             LoginOutcome.Succeeded => Ok(ToResponse(result.Session!)),
-            LoginOutcome.AccountUnavailable => Fail(StatusCodes.Status403Forbidden, "auth.account_unavailable"),
-            _ => Fail(StatusCodes.Status401Unauthorized, "auth.invalid_credentials")
+            LoginOutcome.AccountUnavailable => this.Fail(StatusCodes.Status403Forbidden, "auth.account_unavailable"),
+            _ => this.Fail(StatusCodes.Status401Unauthorized, "auth.invalid_credentials")
         };
     }
 
@@ -63,10 +63,10 @@ public sealed class AuthApiController(AccountService accounts, IAntiforgery anti
         switch (result.Outcome)
         {
             case RegistrationOutcome.Succeeded: return StatusCode(StatusCodes.Status201Created);
-            case RegistrationOutcome.DuplicateAccount: return Fail(StatusCodes.Status409Conflict, "auth.account_exists");
-            case RegistrationOutcome.DuplicateLicense: return Fail(StatusCodes.Status409Conflict, "organization.license_exists");
-            case RegistrationOutcome.InvalidOrganizationType: return Fail(StatusCodes.Status400BadRequest, "organization.invalid_type");
-            case RegistrationOutcome.InvalidInput: return Fail(StatusCodes.Status400BadRequest, "validation");
+            case RegistrationOutcome.DuplicateAccount: return this.Fail(StatusCodes.Status409Conflict, "auth.account_exists");
+            case RegistrationOutcome.DuplicateLicense: return this.Fail(StatusCodes.Status409Conflict, "organization.license_exists");
+            case RegistrationOutcome.InvalidOrganizationType: return this.Fail(StatusCodes.Status400BadRequest, "organization.invalid_type");
+            case RegistrationOutcome.InvalidInput: return this.Fail(StatusCodes.Status400BadRequest, "validation");
             case RegistrationOutcome.IdentityFailed:
                 // Identity's descriptions are safe user-facing text; its codes decide which field they belong to.
                 foreach (var error in result.Errors)
@@ -74,16 +74,9 @@ public sealed class AuthApiController(AccountService accounts, IAntiforgery anti
                 return ValidationProblem(ModelState);
             default:
                 logger.LogError("Registration failed with {Outcome}.", result.Outcome);
-                return Fail(StatusCodes.Status500InternalServerError, "server.error");
+                return this.Fail(StatusCodes.Status500InternalServerError, "server.error");
         }
     }
 
     private static SessionResponse ToResponse(AccountSession session) => new(true, session.DisplayName, session.Roles, session.Organization);
-
-    private ObjectResult Fail(int status, string code)
-    {
-        var result = (ObjectResult)Problem(statusCode: status);
-        ((ProblemDetails)result.Value!).Extensions["code"] = code;
-        return result;
-    }
 }

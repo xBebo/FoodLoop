@@ -231,15 +231,8 @@ public sealed class DonationService(
     {
         page = Math.Max(page, 1);
         var normalizedSearch = (search ?? string.Empty).Trim();
-        AvailableDonationsPage Empty() => new([], page, page > 1, false, normalizedSearch, categoryId);
-
-        if (!currentUser.IsAuthenticated || !currentUser.IsInRole(AppRoles.Beneficiary)) return Empty();
-        var organizationId = await currentUser.GetOrganizationIdAsync(cancellationToken);
-        if (organizationId is null) return Empty();
-
-        var organization = await organizations.GetByIdAsync(organizationId.Value, cancellationToken);
-        if (organization is null || organization.Type != OrganizationType.Beneficiary || organization.Status != OrganizationStatus.Active)
-            return Empty();
+        if (!await IsActiveBeneficiaryAsync(cancellationToken))
+            return new([], page, page > 1, false, normalizedSearch, categoryId, IsAllowed: false);
 
         var result = await donations.GetAvailableAsync(
             normalizedSearch, categoryId, page, MarketplacePageSize, cancellationToken);
@@ -252,12 +245,32 @@ public sealed class DonationService(
             categoryId);
     }
 
+    // Beneficiary marketplace details. Visibility is the marketplace list predicate, so a donation that is missing, expired,
+    // no longer Available or from an inactive donor is the same NotFound and reveals nothing about it.
+    public async Task<GetMarketplaceDonationResult> GetMarketplaceDetailsAsync(Guid donationId, CancellationToken cancellationToken = default)
+    {
+        if (!await IsActiveBeneficiaryAsync(cancellationToken)) return new(GetMarketplaceDonationOutcome.Forbidden);
+        var x = await donations.GetAvailableByIdAsync(donationId, cancellationToken);
+        return x is null ? new(GetMarketplaceDonationOutcome.NotFound) : new(GetMarketplaceDonationOutcome.Success, new(
+            x.Id, x.Title, x.Description, new(x.FoodCategoryId, x.FoodCategory.Name), x.Quantity, x.Unit,
+            x.PreparedAtUtc, x.ExpiresAtUtc, x.StorageInstructions, x.PickupAddress, x.DonorOrganization.Name));
+    }
+
     public async Task<IReadOnlyList<DonationCategoryItem>> GetCategoriesAsync(CancellationToken cancellationToken = default)
         => (await categories.GetAllAsync(cancellationToken)).Select(x => new DonationCategoryItem(x.Id, x.Name)).ToList();
 
+    private async Task<bool> IsActiveBeneficiaryAsync(CancellationToken cancellationToken)
+    {
+        if (!currentUser.IsAuthenticated || !currentUser.IsInRole(AppRoles.Beneficiary)) return false;
+        var organizationId = await currentUser.GetOrganizationIdAsync(cancellationToken);
+        if (organizationId is null) return false;
+        var organization = await organizations.GetByIdAsync(organizationId.Value, cancellationToken);
+        return organization is { Type: OrganizationType.Beneficiary, Status: OrganizationStatus.Active };
+    }
+
     private static DonationListItem Map(FoodDonation x, string? donorName = null)
         => new(x.Id, x.Title, x.FoodCategory?.Name ?? "Unknown", x.Quantity, x.Unit,
-            x.PreparedAtUtc, x.ExpiresAtUtc, x.Status, x.PickupAddress, donorName);
+            x.PreparedAtUtc, x.ExpiresAtUtc, x.Status, x.PickupAddress, donorName, x.FoodCategoryId);
 
     private static string? ValidateAndNormalize(
         string? title,

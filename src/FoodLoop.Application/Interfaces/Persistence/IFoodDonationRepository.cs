@@ -13,6 +13,8 @@ public interface IFoodDonationRepository : IRepository<FoodDonation>
         int page,
         int pageSize,
         CancellationToken cancellationToken = default);
+    // Same visibility predicate as GetAvailableAsync; null when the donation is not currently in the marketplace.
+    Task<FoodDonation?> GetAvailableByIdAsync(Guid donationId, CancellationToken cancellationToken = default);
     Task<IReadOnlyList<FoodDonation>> GetForDonorAsync(
         Guid donorOrganizationId,
         DonationStatus? status = null,
