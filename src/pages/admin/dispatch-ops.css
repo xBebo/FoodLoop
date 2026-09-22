@@ -1,0 +1,61 @@
+/* Assign courier: dispatch operations. Each claim is a full operational card, not a form row. */
+
+.dboard { display: grid; gap: var(--space-5); margin-top: var(--space-6); }
+
+.dop {
+  position: relative;
+  overflow: hidden;
+  border: 1px solid var(--color-border);
+  border-radius: 28px 8px 28px 8px;
+  background: var(--warm-white);
+  box-shadow: var(--shadow-sm);
+}
+.dop > :not(.botanical-layer) { position: relative; z-index: 1; }
+.dop__contours { width: min(220px, 40%); color: var(--sage-500); opacity: 0.16; }
+.dop.is-urgent { border-color: rgb(154 51 32 / 0.28); box-shadow: var(--shadow-md); }
+
+.dop__head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--space-4);
+  padding: clamp(1.25rem, 1rem + 1vw, 1.75rem) clamp(1.25rem, 1rem + 1vw, 1.75rem) var(--space-4);
+  border-bottom: 1px dashed var(--color-border-strong);
+}
+.dop__head > div:first-child { min-width: 0; }
+.dop__kicker { display: flex; align-items: center; gap: var(--space-3); margin-bottom: var(--space-3); }
+.dop__ref { color: var(--forest-700); font-family: var(--font-mono); font-size: var(--text-sm); font-weight: 600; letter-spacing: 0.04em; }
+.dop__title { font-size: clamp(1.5rem, 1.25rem + 1vw, 2rem); line-height: 1.1; letter-spacing: -0.02em; font-weight: 400; overflow-wrap: anywhere; }
+.dop__qty { margin-top: 0.25rem; color: var(--color-text-muted); font-size: var(--text-sm); font-weight: 650; }
+
+.dop__expiry { display: grid; justify-items: end; gap: 0.15rem; text-align: right; }
+.dop__expiry .t-label { color: var(--color-text-muted); }
+.dop__expiry time { font-family: var(--font-display); font-size: 1.375rem; font-weight: 400; letter-spacing: -0.01em; color: var(--ink-900); }
+.dop__expiry.is-urgent time { color: var(--tone-danger-fg); }
+.dop__claimed { color: var(--color-text-muted); font-size: var(--text-xs); }
+
+.dop__route { padding: clamp(1.25rem, 1rem + 1vw, 1.75rem); }
+
+.dop__dispatch {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: var(--space-4);
+  padding: var(--space-4) clamp(1.25rem, 1rem + 1vw, 1.75rem);
+  border-top: 1px solid var(--color-border);
+  background: rgb(218 241 222 / 0.3);
+}
+.dop__field { flex: 1 1 16rem; min-width: 0; display: grid; gap: 0.4rem; }
+.dop__label { font-size: var(--text-sm); font-weight: 650; color: var(--ink-900); }
+.dop__select { min-height: 50px; }
+.dop__error { display: flex; align-items: center; gap: 0.4rem; color: var(--danger); font-size: var(--text-sm); font-weight: 600; }
+.dop__assign { min-height: 50px; flex-shrink: 0; }
+
+.dop__result { padding: 0 clamp(1.25rem, 1rem + 1vw, 1.75rem); }
+.dop__result:empty { display: none; }
+.dop__result .ws-notice { margin-bottom: var(--space-4); }
+
+@media (min-width: 700px) {
+  .dop__dispatch { flex-wrap: nowrap; }
+}
