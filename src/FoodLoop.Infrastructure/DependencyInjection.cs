@@ -46,6 +46,7 @@ public static class DependencyInjection
         services.AddScoped<ICourierDirectory, CourierDirectory>();
         services.AddScoped<AccountService>();
         services.AddScoped<ReferenceDataSeeder>();
+        services.AddScoped<ProductionBootstrapSeeder>();
         services.AddScoped<DevelopmentDataSeeder>();
         return services;
     }
