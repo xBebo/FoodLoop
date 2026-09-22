@@ -1,0 +1,257 @@
+/* ================= Workspace header ================= */
+/* Night-canopy bar: the public site's dark footer/CTA language, reused as product chrome. */
+.ws-header {
+  position: sticky;
+  top: 0;
+  z-index: var(--z-header);
+  background:
+    radial-gradient(60% 140% at 12% 0%, rgb(35 83 71 / 0.55), transparent 70%),
+    var(--forest-950);
+  box-shadow: 0 1px 0 rgb(218 241 222 / 0.06), 0 14px 30px -24px rgb(5 31 32 / 0.8);
+}
+
+.ws-header__bar {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  grid-template-areas:
+    'brand profile'
+    'nav nav';
+  align-items: center;
+  column-gap: var(--space-4);
+  padding-block: var(--space-1) 0;
+}
+
+.ws-header__brand { grid-area: brand; display: flex; align-items: center; gap: var(--space-4); min-width: 0; }
+.ws-header__home { display: inline-flex; align-items: center; min-height: 44px; text-decoration: none; border-radius: var(--radius-sm); }
+.ws-header__context {
+  display: none;
+  padding-left: var(--space-4);
+  border-left: 1px solid var(--color-border-on-dark);
+  color: var(--sage-500);
+  line-height: 1.6;
+}
+
+/* Nav: a recessed track with a mint pill that glides to the current page. */
+.ws-nav { grid-area: nav; min-width: 0; padding-block: var(--space-1) var(--space-2); }
+.ws-nav__list {
+  display: grid;
+  grid-auto-flow: column;
+  grid-auto-columns: minmax(0, 1fr);
+  gap: 2px;
+  padding: 4px;
+  border-radius: var(--radius-pill);
+  background: rgb(218 241 222 / 0.06);
+  box-shadow: inset 0 0 0 1px rgb(218 241 222 / 0.08);
+}
+
+/* Admin has 5 items — too many labels for equal-width columns below 1024px without colliding.
+   Below the desktop breakpoint it becomes a horizontally scrollable, content-sized strip instead;
+   donor/beneficiary/courier keep the equal-column layout above (they already fit it). */
+@media (max-width: 1023.98px) {
+  .ws-header--admin .ws-nav {
+    overflow-x: auto;
+    overflow-y: hidden;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: thin;
+  }
+  .ws-header--admin .ws-nav__list {
+    display: inline-flex;
+    width: max-content;
+    min-width: 100%;
+  }
+  .ws-header--admin .ws-nav__link {
+    flex: 0 0 auto;
+    white-space: nowrap;
+  }
+}
+.ws-nav__link {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 44px;
+  padding-inline: 0.75rem;
+  border-radius: var(--radius-pill);
+  color: var(--color-on-dark-muted);
+  font-size: var(--text-sm);
+  font-weight: 600;
+  text-align: center;
+  line-height: 1.15;
+  text-decoration: none;
+  transition: color var(--dur-fast) var(--ease-out);
+}
+.ws-nav__link:hover { color: var(--color-on-dark); }
+.ws-nav__link[aria-current='page'] { color: var(--forest-950); }
+.ws-nav__label { position: relative; z-index: 1; }
+.ws-nav__indicator {
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: var(--mint-100);
+  box-shadow: 0 6px 18px -8px rgb(142 182 155 / 0.7);
+}
+
+/* Profile: the signed-in account and its logout action. */
+.ws-profile { grid-area: profile; display: flex; align-items: center; gap: var(--space-3); }
+.ws-profile__text { display: none; text-align: right; line-height: 1.25; }
+.ws-profile__name { display: block; font-size: var(--text-sm); font-weight: 650; }
+.ws-profile__org { display: block; font-size: var(--text-xs); color: var(--color-on-dark-muted); }
+.ws-profile__avatar {
+  display: grid;
+  place-items: center;
+  width: 40px;
+  height: 40px;
+  border-radius: 14px 5px 14px 5px;
+  background: linear-gradient(150deg, var(--sage-500), #6d9a7c);
+  color: var(--forest-950);
+  font-family: var(--font-display);
+  font-size: 1rem;
+  font-weight: 500;
+  letter-spacing: 0.02em;
+}
+.ws-logout {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  min-height: 44px;
+  padding-inline: 0.85rem;
+  border: 1px solid rgb(218 241 222 / 0.28);
+  border-radius: var(--radius-pill);
+  background: transparent;
+  color: var(--color-on-dark-muted);
+  font: inherit;
+  font-size: var(--text-xs);
+  font-weight: 600;
+  white-space: nowrap;
+  cursor: pointer;
+}
+.ws-logout:hover { color: var(--color-on-dark); border-color: rgb(218 241 222 / 0.5); }
+.ws-logout:focus-visible { outline-color: var(--color-focus-on-dark); }
+.ws-logout:disabled { opacity: 0.6; cursor: progress; }
+.ws-logout svg { width: 16px; height: 16px; }
+
+/* Role accents: related, not separate systems. Beneficiary leans mint, courier leans deep forest. */
+.ws-header--beneficiary { background: radial-gradient(60% 140% at 12% 0%, rgb(142 182 155 / 0.32), transparent 70%), var(--forest-950); }
+.ws-header--courier { background: radial-gradient(60% 140% at 12% 0%, rgb(22 56 50 / 0.9), transparent 70%), #031617; }
+.ws-header--admin { background: radial-gradient(60% 140% at 12% 0%, rgb(35 83 71 / 0.4), transparent 70%), linear-gradient(100deg, #041a1b, var(--forest-950)); }
+
+/* Two-row header on small screens: anchors / focus targets must clear it. */
+.page-shell:has(> .ws-header) { --header-height: 6.5rem; }
+
+@media (min-width: 1024px) {
+  .page-shell:has(> .ws-header) { --header-height: 4.75rem; }
+  .ws-header__bar {
+    grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+    grid-template-areas: 'brand nav profile';
+    height: 4.75rem;
+    padding-block: 0;
+  }
+  .ws-header__context { display: inline-block; }
+  .ws-nav { padding: 0; }
+  .ws-nav__list { display: flex; }
+  .ws-nav__link { padding-inline: 1.15rem; }
+  .ws-profile { justify-self: end; }
+}
+@media (min-width: 1200px) {
+  .ws-profile__text { display: block; }
+}
+
+/* ================= Workspace footer ================= */
+.ws-footer { margin-top: var(--space-9); border-top: 1px solid var(--color-border); }
+.ws-footer__inner {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2) var(--space-6);
+  padding-block: var(--space-5);
+  color: var(--color-text-muted);
+  font-size: var(--text-sm);
+}
+.ws-footer__inner p { display: flex; align-items: center; gap: 0.6rem; }
+.ws-footer__dot { width: 7px; height: 7px; border-radius: 50%; background: var(--tone-warning-fg); opacity: 0.7; flex-shrink: 0; }
+.ws-footer .link-underline { display: inline-block; padding-block: 0.7rem; --underline-inset: 0.62rem; }
+
+/* Full-bleed dark pages flow straight into a matching footer instead of a paper strip before it. */
+.page-shell__main:has(.courier-floor) + .ws-footer,
+.page-shell__main:has(.verify) + .ws-footer,
+.page-shell__main:has(.pass-scene) + .ws-footer {
+  margin-top: 0;
+  border-top: 1px solid var(--color-border-on-dark);
+  color: var(--color-on-dark-muted);
+}
+.page-shell__main:has(.courier-floor) + .ws-footer { background: #041a1b; }
+.page-shell__main:has(.verify) + .ws-footer { background: #031617; }
+.page-shell__main:has(.pass-scene) + .ws-footer { background: #05201f; }
+.page-shell__main:has(.courier-floor) + .ws-footer .ws-footer__inner,
+.page-shell__main:has(.verify) + .ws-footer .ws-footer__inner,
+.page-shell__main:has(.pass-scene) + .ws-footer .ws-footer__inner {
+  color: var(--color-on-dark-muted);
+}
+.page-shell__main:has(.courier-floor) + .ws-footer .link-underline,
+.page-shell__main:has(.verify) + .ws-footer .link-underline,
+.page-shell__main:has(.pass-scene) + .ws-footer .link-underline {
+  color: var(--color-on-dark);
+}
+
+/* ================= Shared workspace page primitives ================= */
+.ws-page { padding-block: clamp(2rem, 1rem + 3vw, 4rem) 0; }
+
+.ws-intro { display: grid; gap: var(--space-5); align-items: end; }
+.ws-intro__title { font-size: clamp(2.6rem, 1.6rem + 3.6vw, 5rem); line-height: 0.98; letter-spacing: -0.035em; }
+.ws-intro__lead { max-width: 38rem; }
+.ws-intro__actions { display: flex; flex-wrap: wrap; gap: var(--space-3); }
+@media (min-width: 1024px) {
+  .ws-intro:has(> .ws-intro__actions) { grid-template-columns: minmax(0, 1fr) auto; column-gap: var(--space-8); }
+  .ws-intro__actions { grid-column: 2; grid-row: 1 / span 3; align-self: end; }
+}
+
+.ws-back {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  min-height: 44px;
+  color: var(--color-text-muted);
+  font-size: var(--text-sm);
+  font-weight: 600;
+  text-decoration: none;
+  border-radius: var(--radius-sm);
+  transition: color var(--dur-fast) var(--ease-out);
+}
+button.ws-back { padding: 0; border: 0; background: none; font: inherit; font-size: var(--text-sm); font-weight: 600; cursor: pointer; }
+.ws-back svg { width: 18px; height: 18px; transition: transform var(--dur-ui) var(--ease-out); }
+.ws-back:hover { color: var(--forest-900); }
+.on-dark .ws-back:hover { color: var(--mint-100); }
+.ws-back:hover svg { transform: translateX(calc(var(--motion-nudge) * -1)); }
+
+/* Prototype / info messages (role="status" lives on the wrapper). */
+.ws-notice {
+  display: flex;
+  gap: 0.75rem;
+  padding: 1rem 1.15rem;
+  border-radius: var(--radius-md);
+  background: var(--tone-info-bg);
+  color: var(--tone-info-fg);
+  font-size: var(--text-sm);
+  line-height: 1.5;
+}
+.ws-notice svg { flex-shrink: 0; width: 20px; height: 20px; margin-top: 0.1rem; }
+.ws-notice--warning { background: var(--tone-warning-bg); color: var(--tone-warning-fg); }
+.on-dark .ws-notice { background: rgb(218 241 222 / 0.1); color: var(--color-on-dark); box-shadow: inset 0 0 0 1px rgb(218 241 222 / 0.14); }
+
+/* Empty / not-found states */
+.ws-empty {
+  display: grid;
+  justify-items: start;
+  gap: var(--space-4);
+  padding: clamp(2rem, 1rem + 4vw, 4.5rem);
+  border: 1px dashed var(--color-border-strong);
+  border-radius: var(--radius-leaf);
+  background: rgb(251 249 243 / 0.6);
+}
+.ws-empty :is(h2, h3) { font-size: var(--text-h3); }
+.ws-empty p { color: var(--color-text-muted); max-width: 34rem; }
+
+/* Previous / next paging for workspace lists (no totals: the API only says whether another page exists). */
+.ws-pager { display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: var(--space-3) var(--space-5); margin-top: var(--space-7); }
+.ws-pager .t-data { color: var(--color-text-muted); font-size: var(--text-sm); font-weight: 600; }

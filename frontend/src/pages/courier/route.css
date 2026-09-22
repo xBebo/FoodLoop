@@ -1,0 +1,78 @@
+/* Donor → beneficiary route stepper. Styles live with the component so any page (courier, admin dispatch) that
+   renders <Route> gets them, without pulling in courier.css's dispatch-ticket / dark-floor styles. */
+
+/* ================================================================ Route */
+.route { --pin: 14px; --gap: var(--space-5); --route-done: var(--forest-700); --route-track: var(--stone-300); }
+.route--large { --pin: 22px; --gap: var(--space-7); --route-done: var(--mint-100); --route-track: rgb(218 241 222 / 0.3); }
+
+/* Padding keeps the pin halos inside the clip used by the draw-in. */
+.route__stops { display: grid; gap: var(--gap); padding: 6px; margin: -6px; }
+.route__stop,
+.route__transit { position: relative; display: grid; gap: 0.2rem; padding-left: calc(var(--pin) + 1rem); }
+
+/* Segment from this stop's pin down to the next stop: solid once that leg is covered. */
+.route__stop:not(:last-child)::before,
+.route__transit::before {
+  content: '';
+  position: absolute;
+  left: calc(var(--pin) / 2 - 1px);
+  top: calc(0.25rem + var(--pin));
+  bottom: calc(var(--gap) * -1 + 0.25rem);
+  width: 2px;
+  background: repeating-linear-gradient(180deg, var(--route-track) 0 4px, transparent 4px 8px);
+}
+.route__stop.is-done:not(:last-child)::before { background: var(--route-done); }
+
+.route__pin {
+  position: absolute;
+  left: 0;
+  top: 0.25rem;
+  width: var(--pin);
+  height: var(--pin);
+  border: 2px solid var(--route-done);
+  border-radius: 50%;
+  background: var(--color-bg);
+}
+.route--large .route__pin { background: var(--forest-950); }
+.route__stop:first-child .route__pin { border-radius: 4px; }
+.route__stop.is-done .route__pin { background: var(--route-done); }
+.route__stop.is-next .route__pin { box-shadow: 0 0 0 5px color-mix(in srgb, var(--route-done) 20%, transparent); }
+.route__stop:not(.is-done, .is-next) .route__pin { border-style: dashed; border-color: var(--route-track); }
+
+.route__role { color: var(--color-text-muted); font-size: 0.75rem; letter-spacing: 0.12em; }
+.route__name { font-family: var(--font-display); font-size: 1.25rem; line-height: 1.15; letter-spacing: -0.015em; font-weight: 420; overflow-wrap: anywhere; }
+.route__addr { display: flex; align-items: flex-start; gap: 0.35rem; color: var(--color-text-muted); font-size: var(--text-sm); font-weight: 600; overflow-wrap: anywhere; }
+.route__addr svg { width: 15px; height: 15px; flex-shrink: 0; margin-top: 0.2rem; }
+.route__state {
+  justify-self: start;
+  margin-top: 0.3rem;
+  padding: 0.1rem 0.55rem;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-pill);
+  color: var(--color-text-muted);
+  font-size: var(--text-xs);
+  font-weight: 650;
+}
+.route__stop.is-next .route__state { border-color: transparent; background: var(--forest-900); color: var(--mint-100); }
+.route--large .route__stop.is-next .route__state { background: var(--mint-100); color: var(--forest-950); }
+
+.route__transit { grid-auto-flow: column; justify-content: start; align-items: center; gap: var(--space-2); color: var(--route-done); font-size: var(--text-sm); font-weight: 700; }
+.route__truck {
+  position: absolute;
+  left: calc(var(--pin) / 2 - 14px);
+  top: 50%;
+  display: grid;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: var(--route-done);
+  color: var(--color-bg);
+  transform: translateY(-50%);
+}
+.route--large .route__truck { color: var(--forest-950); }
+.route__truck svg { width: 15px; height: 15px; }
+.route__transit::before { top: calc(50% + 14px); }
+
+.route--large .route__name { font-size: clamp(1.6rem, 1.3rem + 1vw, 2.25rem); font-weight: 350; letter-spacing: -0.025em; }
+.route--large .route__role { color: var(--sage-500); }

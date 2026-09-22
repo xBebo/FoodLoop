@@ -1,0 +1,170 @@
+/* ---- Mark / wordmark ---- */
+.fl-mark { width: 1.75rem; height: 1.75rem; flex-shrink: 0; }
+
+.fl-wordmark {
+  --mark-leaf: var(--forest-700);
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  color: var(--forest-950);
+  font-family: var(--font-display);
+  font-size: 1.375rem;
+  font-weight: 450;
+  letter-spacing: -0.03em;
+  line-height: 1;
+}
+.fl-wordmark em { font-style: italic; font-weight: 380; color: var(--mark-leaf); }
+.on-dark .fl-wordmark,
+.on-dark .fl-mark { --mark-leaf: var(--sage-500); }
+.on-dark .fl-wordmark { color: var(--color-on-dark); }
+
+/* ---- Botanical line art ---- */
+.botanical { color: var(--botanical-color, var(--forest-700)); overflow: visible; }
+.on-dark .botanical { --botanical-color: var(--sage-500); }
+
+.botanical-corner { width: min(320px, 60vw); height: auto; opacity: 0.7; }
+.botanical-corner--top-right { transform: scaleX(-1); }
+.botanical-corner--bottom-left { transform: scaleY(-1); }
+.botanical-corner--bottom-right { transform: scale(-1, -1); }
+
+.botanical-layer {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  pointer-events: none;
+  border-radius: inherit;
+}
+.botanical-layer > * { position: absolute; }
+
+/* ---- Ambient orb ---- */
+.orb {
+  position: absolute;
+  aspect-ratio: 1;
+  border-radius: 50%;
+  pointer-events: none;
+  background: radial-gradient(
+    closest-side,
+    var(--orb-color) 0%,
+    color-mix(in srgb, var(--orb-color) 35%, transparent) 45%,
+    transparent 100%
+  );
+  opacity: var(--orb-opacity, 0.55);
+}
+.orb--sage { --orb-color: var(--sage-500); }
+.orb--mint { --orb-color: var(--mint-100); --orb-opacity: 0.8; }
+.orb--forest { --orb-color: var(--forest-700); --orb-opacity: 0.35; }
+.orb--drift { animation: ambient-drift var(--dur-ambient) var(--ease-in-out) infinite; will-change: transform; }
+
+@media (prefers-reduced-motion: reduce) {
+  .orb--drift { animation: none; }
+}
+
+/* ---- Media stand-in (photography not delivered yet) ---- */
+.media-art {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  background:
+    radial-gradient(55% 40% at 72% 18%, var(--art-light), transparent 70%),
+    radial-gradient(90% 60% at 50% 88%, var(--art-pool), transparent 70%),
+    linear-gradient(170deg, var(--art-top), var(--art-bottom));
+}
+.media-art--forest {
+  --art-light: rgb(218 241 222 / 0.34);
+  --art-pool: rgb(35 83 71 / 0.9);
+  --art-top: #1d4a3f;
+  --art-bottom: #06201f;
+  --art-line: var(--sage-500);
+  --art-sprig: var(--mint-100);
+}
+.media-art--umber {
+  --art-light: rgb(246 217 162 / 0.3);
+  --art-pool: rgb(92 66 38 / 0.75);
+  --art-top: #3a3024;
+  --art-bottom: #0e1c19;
+  --art-line: #cdb58c;
+  --art-sprig: #f1e3c6;
+}
+.media-art__field { position: absolute; inset: 0; width: 100%; height: 100%; fill: none; stroke: var(--art-line); stroke-width: 1; vector-effect: non-scaling-stroke; }
+.media-art__field path { vector-effect: non-scaling-stroke; }
+.media-art__sprig {
+  position: absolute;
+  left: 50%;
+  top: 52%;
+  width: 44%;
+  translate: -50% -50%;
+  rotate: -8deg;
+  --botanical-color: var(--art-sprig);
+  opacity: 0.7;
+}
+
+/* Category tones: each gets its own light, ground and contour placement so a grid of stand-ins never repeats. */
+.media-art--produce {
+  --art-light: rgb(214 236 160 / 0.32);
+  --art-pool: rgb(52 96 50 / 0.85);
+  --art-top: #2c5a3a;
+  --art-bottom: #0a2419;
+  --art-line: #a9cf8e;
+  --art-sprig: #e6f5cf;
+}
+.media-art--bakery {
+  --art-light: rgb(250 214 150 / 0.4);
+  --art-pool: rgb(120 76 34 / 0.75);
+  --art-top: #6b4a2a;
+  --art-bottom: #22160c;
+  --art-line: #e2bf88;
+  --art-sprig: #f8e6c4;
+}
+.media-art--prepared {
+  --art-light: rgb(248 180 130 / 0.34);
+  --art-pool: rgb(128 58 36 / 0.7);
+  --art-top: #6a3526;
+  --art-bottom: #1c1210;
+  --art-line: #e0a488;
+  --art-sprig: #f7d9c6;
+}
+.media-art--dairy {
+  --art-light: rgb(236 244 246 / 0.42);
+  --art-pool: rgb(52 88 98 / 0.7);
+  --art-top: #3d5f66;
+  --art-bottom: #0e1f24;
+  --art-line: #b7d2d6;
+  --art-sprig: #f1f7f7;
+}
+.media-art--pantry {
+  --art-light: rgb(232 206 120 / 0.3);
+  --art-pool: rgb(92 88 40 / 0.75);
+  --art-top: #54532c;
+  --art-bottom: #17170c;
+  --art-line: #cfc38a;
+  --art-sprig: #f1ecc8;
+}
+.media-art--mixed {
+  --art-light: rgb(218 241 222 / 0.3);
+  --art-pool: rgb(62 100 84 / 0.75);
+  --art-top: #3b5e52;
+  --art-bottom: #0c1d1a;
+  --art-line: var(--sage-500);
+  --art-sprig: var(--mint-100);
+}
+.media-art--bakery .media-art__field { transform: scaleX(-1); }
+.media-art--prepared .media-art__field { transform: translateY(-18%); }
+.media-art--dairy .media-art__field { transform: scale(-1, -1); }
+.media-art--pantry .media-art__field { transform: translateX(22%) scale(1.15); }
+.media-art--mixed .media-art__field { transform: translateX(-20%) scaleY(-1); }
+
+/* Category glyph: a large thin-line icon in the same stroke language as the botanicals. */
+.media-art__glyph {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 34%;
+  max-width: 160px;
+  aspect-ratio: 1;
+  translate: -50% -50%;
+  color: var(--art-sprig);
+  opacity: 0.82;
+}
+.media-art__glyph svg { width: 100%; height: 100%; stroke-width: 1.25; }
+.media-art__glyph svg * { vector-effect: non-scaling-stroke; }

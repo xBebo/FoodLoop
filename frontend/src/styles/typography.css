@@ -1,0 +1,61 @@
+/* Editorial serif for display, functional sans for everything a user operates. */
+
+h1, h2, h3, h4, .display {
+  font-family: var(--font-display);
+  font-weight: 380;
+  font-optical-sizing: auto;
+  letter-spacing: var(--tracking-display);
+  line-height: var(--leading-heading);
+  text-wrap: balance;
+}
+
+.t-hero {
+  font-family: var(--font-display);
+  font-size: var(--text-hero);
+  font-weight: 340;
+  line-height: var(--leading-tight);
+  letter-spacing: -0.035em;
+  text-wrap: balance;
+}
+
+h1, .t-h1 { font-size: var(--text-h1); line-height: 1; }
+h2, .t-h2 { font-size: var(--text-h2); }
+h3, .t-h3 { font-size: var(--text-h3); letter-spacing: -0.015em; }
+h4, .t-h4 { font-size: var(--text-h4); letter-spacing: -0.01em; font-weight: 450; }
+
+/* Italic serif accent inside headings: "Surplus, <em>rerouted</em>" */
+:is(h1, h2, h3, .t-hero) em {
+  font-style: italic;
+  font-weight: inherit;
+  color: var(--heading-accent, var(--forest-700));
+}
+
+.t-lead {
+  font-size: var(--text-lead);
+  line-height: 1.5;
+  color: var(--color-text-muted);
+  text-wrap: pretty;
+}
+
+.t-body { font-size: var(--text-body); }
+.t-sm { font-size: var(--text-sm); }
+
+/* UI labels & data */
+.t-label {
+  font-family: var(--font-sans);
+  font-size: var(--text-xs);
+  font-weight: 650;
+  letter-spacing: var(--tracking-label);
+  text-transform: uppercase;
+}
+
+.t-data {
+  font-family: var(--font-sans);
+  font-variant-numeric: tabular-nums;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+}
+
+.t-muted { color: var(--color-text-muted); }
+
+p { text-wrap: pretty; }

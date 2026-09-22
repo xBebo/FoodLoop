@@ -1,0 +1,51 @@
+/* Motion tokens. Mirrored in src/lib/motion.ts for Framer Motion — keep both in sync. */
+
+:root {
+  --dur-fast: 150ms;
+  --dur-ui: 260ms;
+  --dur-reveal: 450ms;
+  --dur-ambient: 18s;
+
+  --ease-out: cubic-bezier(0.22, 1, 0.36, 1);
+  --ease-in-out: cubic-bezier(0.65, 0, 0.35, 1);
+
+  /* Movement amounts are tokens so reduced motion can zero them in one place. */
+  --motion-lift: -4px;
+  --motion-press: 0.97;
+  --motion-drift: 1;
+  --motion-nudge: 3px;
+}
+
+@keyframes ambient-drift {
+  0%,
+  100% { transform: translate3d(0, 0, 0) scale(1); }
+  50% { transform: translate3d(calc(var(--motion-drift) * 3%), calc(var(--motion-drift) * -4%), 0) scale(1.06); }
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+/*
+ * Global reduced-motion contract:
+ * - no translation / scaling on hover, press, drift
+ * - transitions + keyframes collapse to instant
+ * - Framer Motion is handled by <MotionConfig reducedMotion="user"> + useReducedMotion in primitives
+ */
+@media (prefers-reduced-motion: reduce) {
+  :root {
+    --motion-lift: 0px;
+    --motion-press: 1;
+    --motion-drift: 0;
+    --motion-nudge: 0px;
+  }
+
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
