@@ -1,0 +1,133 @@
+name: Deploy API
+
+on:
+  pull_request:
+    branches: [develop]
+  workflow_run:
+    workflows: [CI]
+    types: [completed]
+    branches: [develop]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: azure-api-${{ github.event.pull_request.number || 'production' }}
+  cancel-in-progress: false
+
+jobs:
+  # PRs only validate publishing. Production builds require successful push CI
+  # (including .NET 10 build/tests against disposable SQL) in this repository.
+  publish:
+    if: >-
+      github.event_name == 'pull_request' ||
+      (github.event_name == 'workflow_run' &&
+       github.repository == 'xBebo/FoodLoop' &&
+       github.ref == 'refs/heads/develop' &&
+       github.event.workflow_run.event == 'push' &&
+       github.event.workflow_run.head_branch == 'develop' &&
+       github.event.workflow_run.head_repository.full_name == github.repository &&
+       github.event.workflow_run.conclusion == 'success')
+    runs-on: windows-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          ref: ${{ github.event.workflow_run.head_sha || github.sha }}
+          persist-credentials: false
+      - uses: actions/setup-dotnet@67a3573c9a986a3f9c594539f4ab511d57bb3ce9 # v4
+        with:
+          dotnet-version: 10.0.x
+      # Windows F1 uses a 32-bit worker. Do not publish a win-x64 apphost.
+      - name: Publish IIS package
+        run: dotnet publish src/FoodLoop.Web/FoodLoop.Web.csproj -c Release -r win-x86 --self-contained false -p:UseAppHost=false -o artifacts/api
+      - name: Validate IIS entry point
+        shell: pwsh
+        run: |
+          $package = 'artifacts/api'
+          foreach ($file in @('web.config', 'FoodLoop.Web.dll', 'FoodLoop.Web.deps.json', 'FoodLoop.Web.runtimeconfig.json')) {
+            if (!(Test-Path "$package/$file")) { throw "Missing publish file: $file" }
+          }
+          [xml]$config = Get-Content "$package/web.config"
+          $aspNetCore = $config.configuration.location.'system.webServer'.aspNetCore
+          if ($aspNetCore.processPath -ne 'dotnet' -or $aspNetCore.arguments -ne '.\FoodLoop.Web.dll') {
+            throw 'Unexpected IIS process configuration'
+          }
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        if: github.event_name == 'workflow_run'
+        with:
+          name: api-${{ github.event.workflow_run.head_sha }}
+          path: artifacts/api/
+          if-no-files-found: error
+          retention-days: 3
+
+  deploy:
+    needs: publish
+    if: >-
+      github.event_name == 'workflow_run' &&
+      github.repository == 'xBebo/FoodLoop' &&
+      github.ref == 'refs/heads/develop' &&
+      github.event.workflow_run.event == 'push' &&
+      github.event.workflow_run.head_branch == 'develop' &&
+      github.event.workflow_run.head_repository.full_name == github.repository &&
+      github.event.workflow_run.conclusion == 'success'
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    permissions:
+      contents: read
+      id-token: write
+    # No GitHub environment: the Azure federated subject is branch-scoped.
+    steps:
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4
+        with:
+          name: api-${{ github.event.workflow_run.head_sha }}
+          path: api
+      - name: Skip superseded commits
+        id: current
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TESTED_SHA: ${{ github.event.workflow_run.head_sha }}
+        run: |
+          set -euo pipefail
+          current_sha=$(curl --fail --silent --show-error \
+            -H "Authorization: Bearer $GH_TOKEN" \
+            https://api.github.com/repos/xBebo/FoodLoop/git/ref/heads/develop | jq -er '.object.sha')
+          if [ "$current_sha" = "$TESTED_SHA" ]; then
+            echo 'deploy=true' >> "$GITHUB_OUTPUT"
+          else
+            echo 'Superseded commit; deployment skipped.' >> "$GITHUB_STEP_SUMMARY"
+          fi
+      - name: Azure login (OIDC)
+        if: steps.current.outputs.deploy == 'true'
+        uses: azure/login@8216e11d8cd9b42fe925c852af8e76311ff067ac # v2
+        with:
+          client-id: ${{ secrets.AZURE_CLIENT_ID }}
+          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+      - name: Deploy backend
+        id: webapp
+        if: steps.current.outputs.deploy == 'true'
+        uses: azure/webapps-deploy@b686016b4de8820a23519503685d8d03fbfa03a6 # v3
+        with:
+          app-name: foodloop-api-xbebo
+          package: api
+      - name: Verify HTTPS startup and SQL-backed antiforgery keys
+        if: steps.current.outputs.deploy == 'true'
+        env:
+          APP_URL: ${{ steps.webapp.outputs.webapp-url }}
+        run: |
+          set -euo pipefail
+          # Do not print cookies or antiforgery tokens. No login or data mutation.
+          test -n "$APP_URL"
+          base_url="https://${APP_URL#*://}"
+          for attempt in $(seq 1 18); do
+            if curl --fail --silent --show-error --max-time 20 \
+              "${base_url%/}/api/auth/antiforgery" -o response.json && \
+              jq -e '.token | type == "string" and length > 0' response.json > /dev/null; then
+              echo 'HTTPS API startup and antiforgery smoke check passed.' >> "$GITHUB_STEP_SUMMARY"
+              exit 0
+            fi
+            sleep 10
+          done
+          echo 'API smoke check failed; inspect App Service logs.' >&2
+          exit 1
