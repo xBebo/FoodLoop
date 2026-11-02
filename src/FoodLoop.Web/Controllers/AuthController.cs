@@ -1,3 +1,4 @@
+using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.AspNetCore.Mvc;
 using FoodLoop.Application.Identity;
 using FoodLoop.Domain.Enums;
@@ -22,6 +23,7 @@ namespace FoodLoop.Web.Controllers
 
         [HttpPost]
         [ValidateAntiForgeryToken]
+        [EnableRateLimiting("auth")]
         public async Task<IActionResult> Register(string orgName, string licenseNumber, OrganizationType orgType, string email, string password)
         {
             if (!ModelState.IsValid || !Enum.IsDefined(typeof(OrganizationType), orgType))
@@ -73,6 +75,7 @@ namespace FoodLoop.Web.Controllers
 
         [HttpPost]
         [ValidateAntiForgeryToken]
+        [EnableRateLimiting("auth")]
         public async Task<IActionResult> Login(string email, string password, string? returnUrl = null)
         {
             ViewData["ReturnUrl"] = returnUrl;

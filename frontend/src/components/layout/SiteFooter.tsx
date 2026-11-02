@@ -1,4 +1,4 @@
-import { FOOTER_NAV, LEGAL_NAV } from '../../app/routes'
+import { FOOTER_NAV } from '../../app/routes'
 import { AmbientOrb, BotanicalBranch, BotanicalDecoration } from '../brand/Botanical'
 import { FoodLoopWordmark } from '../brand/FoodLoopMark'
 import { NavItemLink } from './SectionLink'
@@ -20,7 +20,7 @@ export function SiteFooter() {
               Good food should <em>travel</em>, not&nbsp;spoil.
             </p>
             <p className="site-footer__mission">
-              FoodLoop connects donors, community organisations and couriers so surplus reaches people within hours —
+              FoodLoop connects donors, community organisations and couriers so surplus reaches people within hours â€”
               not landfill.
             </p>
           </div>
@@ -44,16 +44,8 @@ export function SiteFooter() {
         </div>
 
         <div className="site-footer__bottom">
-          <p>© {new Date().getFullYear()} FoodLoop. Surplus, rerouted with care.</p>
-          <ul role="list" className="site-footer__legal" aria-label="Legal">
-            {LEGAL_NAV.map((item) => (
-              <li key={item.label}>
-                <NavItemLink item={item} className="site-footer__link">
-                  {item.label}
-                </NavItemLink>
-              </li>
-            ))}
-          </ul>
+          <p>Â© {new Date().getFullYear()} FoodLoop. Surplus, rerouted with care.</p>
+          <p>ITI course project · Demonstration only. Use fictional organization details.</p>
         </div>
       </div>
     </footer>

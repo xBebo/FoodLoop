@@ -23,6 +23,7 @@ export function apiErrors(error: unknown, byStatus: Record<number, string> = {})
   if (!(error instanceof ApiError)) return { form: 'Something went wrong. Please try again.' }
   if (error.code === 'antiforgery.invalid') return { form: 'Your session changed in the meantime. Please try again.' }
   if (byStatus[error.status]) return { form: byStatus[error.status] }
+  if (error.status === 429) return { form: 'Too many attempts. Please wait a minute before trying again.' }
   if (error.status === 0) return { form: 'We couldn’t reach FoodLoop. Check your connection and try again.' }
   if (error.status === 400) {
     const fields = Object.fromEntries(Object.entries(error.errors).map(([k, v]) => [k, v[0]]))

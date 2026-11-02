@@ -29,6 +29,9 @@ public static class DependencyInjection
         services.AddIdentity<ApplicationUser, IdentityRole<Guid>>(options => {
             options.User.RequireUniqueEmail = true;
             options.Password.RequiredLength = 10;
+            options.Lockout.MaxFailedAccessAttempts = 5;
+            options.Lockout.DefaultLockoutTimeSpan = TimeSpan.FromMinutes(15);
+            options.Lockout.AllowedForNewUsers = true;
         }).AddEntityFrameworkStores<ApplicationDbContext>().AddDefaultTokenProviders();
         services.ConfigureApplicationCookie(options => {
             options.LoginPath = "/Auth/Login";

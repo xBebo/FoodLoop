@@ -30,7 +30,7 @@ public sealed class AccountService(
         }
 
         // Password proof first, without issuing a cookie; only then may the account's eligibility be revealed.
-        if (!(await signIn.CheckPasswordSignInAsync(user, password, lockoutOnFailure: false)).Succeeded)
+        if (!(await signIn.CheckPasswordSignInAsync(user, password, lockoutOnFailure: true)).Succeeded)
             return new(LoginOutcome.InvalidCredentials);
         if (!LoginEligibility.CanSignIn(user.Organization?.Type, user.Organization?.Status))
             return new(LoginOutcome.AccountUnavailable);
