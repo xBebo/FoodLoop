@@ -1,4 +1,4 @@
-// Information architecture (R2 public site + R3â€“R5 workspace). `section` targets an id on the Home page (see SectionLink).
+// Information architecture (R2 public site + R3–R5 workspace). `section` targets an id on the Home page (see SectionLink).
 
 export const PATHS = {
   home: '/',
@@ -111,10 +111,10 @@ export const FOOTER_NAV: NavGroup[] = [
 ]
 
 export const PAGE_TITLES: Record<string, string> = {
-  [PATHS.home]: 'FoodLoop â€” Good food. Greater impact.',
-  [PATHS.login]: 'Log in â€” FoodLoop',
+  [PATHS.home]: 'FoodLoop — Good food. Greater impact.',
+  [PATHS.login]: 'Log in — FoodLoop',
   [PATHS.register]: 'Join FoodLoop',
-  [PATHS.styleSystem]: 'Style system (dev) â€” FoodLoop',
+  [PATHS.styleSystem]: 'Style system (dev) — FoodLoop',
 }
 
 /** Routes rendered without the site footer (full-height split layouts). */
