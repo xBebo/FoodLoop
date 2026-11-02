@@ -1,75 +1,17 @@
-# React + TypeScript + Vite
+# FoodLoop frontend
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+React, TypeScript and Vite client for the FoodLoop ITI course project.
 
-Currently, two official plugins are available:
+- Live demonstration: https://foodloop-eg.vercel.app
+- Setup, team attribution and backend prerequisites: [root README](../README.md).
+- Production routing and deployment settings: [Vercel guide](../docs/vercel-frontend.md).
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+Use Node.js 24.x and run `npm ci`, then `npm run dev`. Run the ASP.NET Core backend with its `http` launch profile; Vite proxies `/api` to `http://localhost:5179`.
 
-## React Compiler
+Verification: `npm run lint` and `npm run build` (TypeScript followed by a production Vite build). Do not put secrets in frontend environment variables. Production uses relative `/api` requests through the Vercel rewrite to Azure.
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+The style playground is available only in development. Screenshots and product previews use illustrative content; use fictional details when trying the live demonstration.
 
-## Expanding the ESLint configuration
+## Dependency maintenance
 
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
-
-```js
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-
-      // Remove tseslint.configs.recommended and replace with this
-      tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      tseslint.configs.stylisticTypeChecked,
-
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
-
-```
-
-You can also install [eslint-plugin-react-x](https://npmx.dev/package/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://npmx.dev/package/eslint-plugin-react-dom) for React-specific lint rules:
-
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
-
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs['recommended-typescript'],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
-
-```
+The lockfile uses patched development tools. `package.json` temporarily overrides transitive `minimatch` to 11.0.4 because upstream lint packages still request affected earlier majors (GHSA-g3hv-75wg-m249). This changes a tooling dependency across a major boundary: validate `npm ci`, lint and build when updating it, and remove the override once upstream supports a patched version. Node.js 24.x is required for the supported development setup.

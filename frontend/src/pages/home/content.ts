@@ -13,7 +13,7 @@ export const LOOP_STEPS: { id: LoopStepId; role: string; title: string; body: st
     id: 'foodloop',
     role: 'FoodLoop',
     title: 'The right match',
-    body: 'FoodLoop offers each listing to nearby community organizations and keeps every party in sync.',
+    body: 'Approved beneficiary organizations browse available listings and claim food they can use.',
   },
   {
     id: 'courier',
@@ -37,8 +37,8 @@ export const ROLES: { id: RoleId; name: string; purpose: string; capabilities: s
     name: 'Donor',
     purpose: 'Share surplus before it goes to waste.',
     capabilities: [
-      'List surplus with photos, quantities and a pickup window.',
-      'See who claimed it and when the courier is on the way.',
+      'List surplus with quantities, expiry times and handling instructions.',
+      'Track donation status from publication through confirmed handover.',
       'Keep a clear record of everything you have shared.',
     ],
   },
@@ -47,9 +47,9 @@ export const ROLES: { id: RoleId; name: string; purpose: string; capabilities: s
     name: 'Beneficiary',
     purpose: 'Discover food available to your organization.',
     capabilities: [
-      'Browse nearby listings that fit what you can store and serve.',
-      'Claim food in a few steps and choose pickup or delivery.',
-      'Tell donors what your community needs most.',
+      'Browse available listings by title and food category.',
+      'Claim available food and follow its delivery progress.',
+      'Keep a record of your organization’s claims.',
     ],
   },
   {
@@ -57,7 +57,7 @@ export const ROLES: { id: RoleId; name: string; purpose: string; capabilities: s
     name: 'Courier',
     purpose: 'Move each rescue safely from pickup to delivery.',
     capabilities: [
-      'Accept runs that fit your route and your schedule.',
+      'View delivery tasks assigned to you by an administrator.',
       'Follow clear pickup and drop-off instructions.',
       'Confirm every handoff with a one-time code.',
     ],

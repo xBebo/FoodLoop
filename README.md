@@ -1,16 +1,22 @@
 # FoodLoop
 
-ASP.NET Core MVC graduation project with integrated registration/approval, donations, automatic expiry, claims, courier handover, Admin impact dashboard and audit workflows.
+ITI .NET course team project for managing surplus-food donations from listing and claiming through courier pickup and verified delivery.
+
+**Live demonstration:** [foodloop-eg.vercel.app](https://foodloop-eg.vercel.app) · **Default branch:** `develop`
+
+The current application uses React + TypeScript + Vite on Vercel, an ASP.NET Core API on Azure Windows App Service F1, and Azure SQL. The repository also retains the original MVC interface. This is a course demonstration: use fictional organization details and do not submit sensitive information.
+
+Azure F1 can cold-start or stop at its quota. Periodic expiry is not provisioned by the current Azure deployment workflow; request-time expiry checks still prevent expired food from being claimed. See [Azure deployment](docs/azure-deployment.md) and [Vercel frontend routing](docs/vercel-frontend.md).
 
 ## Team ownership
 
 | Owner | Feature |
 |---|---|
-| Jana | Identity UI, organizations, approval and authorization |
-| Alaa | Donations, marketplace and expiry |
-| Safa | Claims, cancellation and concurrency-safe booking |
-| Haneen | Courier assignment, QR verification and handover |
-| Baraa | Audit, admin dashboard and integration |
+| Jana Sharaf | Identity UI, organizations, approval and authorization |
+| Alaa Ahmed | Donations, marketplace and expiry |
+| Safa Nasr Eldin | Claims, cancellation and concurrency-safe booking |
+| Haneen Ali | Courier assignment, QR verification and handover |
+| Baraa — Team Leader | Audit, admin dashboard and system integration |
 
 Start by reviewing [the implemented shared contracts](docs/SHARED-CONTRACTS.md) and the current [Tasks 3 of 3 — Functional Completion, Hardening & Demo Readiness](docs/TASKS-03.md). [Tasks 2 of 3](docs/TASKS-02.md) and [TEAM-START.md](docs/TEAM-START.md) remain as Stage 2 and Stage 1 history.
 
@@ -19,7 +25,7 @@ Start by reviewing [the implemented shared contracts](docs/SHARED-CONTRACTS.md) 
 - .NET 10 SDK (global.json allows installed .NET 10 feature bands, including 10.0.401).
 - Visual Studio supporting .NET 10 with ASP.NET development tools, or the .NET CLI.
 - SQL Server LocalDB on Windows, or a SQL Server instance you can access.
-- EF Core / Identity packages and the repository-local EF tool are pinned to 10.0.12.
+- EF Core / Identity packages and the repository-local EF tool are pinned to 10.0.13.
 
 Run commands below from the repository root. In Visual Studio, set **FoodLoop.Web** as the startup project.
 
@@ -73,6 +79,32 @@ Open the URL printed by the application. Login and registration are available at
 
 Normal app startup does not migrate or create a database. Outside Development a connection string must be configured explicitly. HTTPS certificate trust, if required locally, can be set with `dotnet dev-certs https --trust`.
 
+## React development
+
+Use Node.js 24.x. Start the backend with its HTTP profile, then run the frontend in a separate terminal:
+
+```powershell
+dotnet run --project src/FoodLoop.Web --launch-profile http
+```
+
+```powershell
+cd frontend
+npm ci
+npm run dev
+```
+
+Open the URL printed by Vite. Its `/api` proxy targets `http://localhost:5179`. React login and registration are `/login` and `/register`; the `/Auth/*` URLs above belong to MVC. Check the frontend with `npm run lint` and `npm run build`.
+
+## Authentication protection
+
+Both MVC and API password sign-in share Identity lockout: five failed passwords lock the account for 15 minutes, with the same generic invalid-credentials response. Login and registration POSTs also share a fixed-window rate limit of 60 requests per minute per observed remote IP. No forwarding header is trusted just to identify a visitor. Behind Vercel, multiple visitors may share a bucket. This in-memory budget resets on app restart and is not distributed across instances.
+
+`AuthRateLimit__PermitLimit` and `AuthRateLimit__WindowSeconds` configure the budget. API rejections return HTTP 429 with `auth.rate_limited` and `Retry-After`; MVC rejections return a short message. For larger traffic, provision a trusted edge/distributed limiter rather than enabling unrestricted forwarded headers.
+
+## Attribution and reuse
+
+This is a team project; preserve the ownership table when sharing it. No project-level open-source license has been selected. Third-party license notices remain with bundled libraries. Image provenance and a project license require confirmation by the team.
+
 ## Architecture
 
 ```text
@@ -116,7 +148,7 @@ Coverage includes migration/model consistency, SQL constraints, competing rowver
 4. Open a PR into develop. The affected owner reviews shared contracts.
 5. Merge and demonstrate the integrated application nightly.
 
-The existing release branch is named `master`; do not assume `main` exists. Confirm GitHub branch protection in the repository UI; it is not configured by these source files.
+`develop` is the default and current deployment branch. `master` is an older branch, not the source for the current live demonstration. Confirm required checks and reviews in GitHub; source files do not configure branch protection.
 
 ## Admin dashboard, impact and audit list
 
@@ -130,7 +162,7 @@ Read [the admin feature guide](docs/ADMIN-FEATURE.md) for the count definitions,
 
 ## Automatic donation expiry
 
-The Web project runs a small `BackgroundService` that creates a fresh DI scope for each expiry run and calls Alaa's `IDonationExpiryService`. The worker contains no donation state-transition rules.
+When enabled, the Web project runs a small `BackgroundService` that creates a fresh DI scope for each expiry run and calls Alaa's `IDonationExpiryService`. The worker contains no donation state-transition rules.
 
 Committed defaults:
 

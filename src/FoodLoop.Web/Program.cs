@@ -1,3 +1,5 @@
+using System.Threading.RateLimiting;
+using Microsoft.AspNetCore.RateLimiting;
 using FoodLoop.Application;
 using FoodLoop.Infrastructure;
 using FoodLoop.Infrastructure.Persistence;
@@ -11,6 +13,46 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.AspNetCore.HttpOverrides;
 
 var builder = WebApplication.CreateBuilder(args);
+builder.Services.AddOptions<AuthRateLimitOptions>()
+    .BindConfiguration("AuthRateLimit")
+    .Validate(o => o.PermitLimit is >= 1 and <= 10000 && o.WindowSeconds is >= 1 and <= 3600,
+        "AuthRateLimit requires PermitLimit 1-10000 and WindowSeconds 1-3600.")
+    .ValidateOnStart();
+builder.Services.AddRateLimiter(options =>
+{
+    options.RejectionStatusCode = StatusCodes.Status429TooManyRequests;
+    options.AddPolicy("auth", context =>
+    {
+        var settings = context.RequestServices.GetRequiredService<Microsoft.Extensions.Options.IOptions<AuthRateLimitOptions>>().Value;
+        // Never partition on caller-supplied forwarding headers. Proxied visitors may share a bucket.
+        return RateLimitPartition.GetFixedWindowLimiter(
+            context.Connection.RemoteIpAddress?.ToString() ?? "unknown", _ => new FixedWindowRateLimiterOptions
+            {
+                PermitLimit = settings.PermitLimit,
+                Window = TimeSpan.FromSeconds(settings.WindowSeconds),
+                QueueLimit = 0,
+                AutoReplenishment = true
+            });
+    });
+    options.OnRejected = async (context, ct) =>
+    {
+        context.HttpContext.Response.Headers.CacheControl = "no-store";
+        if (context.Lease.TryGetMetadata(MetadataName.RetryAfter, out var retryAfter))
+            context.HttpContext.Response.Headers.RetryAfter = Math.Ceiling(retryAfter.TotalSeconds)
+                .ToString(System.Globalization.CultureInfo.InvariantCulture);
+        if (IsApi(context.HttpContext.Request))
+            await Results.Problem(statusCode: 429, title: "Too many requests",
+                type: "https://tools.ietf.org/html/rfc6585#section-4",
+                extensions: new Dictionary<string, object?>
+                {
+                    ["code"] = "auth.rate_limited",
+                    ["traceId"] = System.Diagnostics.Activity.Current?.Id ?? context.HttpContext.TraceIdentifier
+                })
+                .ExecuteAsync(context.HttpContext);
+        else
+            await context.HttpContext.Response.WriteAsync("Too many attempts. Please wait before trying again.", ct);
+    };
+});
 builder.Services.AddControllersWithViews(options =>
     {
         options.Filters.Add(new AutoValidateAntiforgeryTokenAttribute());
@@ -123,6 +165,7 @@ app.UseWhen(context => IsApi(context.Request), api =>
 });
 app.UseHttpsRedirection();
 app.UseRouting();
+app.UseRateLimiter();
 app.UseAuthentication();
 app.UseAuthorization();
 app.MapStaticAssets();

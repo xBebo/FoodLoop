@@ -197,6 +197,52 @@ public sealed class AuthApiTests(AuthApiHost host) : IClassFixture<AuthApiHost>
         Assert.DoesNotMatch("(?i)\"id\"|guid|stamp|claim|[0-9a-f]{8}-[0-9a-f]{4}-", session.ToJsonString());
     }
 
+    [Fact]
+    public async Task Failed_passwords_lock_the_account_across_api_and_mvc_then_expire()
+    {
+        var email = await User(AppRoles.Admin);
+        using var client = Client();
+        for (var attempt = 0; attempt < 5; attempt++)
+            await Problem(await Login(client, email, "Wrong-Password!1"), HttpStatusCode.Unauthorized, "auth.invalid_credentials");
+        // A correct password cannot bypass an active lockout; no account-state disclosure.
+        await Problem(await Login(client, email), HttpStatusCode.Unauthorized, "auth.invalid_credentials");
+        var mvc = await client.PostAsync("/Auth/Login", new FormUrlEncodedContent(new Dictionary<string, string>
+        {
+            ["email"] = email, ["password"] = Password, ["__RequestVerificationToken"] = await Token(client)
+        }));
+        Assert.Equal(HttpStatusCode.OK, mvc.StatusCode);
+        Assert.Contains(AuthController.InvalidCredentialsMessage, await mvc.Content.ReadAsStringAsync());
+        Assert.False((await Session(client))["isAuthenticated"]!.GetValue<bool>());
+        await using (var scope = host.Factory.Services.CreateAsyncScope())
+        {
+            var users = scope.ServiceProvider.GetRequiredService<UserManager<ApplicationUser>>();
+            var user = (await users.FindByEmailAsync(email))!;
+            Assert.True(await users.IsLockedOutAsync(user));
+            Assert.True((await users.SetLockoutEndDateAsync(user, DateTimeOffset.UtcNow.AddMinutes(-1))).Succeeded);
+        }
+        Assert.Equal(HttpStatusCode.OK, (await Login(client, email)).StatusCode);
+    }
+
+    [Fact]
+    public async Task Auth_rate_limit_is_shared_by_api_and_mvc_and_ignores_forwarded_headers()
+    {
+        using var factory = host.Factory.WithWebHostBuilder(b => b
+            .UseSetting("AuthRateLimit:PermitLimit", "2")
+            .UseSetting("AuthRateLimit:WindowSeconds", "60"));
+        using var client = factory.CreateClient(new() { AllowAutoRedirect = false, BaseAddress = new Uri("https://localhost") });
+        // Invalid antiforgery requests still consume the budget before reaching the action.
+        Assert.Equal(HttpStatusCode.BadRequest, (await Post(client, "/api/auth/login", new { }, null)).StatusCode);
+        Assert.Equal(HttpStatusCode.BadRequest, (await client.PostAsync("/Auth/Register", new StringContent(""))).StatusCode);
+        client.DefaultRequestHeaders.Add("X-Forwarded-For", "203.0.113.5");
+        var rejected = await Post(client, "/api/auth/register", new { }, null);
+        await Problem(rejected, HttpStatusCode.TooManyRequests, "auth.rate_limited");
+        Assert.Contains("no-store", rejected.Headers.CacheControl!.ToString());
+        Assert.NotNull(rejected.Headers.RetryAfter);
+        Assert.Equal(HttpStatusCode.TooManyRequests, (await client.PostAsync("/Auth/Login", new StringContent(""))).StatusCode);
+        Assert.Equal(HttpStatusCode.OK, (await client.GetAsync("/api/auth/session")).StatusCode);
+        Assert.Equal(HttpStatusCode.OK, (await client.GetAsync("/Auth/Login")).StatusCode);
+    }
+
     // ---- Login
 
     [Fact]

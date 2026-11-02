@@ -1,3 +1,4 @@
+using Microsoft.AspNetCore.RateLimiting;
 using System.ComponentModel.DataAnnotations;
 using FoodLoop.Application.Identity;
 using FoodLoop.Domain.Enums;
@@ -37,6 +38,7 @@ public sealed class AuthApiController(AccountService accounts, IAntiforgery anti
     }
 
     [HttpPost("login"), AllowAnonymous]
+    [EnableRateLimiting("auth")]
     public async Task<IActionResult> Login(LoginRequest request, CancellationToken ct)
     {
         var result = await accounts.SignInAsync(request.Email, request.Password, ct);
@@ -56,6 +58,7 @@ public sealed class AuthApiController(AccountService accounts, IAntiforgery anti
     }
 
     [HttpPost("register"), AllowAnonymous]
+    [EnableRateLimiting("auth")]
     public async Task<IActionResult> Register(RegisterRequest request, CancellationToken ct)
     {
         var result = await accounts.RegisterAsync(

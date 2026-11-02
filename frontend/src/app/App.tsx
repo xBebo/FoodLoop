@@ -27,10 +27,10 @@ const router = createBrowserRouter([
         ],
       },
       // Dev-only reference page: intentionally absent from every navigation.
-      {
+      ...(import.meta.env.DEV ? [{
         path: PATHS.styleSystem,
         lazy: async () => ({ Component: (await import('../pages/dev/StylePlayground')).StylePlayground }),
-      },
+      }] : []),
       { path: '*', element: <NotFound /> },
     ],
   },
