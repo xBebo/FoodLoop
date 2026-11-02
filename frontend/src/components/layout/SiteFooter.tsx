@@ -20,7 +20,7 @@ export function SiteFooter() {
               Good food should <em>travel</em>, not&nbsp;spoil.
             </p>
             <p className="site-footer__mission">
-              FoodLoop connects donors, community organisations and couriers so surplus reaches people within hours â€”
+              FoodLoop connects donors, community organisations and couriers so surplus reaches people within hours —
               not landfill.
             </p>
           </div>
@@ -44,7 +44,7 @@ export function SiteFooter() {
         </div>
 
         <div className="site-footer__bottom">
-          <p>Â© {new Date().getFullYear()} FoodLoop. Surplus, rerouted with care.</p>
+          <p>© {new Date().getFullYear()} FoodLoop. Surplus, rerouted with care.</p>
           <p>ITI course project · Demonstration only. Use fictional organization details.</p>
         </div>
       </div>

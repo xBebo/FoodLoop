@@ -6,8 +6,9 @@
   "scripts": {
     "dev": "vite",
     "build": "tsc -b && vite build",
-    "lint": "eslint .",
-    "preview": "vite preview"
+    "lint": "npm run check:text && eslint .",
+    "preview": "vite preview",
+    "check:text": "node scripts/check-text.mjs"
   },
   "dependencies": {
     "clsx": "^2.1.1",
