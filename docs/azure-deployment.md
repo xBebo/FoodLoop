@@ -78,9 +78,11 @@ Root `vercel.json` is Vercel configuration, outside the backend publish root;
 Azure IIS does not apply its services, rewrites or cron. The backend has no
 Vercel-only route gate: `/api/*` controllers and existing MVC routes remain
 available on Azure. The React frontend is not included in the backend publish.
-The existing Vercel frontend still points `/api/*` to its Vercel backend service,
-so deploying Azure alone does **not** switch frontend traffic. A future frontend
-proxy change must preserve same-origin cookies and antiforgery behavior.
+For the Azure-backed SPA, use a separate Vercel project rooted at `frontend`.
+Its `frontend/vercel.json` proxies `/api` and `/api/*` to Azure before the SPA
+fallback. The repository-root Vercel services/cron configuration is the older
+Vercel backend setup and is preserved; do not use it for this frontend project.
+See [Frontend on Vercel](vercel-frontend.md) for settings and release checks.
 
 ## References
 
